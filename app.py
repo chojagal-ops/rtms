@@ -98,13 +98,25 @@ def migrate_db():
 
     is_pg = _db_url.startswith('postgresql')
 
+    # PostgreSQL 예약어 테이블(user 등)은 따옴표로 감싸야 함
+    _RESERVED = {'user', 'order', 'group', 'table', 'select'}
+
+    def _safe(tbl):
+        return f'"{tbl}"' if (is_pg and tbl.lower() in _RESERVED) else tbl
+
     def add_col(table, col, col_type):
         if table in tables:
-            cols = [c['name'] for c in inspector.get_columns(table)]
-            if col not in cols:
-                with db.engine.connect() as conn:
-                    conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {col} {col_type}'))
-                    conn.commit()
+            try:
+                cols = [c['name'] for c in inspector.get_columns(table)]
+                if col not in cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text(
+                            f'ALTER TABLE {_safe(table)} ADD COLUMN {col} {col_type}'
+                        ))
+                        conn.commit()
+                    print(f'[RTMS] 컬럼 추가: {table}.{col}')
+            except Exception as e:
+                print(f'[RTMS] 컬럼 추가 건너뜀 ({table}.{col}): {e}')
 
     add_col('test_request', 'requester_position', 'VARCHAR(50)')
     add_col('test_result',  'summary',             'TEXT')
