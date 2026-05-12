@@ -8,7 +8,7 @@ from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, current_app, send_from_directory, jsonify, send_file)
 from flask_login import login_required, current_user
 from models import db, TestRequest, TestItem, TestCriterion
-from utils import parse_date, log_error
+from utils import parse_date, log_error, mail_new_request
 from constants import (PRODUCT_TYPES, TEST_STAGES, TEST_PURPOSES,
                        SAMPLE_STATES, PRIORITIES, FEASIBILITY_OPTIONS,
                        CRITERION_TYPES, ATTACH_TYPES)
@@ -214,6 +214,12 @@ def new():
 
             db.session.commit()
             flash(f'의뢰서 [{req_obj.request_no}] 등록되었습니다.', 'success')
+            # 품질팀 접수 알림 메일 발송 (비동기)
+            try:
+                base_url = request.url_root.rstrip('/')
+                mail_new_request(req_obj, base_url)
+            except Exception as e:
+                log_error('접수 메일 발송 오류', e)
             return redirect(url_for('requests.detail', rid=req_obj.id))
         except Exception as e:
             db.session.rollback()

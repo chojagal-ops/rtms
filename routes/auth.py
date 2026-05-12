@@ -50,6 +50,7 @@ def register():
             user = User(
                 username=username,
                 name=request.form.get('name', '').strip(),
+                email=request.form.get('email', '').strip() or None,
                 department=request.form.get('department', '').strip(),
                 is_approved=False,
             )

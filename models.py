@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     username     = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     name         = db.Column(db.String(50), nullable=False)
+    email        = db.Column(db.String(120))                  # 이메일 (결과 통보용)
     department   = db.Column(db.String(50), default='품질팀')
     role         = db.Column(db.String(20), default='user')   # admin / user
     is_approved  = db.Column(db.Boolean, default=False)

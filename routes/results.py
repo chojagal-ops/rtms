@@ -7,7 +7,7 @@ from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, current_app, send_from_directory, jsonify, send_file)
 from flask_login import login_required, current_user
 from models import db, TestRequest, TestItem, TestResult
-from utils import parse_date, log_error
+from utils import parse_date, log_error, mail_result_notify
 
 results_bp = Blueprint('results', __name__)
 
@@ -132,6 +132,21 @@ def edit(rid):
 
             db.session.commit()
             flash('결과서가 저장되었습니다.', 'success')
+
+            # 의뢰자 결과 통보 메일 발송 (비동기, overall_result 있을 때만)
+            if res_obj.overall_result in ('합격', '불합격', '조건부합격'):
+                try:
+                    from models import User
+                    creator = db.session.get(User, req_obj.created_by)
+                    requester_email = creator.email if creator and creator.email else None
+                    if requester_email:
+                        base_url = request.url_root.rstrip('/')
+                        mail_result_notify(req_obj, res_obj, requester_email, base_url)
+                    else:
+                        log_error('결과 통보 메일', Exception(f'의뢰자 이메일 없음 (user_id={req_obj.created_by})'))
+                except Exception as e:
+                    log_error('결과 통보 메일 발송 오류', e)
+
             return redirect(url_for('requests.detail', rid=rid))
         except Exception as e:
             db.session.rollback()

@@ -113,6 +113,7 @@ def migrate_db():
     add_col('test_result',  'attach_doc_name',     'TEXT')
     add_col('test_result',  'test_complete_date',  'DATE')
     add_col('test_result',  'notify_date',         'DATE')
+    add_col('user',         'email',               'VARCHAR(120)')
 
 
 def init_db():
