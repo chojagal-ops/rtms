@@ -131,6 +131,12 @@ def migrate_db():
     add_col('test_result',  'notify_date',         'DATE')
     add_col('user',         'email',               'VARCHAR(120)')
 
+    # ── NC 테이블 시험의뢰자 컬럼 ────────────────────────────
+    add_col('nc_report', 'requester_name',    'VARCHAR(50)')
+    add_col('nc_report', 'requester_dept',    'VARCHAR(100)')
+    add_col('nc_report', 'requester_contact', 'VARCHAR(50)')
+    add_col('nc_report', 'requester_email',   'VARCHAR(120)')
+
     # ── NC 테이블 컬럼 (db.create_all 이후 보완용) ──────────
     # nc_report / nc_action 은 create_all 로 생성되므로 add_col 불필요
     # 기존 test_result의 합격/불합격 → 적합/부적합 데이터 마이그레이션

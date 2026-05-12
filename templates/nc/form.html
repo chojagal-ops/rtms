@@ -14,6 +14,33 @@
   <div style="padding:24px;">
     <form method="POST">
 
+      {# ── 시험의뢰자 정보 ── #}
+      <div style="font-weight:700;color:#374151;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #2563eb;">
+        👤 시험의뢰자 정보
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+        <div>
+          <label class="form-label">의뢰자 이름</label>
+          <input type="text" name="requester_name" class="form-control" placeholder="의뢰자 성명"
+                 value="{{ nc.requester_name if nc else '' }}">
+        </div>
+        <div>
+          <label class="form-label">의뢰 부서</label>
+          <input type="text" name="requester_dept" class="form-control" placeholder="소속 부서"
+                 value="{{ nc.requester_dept if nc else '' }}">
+        </div>
+        <div>
+          <label class="form-label">연락처</label>
+          <input type="text" name="requester_contact" class="form-control" placeholder="전화번호"
+                 value="{{ nc.requester_contact if nc else '' }}">
+        </div>
+        <div>
+          <label class="form-label">이메일</label>
+          <input type="email" name="requester_email" class="form-control" placeholder="이메일 주소"
+                 value="{{ nc.requester_email if nc else '' }}">
+        </div>
+      </div>
+
       {# ── 기본 정보 ── #}
       <div style="font-weight:700;color:#374151;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #f97316;">
         📋 기본 정보

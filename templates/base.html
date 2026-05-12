@@ -87,33 +87,15 @@
     <div class="nav-section" style="margin-top:8px;">부적합 관리</div>
     <div class="nav-item nav-item-with-add">
       <a href="{{ url_for('nc.list_view') }}"
-         class="{{ 'active' if request.blueprint == 'nc' and request.endpoint == 'nc.list_view' }}">
-        <span class="nav-icon">⚠️</span><span>불량 등록 목록</span>
+         class="{{ 'active' if request.blueprint == 'nc' and request.endpoint in ('nc.list_view','nc.detail','nc.edit','nc.new') }}">
+        <span class="nav-icon">⚠️</span><span>부적합 등록</span>
       </a>
-      <a href="{{ url_for('nc.new') }}" class="nav-add-btn" title="불량 등록">＋</a>
-    </div>
-    <div class="nav-item">
-      <a href="{{ url_for('nc.view_analysis') }}"
-         class="{{ 'active' if request.endpoint == 'nc.view_analysis' }}">
-        <span class="nav-icon">🔍</span><span>원인 분석</span>
-      </a>
-    </div>
-    <div class="nav-item">
-      <a href="{{ url_for('nc.view_capa') }}"
-         class="{{ 'active' if request.endpoint == 'nc.view_capa' }}">
-        <span class="nav-icon">🔧</span><span>CAPA 관리</span>
-      </a>
+      <a href="{{ url_for('nc.new') }}" class="nav-add-btn" title="부적합 신규 등록">＋</a>
     </div>
     <div class="nav-item">
       <a href="{{ url_for('nc.view_improvement') }}"
          class="{{ 'active' if request.endpoint == 'nc.view_improvement' }}">
         <span class="nav-icon">📈</span><span>개선조치 관리</span>
-      </a>
-    </div>
-    <div class="nav-item">
-      <a href="{{ url_for('nc.view_prevention') }}"
-         class="{{ 'active' if request.endpoint == 'nc.view_prevention' }}">
-        <span class="nav-icon">🛡️</span><span>재발방지 관리</span>
       </a>
     </div>
 

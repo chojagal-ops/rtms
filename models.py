@@ -163,6 +163,12 @@ class NCReport(db.Model):
     # 연결 (선택)
     request_id     = db.Column(db.Integer, db.ForeignKey('test_request.id'))  # 관련 의뢰서
 
+    # 시험의뢰자 정보
+    requester_name    = db.Column(db.String(50))                    # 의뢰자 이름
+    requester_dept    = db.Column(db.String(100))                   # 의뢰 부서
+    requester_contact = db.Column(db.String(50))                    # 연락처
+    requester_email   = db.Column(db.String(120))                   # 이메일
+
     # 기본 정보
     detection_date = db.Column(db.Date)                             # 발생일
     detected_by    = db.Column(db.String(50))                       # 발견자

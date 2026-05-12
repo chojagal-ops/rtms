@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}개선조치 관리 — RTMS{% endblock %}
+{% block topbar_title %}📈 개선조치 관리{% endblock %}
+
+{% block content %}
+
+{# ── 필터 바 ── #}
+<form method="get" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+  <select name="status" class="form-control" style="width:130px;">
+    <option value="">전체 상태</option>
+    {% for s in NC_STATUSES %}
+    <option value="{{ s }}" {% if s == status_f %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ search }}" placeholder="번호·제품명·의뢰자·부서 검색"
+         class="form-control" style="flex:1;min-width:180px;">
+  <button type="submit" class="btn btn-primary">🔍 검색</button>
+  <a href="{{ url_for('nc.view_improvement') }}" class="btn btn-outline">초기화</a>
+</form>
+
+{# ── 안내 배너 ── #}
+<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;color:#1d4ed8;">
+  💡 각 부적합 항목의 <strong>개선조치 입력</strong> 버튼을 클릭하면 시험의뢰자가 개선 내용을 등록할 수 있습니다.
+</div>
+
+{# ── NC 목록 ── #}
+{% for nc in items %}
+<div class="card" style="margin-bottom:16px;">
+  {# 카드 헤더 #}
+  <div style="padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #f1f5f9;">
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:15px;font-weight:900;color:#f97316;">{{ nc.nc_no }}</span>
+        {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+        <span class="badge" style="font-size:11px;background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};border:1px solid {{ sc.get(nc.status,'#6b7280') }}44;">
+          {{ nc.status }}
+        </span>
+        {% if nc.severity %}
+        <span class="badge" style="font-size:11px;
+          {% if nc.severity == '상' %}background:#fee2e2;color:#dc2626;
+          {% elif nc.severity == '중' %}background:#fef3c7;color:#d97706;
+          {% else %}background:#f0fdf4;color:#16a34a;{% endif %}">
+          심각도 {{ nc.severity }}
+        </span>
+        {% endif %}
+      </div>
+      <div style="font-size:14px;font-weight:600;margin-top:4px;">
+        {{ nc.product_name or '-' }}
+        {% if nc.defect_type %}<span style="font-size:12px;color:#6b7280;font-weight:400;"> · {{ nc.defect_type }}</span>{% endif %}
+      </div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:2px;">
+        발생일: {{ nc.detection_date.strftime('%Y-%m-%d') if nc.detection_date else '-' }}
+        · 발견자: {{ nc.detected_by or '-' }}
+        · 부서: {{ nc.dept or '-' }}
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <a href="{{ url_for('nc.detail', nid=nc.id) }}#tab_improve"
+         class="btn btn-primary btn-sm">📝 개선조치 입력</a>
+      <a href="{{ url_for('nc.detail', nid=nc.id) }}"
+         class="btn btn-outline btn-sm">상세보기</a>
+    </div>
+  </div>
+
+  {# 시험의뢰자 + 개선조치 현황 #}
+  <div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    {# 시험의뢰자 정보 #}
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">👤 시험의뢰자</div>
+      {% if nc.requester_name or nc.requester_dept %}
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        {% if nc.requester_name %}
+        <div style="font-size:13px;font-weight:600;">{{ nc.requester_name }}</div>
+        {% endif %}
+        {% if nc.requester_dept %}
+        <div style="font-size:12px;color:#64748b;">{{ nc.requester_dept }}</div>
+        {% endif %}
+        {% if nc.requester_contact %}
+        <div style="font-size:12px;color:#64748b;">📞 {{ nc.requester_contact }}</div>
+        {% endif %}
+        {% if nc.requester_email %}
+        <div style="font-size:12px;color:#64748b;">✉️ {{ nc.requester_email }}</div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div style="font-size:12px;color:#cbd5e1;">의뢰자 정보 없음</div>
+      {% endif %}
+    </div>
+
+    {# 개선조치 현황 #}
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">📋 개선조치 현황</div>
+      {% set improve_actions = nc.actions | selectattr('action_type', 'equalto', '개선조치') | list %}
+      {% if improve_actions %}
+        {% for a in improve_actions %}
+        <div style="background:#f8fafc;border-radius:7px;padding:8px 12px;margin-bottom:6px;font-size:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+            <span style="font-weight:600;">{{ a.responsible or '담당자 미지정' }}</span>
+            <span class="badge" style="font-size:10px;
+              {% if a.status == '완료' %}background:#dcfce7;color:#16a34a;
+              {% elif a.status == '진행중' %}background:#dbeafe;color:#2563eb;
+              {% else %}background:#f3f4f6;color:#6b7280;{% endif %}">
+              {{ a.status }}
+            </span>
+          </div>
+          <div style="color:#374151;line-height:1.4;">{{ (a.action_desc or '')[:80] }}{{ '…' if a.action_desc and a.action_desc|length > 80 else '' }}</div>
+          {% if a.due_date %}
+          <div style="color:#94a3b8;margin-top:3px;">
+            완료예정: {{ a.due_date.strftime('%Y-%m-%d') }}
+            {% if a.status != '완료' and a.due_date < today %}
+            <span style="color:#dc2626;font-weight:700;"> ⚠️ 기한초과</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="font-size:12px;color:#cbd5e1;padding:8px 0;">
+          아직 등록된 개선조치가 없습니다.
+          <br><a href="{{ url_for('nc.detail', nid=nc.id) }}#tab_improve"
+                 style="color:#f97316;font-weight:600;">→ 개선조치 입력하기</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div style="padding:48px;text-align:center;color:#94a3b8;">
+    <div style="font-size:36px;margin-bottom:10px;">📋</div>
+    <div style="font-size:14px;">등록된 부적합이 없습니다.</div>
+    <a href="{{ url_for('nc.new') }}" class="btn btn-primary" style="margin-top:16px;">➕ 부적합 등록</a>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}

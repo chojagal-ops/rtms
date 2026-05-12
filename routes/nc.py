@@ -27,6 +27,12 @@ def _next_nc_no():
 
 
 def _form_to_nc(nc, form):
+    # 시험의뢰자 정보
+    nc.requester_name    = form.get('requester_name', '').strip()
+    nc.requester_dept    = form.get('requester_dept', '').strip()
+    nc.requester_contact = form.get('requester_contact', '').strip()
+    nc.requester_email   = form.get('requester_email', '').strip()
+    # 기본 정보
     nc.detection_date  = parse_date(form.get('detection_date'))
     nc.detected_by     = form.get('detected_by', '').strip()
     nc.product_name    = form.get('product_name', '').strip()
@@ -287,10 +293,28 @@ def view_capa():
 @nc_bp.route('/nc/improvement')
 @login_required
 def view_improvement():
-    """개선조치 현황"""
-    actions = NCAction.query.filter_by(action_type='개선조치').order_by(NCAction.created_at.desc()).all()
-    return render_template('nc/actions.html', actions=actions,
-                           view_type='개선조치', page_title='📈 개선조치 관리')
+    """개선조치 관리 — NC 목록 + 의뢰자별 개선조치 입력"""
+    status_f = request.args.get('status', '')
+    search   = request.args.get('q', '').strip()
+    try:
+        q = NCReport.query
+        if status_f:
+            q = q.filter(NCReport.status == status_f)
+        if search:
+            q = q.filter(db.or_(
+                NCReport.nc_no.ilike(f'%{search}%'),
+                NCReport.product_name.ilike(f'%{search}%'),
+                NCReport.requester_name.ilike(f'%{search}%'),
+                NCReport.requester_dept.ilike(f'%{search}%'),
+            ))
+        items = q.order_by(NCReport.created_at.desc()).all()
+    except Exception as e:
+        log_error('개선조치 목록 조회 오류', e)
+        items = []
+    return render_template('nc/improvement_list.html', items=items,
+                           status_f=status_f, search=search,
+                           NC_STATUSES=NC_STATUSES, NC_SEVERITIES=NC_SEVERITIES,
+                           page_title='📈 개선조치 관리')
 
 
 @nc_bp.route('/nc/prevention')
