@@ -107,6 +107,69 @@ body {
 
 .nav-item a .nav-icon { width: 18px; font-size: 15px; text-align: center; }
 
+/* 사이드바 배지 (접수대기 건수 등) */
+.nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* 품질팀 업무함 모달 */
+.qt-modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+.qt-modal-overlay.open { display: flex; }
+.qt-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px;
+  width: 440px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.qt-modal h4 { font-size: 16px; margin-bottom: 18px; color: var(--text); }
+.qt-modal .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.qt-modal .form-row.full { grid-template-columns: 1fr; }
+.qt-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+/* 워크플로우 섹션 헤더 */
+.wf-section {
+  margin-bottom: 28px;
+}
+.wf-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.wf-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.wf-count-badge {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .nav-item-with-add { display: flex; align-items: center; }
 .nav-item-with-add > a:first-child { flex: 1; }
 

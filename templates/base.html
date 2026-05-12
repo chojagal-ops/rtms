@@ -36,9 +36,19 @@
     </div>
 
     <div class="nav-section" style="margin-top:8px;">업무</div>
+    <div class="nav-item">
+      <a href="{{ url_for('requests.qteam') }}"
+         class="{{ 'active' if request.endpoint == 'requests.qteam' }}"
+         style="position:relative;">
+        <span class="nav-icon">🏭</span><span>품질팀 업무함</span>
+        {% if pending_count > 0 %}
+        <span class="nav-badge">{{ pending_count }}</span>
+        {% endif %}
+      </a>
+    </div>
     <div class="nav-item nav-item-with-add">
       <a href="{{ url_for('requests.list_view') }}"
-         class="{{ 'active' if request.blueprint == 'requests' }}">
+         class="{{ 'active' if request.blueprint == 'requests' and request.endpoint != 'requests.qteam' }}">
         <span class="nav-icon">📋</span><span>시험 의뢰서</span>
       </a>
       <a href="{{ url_for('requests.new') }}"
@@ -48,6 +58,9 @@
       <a href="{{ url_for('requests.list_view') }}?status=접수대기"
          class="{{ 'active' if request.args.get('status') == '접수대기' }}">
         <span class="nav-icon">🕐</span><span>접수 대기</span>
+        {% if pending_count > 0 %}
+        <span class="nav-badge">{{ pending_count }}</span>
+        {% endif %}
       </a>
     </div>
     <div class="nav-item">

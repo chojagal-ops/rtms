@@ -55,12 +55,20 @@ from datetime import date as _date
 
 @app.context_processor
 def inject_globals():
+    # 접수대기 건수 — 사이드바 배지용
+    pending_count = 0
+    try:
+        from models import TestRequest
+        pending_count = TestRequest.query.filter_by(status='접수대기').count()
+    except Exception:
+        pass
     return dict(
         STATUS_META=STATUS_META,
         REQUEST_STATUSES=REQUEST_STATUSES,
         OVERALL_RESULTS=OVERALL_RESULTS,
         today=_date.today(),
         app_version=APP_VERSION,          # CSS/JS 캐시 버스팅용
+        pending_count=pending_count,      # 사이드바 배지
     )
 
 

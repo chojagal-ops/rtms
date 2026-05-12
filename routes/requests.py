@@ -465,6 +465,60 @@ def export_excel(rid):
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
+# ── 품질팀 업무함 ────────────────────────────────────────────
+@requests_bp.route('/qteam')
+@login_required
+def qteam():
+    """품질팀 업무함 — 상태별 의뢰서 현황 및 워크플로우"""
+    from models import TestRequest as TR
+    try:
+        waiting  = TR.query.filter_by(status='접수대기').order_by(TR.created_at.asc()).all()
+        received = TR.query.filter_by(status='접수완료').order_by(TR.created_at.asc()).all()
+        testing  = TR.query.filter_by(status='시험중').order_by(TR.created_at.asc()).all()
+        replied  = TR.query.filter_by(status='결과회신').order_by(TR.created_at.asc()).all()
+        hold     = TR.query.filter_by(status='보류').order_by(TR.created_at.asc()).all()
+    except Exception as e:
+        log_error('품질팀 업무함 조회 오류', e)
+        waiting = received = testing = replied = hold = []
+    return render_template('qteam.html',
+        waiting=waiting, received=received,
+        testing=testing, replied=replied, hold=hold,
+    )
+
+
+# ── 빠른 상태 변경 ───────────────────────────────────────────
+@requests_bp.route('/requests/<int:rid>/quick-status', methods=['POST'])
+@login_required
+def quick_status(rid):
+    """품질팀 업무함용 빠른 상태 변경"""
+    req_obj = db.get_or_404(TestRequest, rid)
+    new_status = request.form.get('status', '').strip()
+    valid = {'접수완료', '시험중', '완료', '보류', '결과회신', '접수대기'}
+    if new_status not in valid:
+        flash('유효하지 않은 상태값입니다.', 'warning')
+        return redirect(request.referrer or url_for('requests.qteam'))
+    try:
+        req_obj.status = new_status
+        # 접수완료 처리 시 접수 정보 함께 저장
+        if new_status == '접수완료':
+            rname = request.form.get('receiver_name', '').strip()
+            if rname:
+                req_obj.receiver_name = rname
+            feas = request.form.get('feasibility', '').strip()
+            if feas:
+                req_obj.feasibility = feas
+            opinion = request.form.get('review_opinion', '').strip()
+            if opinion:
+                req_obj.review_opinion = opinion
+        db.session.commit()
+        flash(f'[{req_obj.request_no}] 상태가 [{new_status}]로 변경되었습니다.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        log_error('빠른 상태 변경 오류', e)
+        flash('변경 중 오류가 발생했습니다.', 'danger')
+    return redirect(request.referrer or url_for('requests.qteam'))
+
+
 # ── 파일 다운로드 ────────────────────────────────────────────
 @requests_bp.route('/requests/uploads/<filename>')
 @login_required

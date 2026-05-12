@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% block title %}품질팀 업무함 — RTMS{% endblock %}
+{% block topbar_title %}🏭 품질팀 업무함{% endblock %}
+
+{% block content %}
+
+<!-- KPI 카드 -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;">
+  {% set kpi_list = [
+    ('📬','접수 대기', waiting|length, '#fef3c7','#d97706'),
+    ('📋','접수 완료', received|length, '#dbeafe','#2563eb'),
+    ('⚗️','시험 중',   testing|length,  '#fef9c3','#ca8a04'),
+    ('📊','결과 회신', replied|length,  '#dcfce7','#16a34a'),
+    ('⏸️','보 류',    hold|length,     '#f1f5f9','#64748b'),
+  ] %}
+  {% for icon, label, cnt, bg, color in kpi_list %}
+  <div style="background:{{ bg }};border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px;">
+    <div style="font-size:24px;">{{ icon }}</div>
+    <div>
+      <div style="font-size:22px;font-weight:800;color:{{ color }};">{{ cnt }}</div>
+      <div style="font-size:11px;font-weight:600;color:{{ color }};opacity:0.8;">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ─── 1. 접수 대기 ─────────────────────────────────────── -->
+<div class="wf-section">
+  <div class="wf-section-header">
+    <div style="width:4px;height:20px;background:#d97706;border-radius:2px;"></div>
+    <span class="wf-section-title">📬 접수 대기</span>
+    <span class="wf-count-badge" style="background:#fef3c7;color:#d97706;">{{ waiting|length }}건</span>
+    <span style="font-size:12px;color:#94a3b8;margin-left:4px;">→ 접수확인 후 시험 시작</span>
+  </div>
+  {% if waiting %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:130px;">의뢰번호</th>
+            <th>제품명 / 모델</th>
+            <th style="width:90px;">의뢰부서</th>
+            <th style="width:70px;">의뢰자</th>
+            <th style="width:90px;">완료희망일</th>
+            <th style="width:55px;">우선순위</th>
+            <th style="width:65px;">항목수</th>
+            <th style="width:170px;">액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in waiting %}
+          <tr>
+            <td>
+              <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                 style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
+                {{ item.request_no or '-' }}
+              </a>
+              <div style="font-size:10px;color:#94a3b8;">
+                {{ item.created_at.strftime('%Y-%m-%d') if item.created_at else '' }}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:600;font-size:13px;">{{ item.product_name or '-' }}</div>
+              <div style="font-size:11px;color:#64748b;">{{ item.model_code or '' }}</div>
+            </td>
+            <td style="font-size:12px;">{{ item.request_dept or '-' }}</td>
+            <td style="font-size:12px;">{{ item.requester_name or '-' }}</td>
+            <td style="font-size:12px;">
+              {% if item.deadline %}
+                {% if item.deadline < today %}
+                  <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%m/%d') }} ⚠️</span>
+                {% else %}
+                  {{ item.deadline.strftime('%Y-%m-%d') }}
+                {% endif %}
+              {% else %}-{% endif %}
+            </td>
+            <td style="text-align:center;">
+              <span style="font-weight:700;font-size:12px;
+                color:{{ '#dc2626' if item.priority=='상' else ('#d97706' if item.priority=='중' else '#475569') }};">
+                {{ item.priority or '-' }}
+              </span>
+            </td>
+            <td style="text-align:center;font-size:13px;">{{ item.test_items|length }}</td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <button class="btn btn-sm"
+                  style="background:#d97706;color:#fff;border:none;"
+                  onclick="openAcceptModal({{ item.id }}, '{{ item.request_no }}', '{{ item.product_name or '' }}')">
+                  ✅ 접수확인
+                </button>
+                <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                   class="btn btn-outline btn-sm">상세</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">
+      ✅ 접수 대기 의뢰서가 없습니다.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ─── 2. 접수 완료 (시험 시작 대기) ────────────────────── -->
+<div class="wf-section">
+  <div class="wf-section-header">
+    <div style="width:4px;height:20px;background:#2563eb;border-radius:2px;"></div>
+    <span class="wf-section-title">📋 접수 완료 — 시험 시작 대기</span>
+    <span class="wf-count-badge" style="background:#dbeafe;color:#2563eb;">{{ received|length }}건</span>
+    <span style="font-size:12px;color:#94a3b8;margin-left:4px;">→ 시험 시작 버튼으로 진행</span>
+  </div>
+  {% if received %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:130px;">의뢰번호</th>
+            <th>제품명 / 모델</th>
+            <th style="width:90px;">의뢰부서</th>
+            <th style="width:70px;">의뢰자</th>
+            <th style="width:90px;">완료희망일</th>
+            <th style="width:80px;">접수자</th>
+            <th style="width:80px;">가능여부</th>
+            <th style="width:170px;">액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in received %}
+          <tr>
+            <td>
+              <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                 style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
+                {{ item.request_no or '-' }}
+              </a>
+            </td>
+            <td>
+              <div style="font-weight:600;font-size:13px;">{{ item.product_name or '-' }}</div>
+              <div style="font-size:11px;color:#64748b;">{{ item.model_code or '' }}</div>
+            </td>
+            <td style="font-size:12px;">{{ item.request_dept or '-' }}</td>
+            <td style="font-size:12px;">{{ item.requester_name or '-' }}</td>
+            <td style="font-size:12px;">
+              {% if item.deadline %}
+                {% if item.deadline < today %}
+                  <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%m/%d') }} ⚠️</span>
+                {% else %}{{ item.deadline.strftime('%Y-%m-%d') }}{% endif %}
+              {% else %}-{% endif %}
+            </td>
+            <td style="font-size:12px;">{{ item.receiver_name or '-' }}</td>
+            <td style="font-size:12px;">{{ item.feasibility or '-' }}</td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <form method="POST"
+                      action="{{ url_for('requests.quick_status', rid=item.id) }}">
+                  <input type="hidden" name="status" value="시험중">
+                  <button type="submit" class="btn btn-sm"
+                    style="background:#ca8a04;color:#fff;border:none;">
+                    ⚗️ 시험 시작
+                  </button>
+                </form>
+                <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                   class="btn btn-outline btn-sm">상세</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">
+      해당 건이 없습니다.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ─── 3. 시험 중 ───────────────────────────────────────── -->
+<div class="wf-section">
+  <div class="wf-section-header">
+    <div style="width:4px;height:20px;background:#ca8a04;border-radius:2px;"></div>
+    <span class="wf-section-title">⚗️ 시험 진행중</span>
+    <span class="wf-count-badge" style="background:#fef9c3;color:#ca8a04;">{{ testing|length }}건</span>
+    <span style="font-size:12px;color:#94a3b8;margin-left:4px;">→ 결과 등록 후 결과회신</span>
+  </div>
+  {% if testing %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:130px;">의뢰번호</th>
+            <th>제품명 / 모델</th>
+            <th style="width:90px;">의뢰부서</th>
+            <th style="width:90px;">완료희망일</th>
+            <th style="width:65px;">항목수</th>
+            <th style="width:80px;">결과서</th>
+            <th style="width:180px;">액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in testing %}
+          <tr>
+            <td>
+              <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                 style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
+                {{ item.request_no or '-' }}
+              </a>
+            </td>
+            <td>
+              <div style="font-weight:600;font-size:13px;">{{ item.product_name or '-' }}</div>
+              <div style="font-size:11px;color:#64748b;">{{ item.model_code or '' }}</div>
+            </td>
+            <td style="font-size:12px;">{{ item.request_dept or '-' }}</td>
+            <td style="font-size:12px;">
+              {% if item.deadline %}
+                {% if item.deadline < today %}
+                  <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%m/%d') }} ⚠️</span>
+                {% else %}{{ item.deadline.strftime('%Y-%m-%d') }}{% endif %}
+              {% else %}-{% endif %}
+            </td>
+            <td style="text-align:center;font-size:13px;">{{ item.test_items|length }}</td>
+            <td style="text-align:center;">
+              {% if item.result %}
+                <span style="font-size:11px;color:#16a34a;font-weight:700;">입력됨</span>
+              {% else %}
+                <span style="font-size:11px;color:#94a3b8;">미입력</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <a href="{{ url_for('results.edit', rid=item.id) }}"
+                   class="btn btn-sm"
+                   style="background:#16a34a;color:#fff;border:none;">
+                  📊 결과 등록
+                </a>
+                <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                   class="btn btn-outline btn-sm">상세</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">
+      현재 시험 진행중인 건이 없습니다.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ─── 4. 결과 회신 ─────────────────────────────────────── -->
+<div class="wf-section">
+  <div class="wf-section-header">
+    <div style="width:4px;height:20px;background:#16a34a;border-radius:2px;"></div>
+    <span class="wf-section-title">📊 결과 회신</span>
+    <span class="wf-count-badge" style="background:#dcfce7;color:#16a34a;">{{ replied|length }}건</span>
+    <span style="font-size:12px;color:#94a3b8;margin-left:4px;">→ 완료 처리</span>
+  </div>
+  {% if replied %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:130px;">의뢰번호</th>
+            <th>제품명 / 모델</th>
+            <th style="width:90px;">의뢰부서</th>
+            <th style="width:95px;">종합 판정</th>
+            <th style="width:80px;">시험자</th>
+            <th style="width:90px;">통보일</th>
+            <th style="width:180px;">액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in replied %}
+          {% set res = item.result %}
+          <tr>
+            <td>
+              <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                 style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
+                {{ item.request_no or '-' }}
+              </a>
+            </td>
+            <td>
+              <div style="font-weight:600;font-size:13px;">{{ item.product_name or '-' }}</div>
+              <div style="font-size:11px;color:#64748b;">{{ item.model_code or '' }}</div>
+            </td>
+            <td style="font-size:12px;">{{ item.request_dept or '-' }}</td>
+            <td>
+              {% if res and res.overall_result %}
+                {% set rmeta = STATUS_META.get(res.overall_result, {}) %}
+                <span class="badge"
+                  style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};">
+                  {{ res.overall_result }}
+                </span>
+              {% else %}<span style="color:#94a3b8;font-size:12px;">미입력</span>{% endif %}
+            </td>
+            <td style="font-size:12px;">{{ res.tester_name if res else '-' }}</td>
+            <td style="font-size:12px;">{{ res.notify_date.strftime('%Y-%m-%d') if res and res.notify_date else '-' }}</td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <form method="POST"
+                      action="{{ url_for('requests.quick_status', rid=item.id) }}">
+                  <input type="hidden" name="status" value="완료">
+                  <button type="submit" class="btn btn-sm"
+                    style="background:var(--primary);color:#fff;border:none;"
+                    onclick="return confirm('{{ item.request_no }}을 완료 처리하시겠습니까?')">
+                    🏁 완료 처리
+                  </button>
+                </form>
+                <a href="{{ url_for('results.edit', rid=item.id) }}"
+                   class="btn btn-outline btn-sm">결과수정</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">
+      결과 회신 대기 건이 없습니다.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ─── 5. 보류 ──────────────────────────────────────────── -->
+{% if hold %}
+<div class="wf-section">
+  <div class="wf-section-header">
+    <div style="width:4px;height:20px;background:#64748b;border-radius:2px;"></div>
+    <span class="wf-section-title">⏸️ 보류</span>
+    <span class="wf-count-badge" style="background:#f1f5f9;color:#64748b;">{{ hold|length }}건</span>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:130px;">의뢰번호</th>
+            <th>제품명 / 모델</th>
+            <th style="width:90px;">의뢰부서</th>
+            <th style="width:90px;">완료희망일</th>
+            <th style="width:180px;">액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in hold %}
+          <tr>
+            <td>
+              <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                 style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
+                {{ item.request_no or '-' }}
+              </a>
+            </td>
+            <td>
+              <div style="font-weight:600;">{{ item.product_name or '-' }}</div>
+              <div style="font-size:11px;color:#64748b;">{{ item.model_code or '' }}</div>
+            </td>
+            <td style="font-size:12px;">{{ item.request_dept or '-' }}</td>
+            <td style="font-size:12px;">{{ item.deadline.strftime('%Y-%m-%d') if item.deadline else '-' }}</td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <form method="POST"
+                      action="{{ url_for('requests.quick_status', rid=item.id) }}">
+                  <input type="hidden" name="status" value="접수완료">
+                  <button type="submit" class="btn btn-sm"
+                    style="background:#2563eb;color:#fff;border:none;">
+                    🔄 재접수
+                  </button>
+                </form>
+                <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                   class="btn btn-outline btn-sm">상세</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─── 접수 확인 모달 ────────────────────────────────────── -->
+<div class="qt-modal-overlay" id="acceptModal">
+  <div class="qt-modal">
+    <h4>✅ 접수 확인 처리</h4>
+    <div style="margin-bottom:14px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;">
+      <strong id="modalReqNo"></strong> — <span id="modalProdName" style="color:#64748b;"></span>
+    </div>
+    <form method="POST" id="acceptForm" action="">
+      <input type="hidden" name="status" value="접수완료">
+      <div class="qt-modal .form-row">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">접수자 <span class="req">*</span></label>
+          <input type="text" name="receiver_name" class="form-control"
+                 placeholder="품질팀 담당자명" required>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">시험 가능 여부</label>
+          <select name="feasibility" class="form-control">
+            <option value="">— 선택 —</option>
+            <option value="가능">가능</option>
+            <option value="조건조정">조건 조정</option>
+            <option value="불가">불가</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:4px;">
+          <label class="form-label">검토 의견</label>
+          <textarea name="review_opinion" class="form-control" rows="2"
+                    placeholder="조건 조정 내용, 특이사항 등 (선택)"></textarea>
+        </div>
+      </div>
+      <div class="qt-modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeAcceptModal()">취소</button>
+        <button type="submit" class="btn btn-primary">✅ 접수 완료</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openAcceptModal(rid, reqNo, prodName) {
+  document.getElementById('acceptForm').action = '/requests/' + rid + '/quick-status';
+  document.getElementById('modalReqNo').textContent  = reqNo;
+  document.getElementById('modalProdName').textContent = prodName;
+  document.getElementById('acceptModal').classList.add('open');
+}
+function closeAcceptModal() {
+  document.getElementById('acceptModal').classList.remove('open');
+}
+// 모달 바깥 클릭 시 닫기
+document.getElementById('acceptModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAcceptModal();
+});
+</script>
+{% endblock %}
