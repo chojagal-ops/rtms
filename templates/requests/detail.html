@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% block title %}{{ item.request_no }} — RTMS{% endblock %}
+{% block topbar_title %}📋 의뢰서 상세{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('requests.list_view') }}">의뢰서 목록</a>
+  <span>›</span><span>{{ item.request_no or '상세' }}</span>
+</div>
+
+<!-- 헤더 액션 바 -->
+<div class="page-header">
+  <div>
+    <h2>{{ item.request_no or '(번호 없음)' }}</h2>
+    {% set meta = STATUS_META.get(item.status, {}) %}
+    <span class="badge" style="background:{{ meta.get('bg','#f1f5f9') }};color:{{ meta.get('color','#475569') }};font-size:13px;padding:4px 12px;">
+      {{ item.status }}
+    </span>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url_for('requests.export_excel', rid=item.id) }}"
+       class="btn btn-outline btn-sm" style="color:#15803d;border-color:#15803d;">📥 의뢰서 엑셀</a>
+    {% if item.result %}
+    <a href="{{ url_for('results.export_excel', rid=item.id) }}"
+       class="btn btn-outline btn-sm" style="color:#15803d;border-color:#15803d;">📥 결과서 엑셀</a>
+    {% endif %}
+    <button type="button" onclick="window.print()" class="btn btn-outline btn-sm">🖨️ 인쇄</button>
+    <a href="{{ url_for('requests.edit', rid=item.id) }}" class="btn btn-outline">✏️ 수정</a>
+    <a href="{{ url_for('results.edit', rid=item.id) }}" class="btn btn-primary">
+      {{ '📊 결과서 수정' if item.result else '📊 결과서 입력' }}
+    </a>
+    <form action="{{ url_for('requests.delete', rid=item.id) }}" method="POST" class="delete-form">
+      <button type="submit" class="btn btn-danger btn-sm">🗑 삭제</button>
+    </form>
+  </div>
+</div>
+
+<!-- 기본 정보 요약 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>기본 정보</h5></div>
+  <div class="card-body">
+    <div class="project-info-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+      <div class="info-item"><div class="info-label">의뢰부서</div><div class="info-value">{{ item.request_dept or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">의뢰자</div><div class="info-value">{{ item.requester_name or '-' }} {{ '(' + item.requester_position + ')' if item.requester_position else '' }}</div></div>
+      <div class="info-item"><div class="info-label">연락처</div><div class="info-value">{{ item.contact or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">프로젝트/고객사</div><div class="info-value">{{ item.project_customer or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">제품명</div><div class="info-value">{{ item.product_name or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">모델명/코드</div><div class="info-value">{{ item.model_code or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">제품 종류</div><div class="info-value">{{ item.product_type or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">시험 단계</div><div class="info-value">{{ item.test_stage or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">완료 희망일</div>
+        <div class="info-value">
+          {% if item.deadline %}
+            {% set today_d = today %}
+            {% if item.deadline < today_d and item.status not in ['완료','보류'] %}
+              <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%Y-%m-%d') }} ⚠️ 기한초과</span>
+            {% else %}
+              {{ item.deadline.strftime('%Y-%m-%d') }}
+            {% endif %}
+          {% else %}-{% endif %}
+        </div>
+      </div>
+      <div class="info-item"><div class="info-label">우선순위</div>
+        <div class="info-value" style="color:{{ '#dc2626' if item.priority=='상' else ('#d97706' if item.priority=='중' else 'inherit') }};font-weight:700;">
+          {{ item.priority or '-' }}
+        </div>
+      </div>
+      <div class="info-item"><div class="info-label">시험 목적</div><div class="info-value">{{ item.test_purpose or '-' }}</div></div>
+      <div class="info-item"><div class="info-label">시편 수량</div><div class="info-value">{{ (item.sample_qty|string + '개') if item.sample_qty else '-' }}</div></div>
+    </div>
+    {% if item.test_purpose_detail %}
+    <div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:13px;">
+      <span style="font-weight:700;color:#475569;">목적 상세: </span>{{ item.test_purpose_detail }}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 탭: 시험항목 / 결과서 / 승인 -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab_items">⚗️ 시험 항목 <span class="tab-count">{{ item.test_items|length }}</span></button>
+  <button class="tab-btn" data-tab="tab_criteria">📏 판정 기준 <span class="tab-count">{{ item.criteria|length }}</span></button>
+  <button class="tab-btn" data-tab="tab_result">📊 시험 결과</button>
+  <button class="tab-btn" data-tab="tab_approval">✅ 승인 정보</button>
+</div>
+
+<!-- 시험 항목 탭 -->
+<div id="tab_items" class="tab-pane active">
+  {% if item.test_items %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">No</th>
+            <th>시험 항목</th>
+            <th>시험 조건</th>
+            <th style="width:120px;">규격</th>
+            <th style="width:100px;">항목 결과</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ti in item.test_items %}
+          {% set rmeta = STATUS_META.get(ti.item_result or '', {}) %}
+          <tr>
+            <td style="text-align:center;color:#64748b;">{{ ti.item_no }}</td>
+            <td style="font-weight:600;">{{ ti.test_name or '-' }}</td>
+            <td style="font-size:12px;">{{ ti.test_condition or '-' }}</td>
+            <td style="font-size:12px;">{{ ti.standard or '-' }}</td>
+            <td>
+              {% if ti.item_result %}
+              <span class="badge" style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};">
+                {{ ti.item_result }}
+              </span>
+              {% else %}<span style="color:#94a3b8;font-size:12px;">미입력</span>{% endif %}
+            </td>
+          </tr>
+          {% if ti.result_detail %}
+          <tr style="background:#f8fafc;">
+            <td></td>
+            <td colspan="4" style="font-size:12px;color:#475569;padding:6px 12px;">💬 {{ ti.result_detail }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state"><div class="empty-icon">⚗️</div><p>등록된 시험 항목이 없습니다.</p></div>
+  {% endif %}
+</div>
+
+<!-- 판정 기준 탭 -->
+<div id="tab_criteria" class="tab-pane">
+  {% if item.criteria %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">No</th>
+            <th style="width:130px;">기준 유형</th>
+            <th>기준 내용</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in item.criteria %}
+          <tr>
+            <td style="text-align:center;color:#64748b;">{{ c.criterion_no }}</td>
+            <td><span class="badge badge-진행중">{{ c.criterion_type or '-' }}</span></td>
+            <td>{{ c.criterion_content or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state"><div class="empty-icon">📏</div><p>등록된 판정 기준이 없습니다.</p></div>
+  {% endif %}
+</div>
+
+<!-- 시험 결과 탭 -->
+<div id="tab_result" class="tab-pane">
+  {% if item.result %}
+  {% set res = item.result %}
+  {% set rmeta = STATUS_META.get(res.overall_result or '', {}) %}
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-header" style="justify-content:space-between;">
+      <h5>📊 시험 결과서</h5>
+      <div style="display:flex;gap:8px;">
+        <a href="{{ url_for('results.edit', rid=item.id) }}" class="btn btn-outline btn-sm">수정</a>
+        <form action="{{ url_for('results.delete', rid=item.id) }}" method="POST" class="delete-form">
+          <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+        </form>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="project-info-grid">
+        <div class="info-item">
+          <div class="info-label">종합 판정</div>
+          <div class="info-value">
+            <span class="badge" style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};font-size:14px;padding:4px 14px;">
+              {{ res.overall_result or '-' }}
+            </span>
+          </div>
+        </div>
+        <div class="info-item"><div class="info-label">결과서 작성일</div><div class="info-value">{{ res.result_date.strftime('%Y-%m-%d') if res.result_date else '-' }}</div></div>
+        <div class="info-item"><div class="info-label">완료일</div><div class="info-value">{{ res.complete_date.strftime('%Y-%m-%d') if res.complete_date else '-' }}</div></div>
+        <div class="info-item"><div class="info-label">시험 완료일</div><div class="info-value">{{ res.test_complete_date.strftime('%Y-%m-%d') if res.test_complete_date else '-' }}</div></div>
+        <div class="info-item"><div class="info-label">통보일</div><div class="info-value">{{ res.notify_date.strftime('%Y-%m-%d') if res.notify_date else '-' }}</div></div>
+        <div class="info-item"><div class="info-label">시험자</div><div class="info-value">{{ res.tester_name or '-' }}</div></div>
+        <div class="info-item"><div class="info-label">통보자</div><div class="info-value">{{ res.notifier_name or '-' }}</div></div>
+        <div class="info-item"><div class="info-label">시료 반환</div><div class="info-value">{{ 'YES' if res.sample_returned else 'NO' }}</div></div>
+        <div class="info-item"><div class="info-label">성적서 첨부</div><div class="info-value">{{ 'YES' if res.report_attached else 'NO' }}</div></div>
+      </div>
+      {% if res.summary %}
+      <div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:13px;">
+        <span style="font-weight:700;">결과 요약: </span>{{ res.summary }}
+      </div>
+      {% endif %}
+      {% if res.attachment %}
+      <div style="margin-top:12px;">
+        📎 <a href="{{ url_for('results.download_file', filename=res.attachment) }}"
+              style="color:#1a3a5c;font-weight:600;">
+          {{ res.attachment.split('_',1)[1] if '_' in res.attachment else res.attachment }}
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <p>아직 결과서가 입력되지 않았습니다.</p>
+    <a href="{{ url_for('results.edit', rid=item.id) }}" class="btn btn-primary" style="margin-top:12px;">
+      결과서 입력
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 승인 정보 탭 -->
+<div id="tab_approval" class="tab-pane">
+
+  <!-- 의뢰팀 서명 (읽기 전용) -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-header"><h5>📝 의뢰팀 서명</h5></div>
+    <div class="card-body">
+      <div class="project-info-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+        <div class="info-item"><div class="info-label">작성자</div><div class="info-value">{{ item.writer_name or '-' }}</div></div>
+        <div class="info-item"><div class="info-label">승인자</div><div class="info-value">{{ item.dept_approver or '-' }}</div></div>
+      </div>
+      {% if item.attachment %}
+      <div style="margin-top:10px;">
+        📎 <a href="{{ url_for('requests.download_file', filename=item.attachment) }}"
+              style="color:#1a3a5c;font-weight:600;">
+          {{ item.attachment.split('_',1)[1] if '_' in item.attachment else item.attachment }}
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 품질팀 접수 처리 -->
+  <div class="card">
+    <div class="card-header" style="justify-content:space-between;">
+      <h5>✅ 품질팀 접수 처리</h5>
+      {% if item.receiver_name %}
+      <span class="badge" style="background:#dcfce7;color:#15803d;">접수 완료</span>
+      {% else %}
+      <span class="badge" style="background:#fef3c7;color:#d97706;">접수 대기</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if current_user.role == 'admin' or current_user.department == '품질팀' %}
+      <form method="POST" action="{{ url_for('requests.accept', rid=item.id) }}">
+        <div class="form-grid cols-3">
+          <div class="form-group">
+            <label class="form-label">접수자 <span class="req">*</span></label>
+            <input type="text" name="receiver_name" class="form-control"
+                   value="{{ item.receiver_name or '' }}" placeholder="품질팀 담당자명">
+          </div>
+          <div class="form-group">
+            <label class="form-label">시험 가능 여부</label>
+            <select name="feasibility" class="form-control">
+              <option value="">- 선택 -</option>
+              {% for f in ['가능','조건조정','불가'] %}
+              <option value="{{ f }}" {{ 'selected' if item.feasibility == f }}>{{ f }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">QA 승인자</label>
+            <input type="text" name="qa_approver" class="form-control"
+                   value="{{ item.qa_approver or '' }}" placeholder="QA 승인자명">
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">검토 의견</label>
+            <textarea name="review_opinion" class="form-control" rows="3"
+                      placeholder="시험 가능 여부 검토 의견, 조건 조정 내용 등">{{ item.review_opinion or '' }}</textarea>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
+          <button type="submit" class="btn btn-primary">
+            {{ '접수 정보 수정' if item.receiver_name else '✅ 접수 처리 완료' }}
+          </button>
+        </div>
+      </form>
+      {% else %}
+      <!-- 품질팀/관리자가 아닌 경우 읽기 전용 -->
+      <div class="project-info-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+        <div class="info-item"><div class="info-label">접수자</div><div class="info-value">{{ item.receiver_name or '-' }}</div></div>
+        <div class="info-item"><div class="info-label">시험 가능 여부</div><div class="info-value">{{ item.feasibility or '-' }}</div></div>
+        <div class="info-item"><div class="info-label">QA 승인자</div><div class="info-value">{{ item.qa_approver or '-' }}</div></div>
+      </div>
+      {% if item.review_opinion %}
+      <div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:13px;">
+        <span style="font-weight:700;">검토 의견: </span>{{ item.review_opinion }}
+      </div>
+      {% endif %}
+      {% endif %}
+
+      {% if item.notes %}
+      <div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:13px;border-top:1px solid #e2e8f0;">
+        <span style="font-weight:700;">비고: </span>{{ item.notes }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const today = new Date('{{ today.strftime("%Y-%m-%d") }}');
+</script>
+<style>
+@media print {
+  .sidebar, .topbar, .breadcrumb, .tabs, .tab-btn,
+  .delete-form, .page-header > div:last-child,
+  a.btn, button { display:none!important; }
+  .main-wrap  { margin-left:0!important; }
+  .page-content { padding:4mm!important; }
+  .tab-pane   { display:block!important; }
+  .card { box-shadow:none!important; border:1px solid #bbb!important; margin-bottom:8px!important; page-break-inside:avoid; }
+  .page-header { margin-bottom:6px!important; }
+  @page { size:A4 portrait; margin:12mm; }
+}
+</style>
+{% endblock %}

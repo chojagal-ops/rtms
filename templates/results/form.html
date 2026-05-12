@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% block title %}결과서 {{ '수정' if res else '입력' }} — {{ req.request_no }}{% endblock %}
+{% block topbar_title %}📊 신뢰성 시험 결과서 {{ '수정' if res else '입력' }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('requests.list_view') }}">의뢰서 목록</a>
+  <span>›</span>
+  <a href="{{ url_for('requests.detail', rid=req.id) }}">{{ req.request_no or '상세' }}</a>
+  <span>›</span><span>결과서 {{ '수정' if res else '입력' }}</span>
+</div>
+
+<!-- 엑셀 파싱 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <h5>📂 기존 엑셀 결과서 불러오기
+      <span style="font-size:11px;font-weight:400;color:#64748b;">(선택) — 엑셀 파일을 올리면 날짜·시험자 항목이 자동 입력됩니다</span>
+    </h5>
+  </div>
+  <div class="card-body" style="padding:14px 20px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="file" id="excel_upload" accept=".xlsx,.xls"
+             style="padding:6px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;">
+      <button type="button" id="btn_parse" class="btn btn-primary btn-sm">📥 자동 입력</button>
+      <span id="parse_msg" style="font-size:12px;color:#64748b;"></span>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        {% if res %}
+        <a href="{{ url_for('results.export_excel', rid=req.id) }}"
+           class="btn btn-outline btn-sm" style="color:#15803d;border-color:#15803d;">📥 결과서 엑셀</a>
+        {% endif %}
+        <button type="button" onclick="window.print()" class="btn btn-outline btn-sm">🖨️ 결과서 인쇄</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="result_form">
+
+<!-- ══════════════════════════════════════════════════════
+     [READ-ONLY] 의뢰서 참조 정보
+     ══════════════════════════════════════════════════════ -->
+<div class="card" style="margin-bottom:16px;border-left:3px solid #94a3b8;">
+  <div class="card-header" style="cursor:pointer;user-select:none;" onclick="toggleSection('ref_body')">
+    <h5 style="color:#475569;">📋 의뢰서 참조 정보 (읽기 전용)
+      <span id="ref_toggle" style="font-size:12px;font-weight:400;color:#94a3b8;margin-left:8px;">▼ 펼치기</span>
+    </h5>
+  </div>
+  <div id="ref_body" style="display:none;">
+    <!-- 의뢰 부서 / 제품 정보 -->
+    <div class="card-body" style="padding:14px 20px;background:#f8fafc;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;">
+        <div>
+          <div style="font-weight:700;color:#475569;margin-bottom:8px;">① 의뢰 부서 및 담당자</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <tr><td style="width:90px;color:#64748b;padding:3px 0;">의뢰부서</td><td style="font-weight:600;">{{ req.request_dept or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">의뢰자</td><td>{{ req.requester_name or '-' }} {{ ('/ ' + req.requester_position) if req.requester_position else '' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">연락처</td><td>{{ req.contact or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">프로젝트/고객사</td><td>{{ req.project_customer or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">의뢰일자</td><td>{{ req.write_date.strftime('%Y-%m-%d') if req.write_date else '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">완료희망일</td><td>{{ req.deadline.strftime('%Y-%m-%d') if req.deadline else '-' }}</td></tr>
+          </table>
+        </div>
+        <div>
+          <div style="font-weight:700;color:#475569;margin-bottom:8px;">② 제품 정보</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <tr><td style="width:90px;color:#64748b;padding:3px 0;">제품명</td><td style="font-weight:600;">{{ req.product_name or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">모델명/코드</td><td>{{ req.model_code or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">제품 종류</td><td>{{ req.product_type or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">시험 단계</td><td>{{ req.test_stage or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">시험 목적</td><td>{{ req.test_purpose or '-' }}</td></tr>
+            <tr><td style="color:#64748b;padding:3px 0;">시편 수량</td><td>{{ req.sample_qty or '-' }}개 / {{ req.sample_state or '-' }}</td></tr>
+          </table>
+        </div>
+      </div>
+
+      {% if req.test_items %}
+      <div style="margin-top:16px;">
+        <div style="font-weight:700;color:#475569;margin-bottom:8px;font-size:13px;">⑤ 시험 항목 및 조건</div>
+        <table style="font-size:12px;width:100%;">
+          <thead>
+            <tr style="background:#e2e8f0;">
+              <th style="width:36px;padding:5px 8px;">No</th>
+              <th style="padding:5px 8px;">시험 항목</th>
+              <th style="padding:5px 8px;">시험 조건</th>
+              <th style="width:110px;padding:5px 8px;">규격</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ti in req.test_items %}
+            <tr style="border-bottom:1px solid #e2e8f0;">
+              <td style="text-align:center;padding:5px 8px;color:#64748b;">{{ ti.item_no }}</td>
+              <td style="padding:5px 8px;font-weight:600;">{{ ti.test_name or '-' }}</td>
+              <td style="padding:5px 8px;color:#475569;">{{ ti.test_condition or '-' }}</td>
+              <td style="padding:5px 8px;color:#64748b;">{{ ti.standard or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      {% if req.criteria %}
+      <div style="margin-top:16px;">
+        <div style="font-weight:700;color:#475569;margin-bottom:8px;font-size:13px;">⑥ 판정 기준</div>
+        <table style="font-size:12px;width:100%;">
+          <thead>
+            <tr style="background:#e2e8f0;">
+              <th style="width:36px;padding:5px 8px;">No</th>
+              <th style="width:120px;padding:5px 8px;">기준 유형</th>
+              <th style="padding:5px 8px;">기준 내용</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in req.criteria %}
+            <tr style="border-bottom:1px solid #e2e8f0;">
+              <td style="text-align:center;padding:5px 8px;color:#64748b;">{{ c.criterion_no }}</td>
+              <td style="padding:5px 8px;color:#475569;">{{ c.criterion_type or '-' }}</td>
+              <td style="padding:5px 8px;">{{ c.criterion_content or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ⑦ 시험 결과 (항목별)
+     ══════════════════════════════════════════════════════ -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>⑦ 시험 결과 (항목별 판정)</h5></div>
+  <div class="card-body" style="padding:0;">
+    {% if req.test_items %}
+    <table style="font-size:13px;">
+      <thead>
+        <tr>
+          <th style="width:36px;">No</th>
+          <th>시험 항목</th>
+          <th style="width:80px;color:#64748b;font-size:11px;">규격</th>
+          <th style="width:110px;">항목 판정 <span class="req">*</span></th>
+          <th>결과 상세 내용</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ti in req.test_items %}
+        <tr>
+          <td style="text-align:center;color:#64748b;">{{ ti.item_no }}</td>
+          <td>
+            <div style="font-weight:600;">{{ ti.test_name or '-' }}</div>
+            {% if ti.test_condition %}<div style="font-size:11px;color:#64748b;margin-top:2px;">{{ ti.test_condition }}</div>{% endif %}
+          </td>
+          <td style="font-size:11px;color:#64748b;">{{ ti.standard or '-' }}</td>
+          <td>
+            <select name="item_result" class="form-control" style="font-size:12px;">
+              <option value="">- 선택 -</option>
+              {% for r in ['합격','불합격','해당없음','진행중'] %}
+              <option value="{{ r }}" {{ 'selected' if ti.item_result == r }}>{{ r }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <input type="text" name="item_result_detail" class="form-control"
+                   value="{{ ti.result_detail or '' }}"
+                   placeholder="측정값, 특이사항 등">
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:24px;">
+      <p style="font-size:13px;color:#64748b;">의뢰서에 시험 항목이 없습니다.
+        <a href="{{ url_for('requests.edit', rid=req.id) }}" style="color:#1a3a5c;">의뢰서 수정</a>에서 먼저 항목을 등록하세요.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     종합 판정 + 결과 요약
+     ══════════════════════════════════════════════════════ -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>⑧ 종합 판정 및 완료 정보</h5></div>
+  <div class="card-body">
+    <div class="form-grid cols-3">
+
+      <div class="form-group">
+        <label class="form-label">종합 판정 결과 <span class="req">*</span></label>
+        <select name="overall_result" class="form-control" style="font-weight:700;">
+          <option value="">- 선택 -</option>
+          {% for r in OVERALL_RESULTS %}
+          <option value="{{ r }}" {{ 'selected' if res and res.overall_result == r }}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">결과서 작성일</label>
+        <input type="date" name="result_date" id="f_result_date" class="form-control"
+               value="{{ res.result_date.strftime('%Y-%m-%d') if res and res.result_date else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">완료 일자</label>
+        <input type="date" name="complete_date" id="f_complete_date" class="form-control"
+               value="{{ res.complete_date.strftime('%Y-%m-%d') if res and res.complete_date else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">시험 완료일</label>
+        <input type="date" name="test_complete_date" class="form-control"
+               value="{{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">통보일</label>
+        <input type="date" name="notify_date" class="form-control"
+               value="{{ res.notify_date.strftime('%Y-%m-%d') if res and res.notify_date else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">시료 전달 여부</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:9px 0;">
+          <input type="checkbox" name="sample_returned" {{ 'checked' if res and res.sample_returned }}>
+          YES — 시료 반환됨
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">시험자 <span class="req">*</span></label>
+        <input type="text" name="tester_name" id="f_tester_name" class="form-control"
+               value="{{ res.tester_name or '' if res else '' }}" placeholder="시험 담당자명">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">통보자</label>
+        <input type="text" name="notifier_name" class="form-control"
+               value="{{ res.notifier_name or '' if res else '' }}" placeholder="결과 통보자명">
+      </div>
+
+      <div class="form-group form-full">
+        <label class="form-label">결과 요약 / 종합 의견</label>
+        <textarea name="summary" class="form-control" rows="4"
+                  placeholder="시험 결과 전반에 대한 요약 내용, 특이사항, 종합 의견 등을 기재하세요.">{{ res.summary or '' if res else '' }}</textarea>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ⑨ 첨부 문서
+     ══════════════════════════════════════════════════════ -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>⑨ 첨부 문서</h5></div>
+  <div class="card-body">
+    <div class="form-grid cols-3">
+
+      <div class="form-group">
+        <label class="form-label">시험 성적서 첨부</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:9px 0;">
+          <input type="checkbox" name="report_attached" {{ 'checked' if res and res.report_attached }}>
+          YES — 시험 성적서 첨부됨
+        </label>
+      </div>
+
+      <div class="form-group" style="grid-column:span 2;">
+        <label class="form-label">첨부 문서명</label>
+        <input type="text" name="attach_doc_name" id="f_attach_doc" class="form-control"
+               value="{{ res.attach_doc_name or '' if res else '' }}" placeholder="첨부 문서 이름 기재">
+      </div>
+
+      <div class="form-group form-full">
+        <label class="form-label">파일 첨부</label>
+        {% if res and res.attachment %}
+        <div style="margin-bottom:8px;padding:8px 12px;background:#f1f5f9;border-radius:6px;font-size:13px;">
+          📎 현재: <a href="{{ url_for('results.download_file', filename=res.attachment) }}"
+                     style="color:#1a3a5c;font-weight:600;">
+            {{ res.attachment.split('_',1)[1] if '_' in res.attachment else res.attachment }}
+          </a>
+          <span style="color:#94a3b8;margin-left:8px;">(새 파일 선택 시 교체)</span>
+        </div>
+        {% endif %}
+        <input type="file" name="attachment" class="form-control"
+               accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc,.zip,.hwp"
+               style="padding:6px;">
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">허용: PDF, 이미지, Excel, Word, ZIP, HWP / 최대 50MB</div>
+      </div>
+
+      <div class="form-group form-full">
+        <label class="form-label">비고</label>
+        <textarea name="notes" class="form-control" rows="2"
+                  placeholder="기타 메모">{{ res.notes or '' if res else '' }}</textarea>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="flex gap-8 mt-16" style="justify-content:flex-end;">
+  <a href="{{ url_for('requests.detail', rid=req.id) }}" class="btn btn-outline">취소</a>
+  <button type="submit" class="btn btn-primary" style="min-width:140px;">
+    {{ '결과서 수정 완료' if res else '📊 결과서 저장' }}
+  </button>
+</div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── 의뢰서 참조 섹션 토글 ─────────────────────────────
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const tog = document.getElementById('ref_toggle');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    tog.textContent = '▲ 접기';
+  } else {
+    el.style.display = 'none';
+    tog.textContent = '▼ 펼치기';
+  }
+}
+
+// ── 엑셀 파싱 ─────────────────────────────────────────
+document.getElementById('btn_parse').addEventListener('click', function() {
+  const file = document.getElementById('excel_upload').files[0];
+  if (!file) { alert('엑셀 파일을 선택해주세요.'); return; }
+  const msg = document.getElementById('parse_msg');
+  msg.textContent = '📥 파싱 중…';
+  const fd = new FormData();
+  fd.append('excel_file', file);
+  fetch('{{ url_for("results.parse_excel", rid=req.id) }}', { method:'POST', body:fd })
+    .then(r => r.json())
+    .then(res => {
+      if (!res.ok) { msg.textContent = '❌ ' + res.msg; return; }
+      const d = res.data;
+      if (d.result_date)   document.getElementById('f_result_date').value  = d.result_date;
+      if (d.complete_date) document.getElementById('f_complete_date').value = d.complete_date;
+      if (d.tester_name)   document.getElementById('f_tester_name').value   = d.tester_name;
+      if (d.attach_doc_name) document.getElementById('f_attach_doc').value  = d.attach_doc_name;
+      msg.textContent = '✅ 자동 입력 완료! 내용을 확인 후 저장하세요.';
+      msg.style.color = '#15803d';
+    })
+    .catch(() => { msg.textContent = '❌ 오류가 발생했습니다.'; });
+});
+
+// ── 인쇄 스타일 ───────────────────────────────────────
+const printStyle = `
+  @media print {
+    .sidebar, .topbar, .card:first-child, .breadcrumb,
+    .btn, #ref_toggle, button { display:none!important; }
+    #ref_body { display:block!important; }
+    .main-wrap { margin-left:0!important; }
+    .page-content { padding:0!important; }
+    .card { box-shadow:none!important; border:1px solid #ccc!important; margin-bottom:10px!important; }
+    @page { size:A4 portrait; margin:15mm; }
+  }`;
+const s = document.createElement('style'); s.textContent = printStyle;
+document.head.appendChild(s);
+</script>
+{% endblock %}

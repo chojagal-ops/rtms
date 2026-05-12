@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# 가상환경
+venv/
+.venv/
+env/
+
+# 환경변수 (절대 커밋 금지)
+.env
+
+# SQLite 로컬 DB
+*.db
+*.sqlite3
+
+# 업로드 파일 (사용자 데이터 - 커밋 불필요)
+static/uploads/
+
+# 로그
+error.log
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}회원 관리 — RTMS{% endblock %}
+{% block topbar_title %}👥 회원 관리{% endblock %}
+
+{% block content %}
+<div class="page-header"><h2>👥 회원 관리</h2></div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>아이디</th><th>이름</th><th>부서</th><th>권한</th>
+          <th>가입일</th><th style="width:100px;">승인 상태</th><th style="width:80px;">작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:600;">{{ u.username }}</td>
+          <td>{{ u.name }}</td>
+          <td>{{ u.department }}</td>
+          <td>
+            <span class="badge {{ 'badge-완료' if u.role == 'admin' else 'badge-대기' }}">
+              {{ '관리자' if u.role == 'admin' else '일반' }}
+            </span>
+          </td>
+          <td style="font-size:12px;color:#64748b;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <span class="badge {{ 'badge-합격' if u.is_approved else 'badge-지연' }}">
+              {{ '승인됨' if u.is_approved else '대기중' }}
+            </span>
+          </td>
+          <td>
+            {% if u.id != current_user.id %}
+            <form action="{{ url_for('auth.approve_user', uid=u.id) }}" method="POST">
+              <button type="submit" class="btn btn-sm {{ 'btn-outline' if u.is_approved else 'btn-success' }}">
+                {{ '승인 취소' if u.is_approved else '승인' }}
+              </button>
+            </form>
+            {% else %}
+            <span style="font-size:11px;color:#94a3b8;">본인</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

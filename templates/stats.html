@@ -1,0 +1,600 @@
+{% extends 'base.html' %}
+{% block title %}통계 / 모니터링 — RTMS{% endblock %}
+{% block topbar_title %}📈 통계 / 모니터링{% endblock %}
+
+{% block content %}
+
+<!-- ── 필터 바 ──────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="padding:12px 20px;">
+    <form method="GET" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+
+      <!-- 보기 방식 -->
+      <div>
+        <div class="form-label" style="margin-bottom:5px;">보기 방식</div>
+        <div style="display:flex;background:var(--bg-inner);border-radius:8px;padding:3px;gap:2px;">
+          {% for v, lbl in [('yearly','연도별'),('monthly','월별'),('weekly','주별')] %}
+          <a href="?view={{ v }}&year={{ year }}&month={{ month }}"
+             style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.15s;
+                    {% if view == v %}background:#fff;color:var(--primary);box-shadow:var(--shadow-sm);{% else %}color:var(--text-sub);{% endif %}">
+            {{ lbl }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 연도 -->
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">연도</label>
+        <select name="year" class="form-control" style="width:90px;" onchange="this.form.submit()">
+          {% for y in years %}
+          <option value="{{ y }}" {{ 'selected' if year == y|string }}>{{ y }}년</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- 월 (월별·주별일 때만) -->
+      {% if view in ['monthly','weekly'] %}
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">월</label>
+        <select name="month" class="form-control" style="width:80px;" onchange="this.form.submit()">
+          {% for m in range(1,13) %}
+          <option value="{{ m }}" {{ 'selected' if month == m|string }}>{{ m }}월</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% else %}
+      <input type="hidden" name="month" value="{{ month }}">
+      {% endif %}
+
+      <input type="hidden" name="view" value="{{ view }}">
+      <button type="submit" class="btn btn-primary btn-sm" style="margin-bottom:1px;">🔍 조회</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── KPI 카드 ─────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-bottom:16px;">
+
+  <div class="stat-card">
+    <div class="stat-label">총 의뢰건수</div>
+    <div class="stat-value" style="color:var(--primary);">{{ total_year }}</div>
+    <div class="stat-icon">📋</div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-label">시험 완료</div>
+    <div class="stat-value">{{ completed_year }}</div>
+    <div class="stat-icon">✅</div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-label">진행중</div>
+    <div class="stat-value">{{ active_year }}</div>
+    <div class="stat-icon">⚗️</div>
+  </div>
+
+  <div class="stat-card danger">
+    <div class="stat-label">미완료·보류</div>
+    <div class="stat-value">{{ hold_year }}</div>
+    <div class="stat-icon">⏸️</div>
+  </div>
+
+  <div class="stat-card" style="--border-color:var(--primary);">
+    <div class="stat-label">커버리지율</div>
+    <div class="stat-value" style="color:var(--primary);">{{ coverage_rate }}<span style="font-size:14px;">%</span></div>
+    <div class="stat-icon">📊</div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-label">합격</div>
+    <div class="stat-value">{{ pass_cnt }}</div>
+    <div class="stat-icon">🏆</div>
+  </div>
+
+  <div class="stat-card danger">
+    <div class="stat-label">불합격</div>
+    <div class="stat-value">{{ fail_cnt }}</div>
+    <div class="stat-icon">❌</div>
+  </div>
+
+  <div class="stat-card" style="">
+    <div class="stat-label">합격률</div>
+    <div class="stat-value" style="color:#15803d;">{{ pass_rate }}<span style="font-size:14px;">%</span></div>
+    <div class="stat-icon">🎯</div>
+  </div>
+</div>
+
+<!-- ── 커버리지 게이지 ──────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="padding:16px 24px;">
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:280px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text);">
+            📊 커버리지율 (시험완료 / 총의뢰)
+          </span>
+          <span style="font-size:18px;font-weight:800;color:var(--primary);">{{ coverage_rate }}%</span>
+        </div>
+        <div style="background:var(--bg-inner);border-radius:8px;height:14px;overflow:hidden;">
+          <div style="height:14px;border-radius:8px;background:linear-gradient(90deg,#f97316,#ea580c);width:{{ coverage_rate }}%;transition:width 0.5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
+          <span>완료 {{ completed_year }}건</span><span>미완료 {{ active_year + hold_year }}건</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:280px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text);">
+            🎯 합격률 (합격 / 결과회신 전체)
+          </span>
+          <span style="font-size:18px;font-weight:800;color:#15803d;">{{ pass_rate }}%</span>
+        </div>
+        <div style="background:var(--bg-inner);border-radius:8px;height:14px;overflow:hidden;">
+          <div style="height:14px;border-radius:8px;background:linear-gradient(90deg,#16a34a,#22c55e);width:{{ pass_rate }}%;transition:width 0.5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
+          <span>합격 {{ pass_cnt }}건</span><span>불합격 {{ fail_cnt }}건 / 조건부 {{ cond_cnt }}건</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 차트 Row 1: 추이 차트 + 상태 분포 ──────────────── -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
+
+  <!-- 월별/주별 의뢰·완료 추이 -->
+  <div class="card">
+    <div class="card-header">
+      <h5>
+        {% if view == 'weekly' %}📅 {{ year }}년 {{ month }}월 주별 의뢰·완료 추이
+        {% elif view == 'yearly' %}📅 연도별 의뢰·완료 비교
+        {% else %}📅 {{ year }}년 월별 의뢰·완료 추이
+        {% endif %}
+      </h5>
+    </div>
+    <div class="card-body">
+      <canvas id="trendChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- 상태 분포 도넛 -->
+  <div class="card">
+    <div class="card-header"><h5>🔵 {{ year }}년 진행 상태 분포</h5></div>
+    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;">
+      <canvas id="statusChart" height="200" style="max-width:240px;"></canvas>
+      <div id="statusLegend" style="margin-top:12px;width:100%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 차트 Row 2: 판정결과 + 부서별 + 제품별 ─────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+
+  <!-- 판정결과 도넛 -->
+  <div class="card">
+    <div class="card-header"><h5>🏆 {{ year }}년 판정결과 분포</h5></div>
+    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;">
+      <canvas id="resultChart" height="200" style="max-width:200px;"></canvas>
+    </div>
+  </div>
+
+  <!-- 부서별 의뢰 건수 -->
+  <div class="card">
+    <div class="card-header"><h5>🏢 부서별 의뢰 건수</h5></div>
+    <div class="card-body">
+      <canvas id="deptChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- 제품별 의뢰 건수 -->
+  <div class="card">
+    <div class="card-header"><h5>📦 제품별 의뢰 건수</h5></div>
+    <div class="card-body">
+      <canvas id="prodChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── 차트 Row 3: 월별 판정결과 누적 + 커버리지율 추이 ── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+
+  <!-- 월별 판정결과 누적 막대 -->
+  <div class="card">
+    <div class="card-header"><h5>📊 {{ year }}년 월별 판정결과 누적</h5></div>
+    <div class="card-body">
+      <canvas id="resultMonthChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- 월별 커버리지율 라인 -->
+  <div class="card">
+    <div class="card-header"><h5>📈 {{ year }}년 월별 커버리지율 추이</h5></div>
+    <div class="card-body">
+      <canvas id="coverageChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── 수치 요약 테이블 ─────────────────────────────────── -->
+<div class="card">
+  <div class="card-header"><h5>📋 월별 상세 수치 ({{ year }}년)</h5></div>
+  <div style="overflow-x:auto;">
+    <table style="font-size:12px;text-align:center;">
+      <thead>
+        <tr>
+          <th style="text-align:left;width:50px;">월</th>
+          <th>의뢰</th>
+          <th>완료</th>
+          <th>진행중</th>
+          <th>커버리지율</th>
+          <th>합격</th>
+          <th>불합격</th>
+          <th>조건부합격</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set ns = namespace(t=0,d=0,a=0,p=0,f=0,c=0) %}
+        {% for i in range(12) %}
+        {% set ns.t = ns.t + monthly_total[i] %}
+        {% set ns.d = ns.d + monthly_done[i] %}
+        {% set ns.a = ns.a + monthly_active[i] %}
+        {% set ns.p = ns.p + monthly_pass[i] %}
+        {% set ns.f = ns.f + monthly_fail[i] %}
+        {% set ns.c = ns.c + monthly_cond[i] %}
+        <tr {% if monthly_total[i] == 0 %}style="color:var(--text-muted);"{% endif %}>
+          <td style="text-align:left;font-weight:700;color:var(--primary);">{{ i+1 }}월</td>
+          <td>{{ monthly_total[i] if monthly_total[i] else '-' }}</td>
+          <td style="color:#15803d;font-weight:{% if monthly_done[i] %}700{% else %}400{% endif %};">
+            {{ monthly_done[i] if monthly_done[i] else '-' }}
+          </td>
+          <td style="color:var(--text-sub);">{{ monthly_active[i] if monthly_active[i] else '-' }}</td>
+          <td>
+            {% if monthly_total[i] %}
+            <span style="font-weight:700;color:{% if monthly_rate[i] >= 80 %}#15803d{% elif monthly_rate[i] >= 50 %}#d97706{% else %}#b91c1c{% endif %};">
+              {{ monthly_rate[i] }}%
+            </span>
+            {% else %}-{% endif %}
+          </td>
+          <td style="color:#15803d;">{{ monthly_pass[i] if monthly_pass[i] else '-' }}</td>
+          <td style="color:#b91c1c;">{{ monthly_fail[i] if monthly_fail[i] else '-' }}</td>
+          <td style="color:#d97706;">{{ monthly_cond[i] if monthly_cond[i] else '-' }}</td>
+        </tr>
+        {% endfor %}
+        <!-- 합계 -->
+        <tr style="background:var(--bg-subtle);font-weight:700;border-top:2px solid var(--border-mid);">
+          <td style="text-align:left;">합계</td>
+          <td>{{ ns.t }}</td>
+          <td style="color:#15803d;">{{ ns.d }}</td>
+          <td style="color:var(--text-sub);">{{ ns.a }}</td>
+          <td style="color:var(--primary);">
+            {{ ((ns.d/ns.t*100)|round(1)) if ns.t else 0 }}%
+          </td>
+          <td style="color:#15803d;">{{ ns.p }}</td>
+          <td style="color:#b91c1c;">{{ ns.f }}</td>
+          <td style="color:#d97706;">{{ ns.c }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ── 데이터 ──────────────────────────────────────────────
+const VIEW   = '{{ view }}';
+const ORANGE = '#f97316';
+const ORANGE_D = '#ea580c';
+const GREEN  = '#16a34a';
+const RED    = '#dc2626';
+const BLUE   = '#3b82f6';
+const AMBER  = '#d97706';
+const PURPLE = '#8b5cf6';
+
+const monthlyLabels = {{ monthly_labels | tojson }};
+const monthlyTotal  = {{ monthly_total  | tojson }};
+const monthlyDone   = {{ monthly_done   | tojson }};
+const monthlyActive = {{ monthly_active | tojson }};
+const monthlyRate   = {{ monthly_rate   | tojson }};
+const monthlyPass   = {{ monthly_pass   | tojson }};
+const monthlyFail   = {{ monthly_fail   | tojson }};
+const monthlyCond   = {{ monthly_cond   | tojson }};
+
+const weeklyLabels  = {{ weekly_labels  | tojson }};
+const weeklyTotal   = {{ weekly_total   | tojson }};
+const weeklyDone    = {{ weekly_done    | tojson }};
+const weeklyRate    = {{ weekly_rate    | tojson }};
+
+const yearlyLabels  = {{ yearly_labels  | tojson }};
+const yearlyTotal   = {{ yearly_total   | tojson }};
+const yearlyDone    = {{ yearly_done    | tojson }};
+
+const statusLabels  = {{ status_list    | tojson }};
+const statusCounts  = {{ status_counts  | tojson }};
+const deptLabels    = {{ dept_labels    | tojson }};
+const deptCounts    = {{ dept_counts    | tojson }};
+const prodLabels    = {{ prod_labels    | tojson }};
+const prodCounts    = {{ prod_counts    | tojson }};
+
+const passCnt  = {{ pass_cnt }};
+const failCnt  = {{ fail_cnt }};
+const condCnt  = {{ cond_cnt }};
+
+// ── 공통 옵션 ───────────────────────────────────────────
+Chart.defaults.font.family = "'Segoe UI','Malgun Gothic',sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#6b7280';
+
+const gridOpts = {
+  color: 'rgba(0,0,0,0.05)',
+  drawBorder: false,
+};
+
+// ── 1) 추이 차트 (Bar + Line combo) ─────────────────────
+{
+  let labels, totalData, doneData, rateData;
+  if (VIEW === 'weekly') {
+    labels   = weeklyLabels;
+    totalData = weeklyTotal;
+    doneData  = weeklyDone;
+    rateData  = weeklyRate;
+  } else if (VIEW === 'yearly') {
+    labels   = yearlyLabels;
+    totalData = yearlyTotal;
+    doneData  = yearlyDone;
+    rateData  = yearlyTotal.map((t,i) =>
+      t ? Math.round(yearlyDone[i]/t*100*10)/10 : 0);
+  } else {
+    labels   = monthlyLabels;
+    totalData = monthlyTotal;
+    doneData  = monthlyDone;
+    rateData  = monthlyRate;
+  }
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '총 의뢰',
+          data: totalData,
+          backgroundColor: 'rgba(249,115,22,0.20)',
+          borderColor: ORANGE,
+          borderWidth: 1.5,
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          label: '완료',
+          data: doneData,
+          backgroundColor: 'rgba(22,163,74,0.25)',
+          borderColor: GREEN,
+          borderWidth: 1.5,
+          borderRadius: 4,
+          order: 3,
+        },
+        {
+          label: '커버리지율(%)',
+          data: rateData,
+          type: 'line',
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.35,
+          yAxisID: 'y2',
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              return ctx.dataset.yAxisID === 'y2'
+                ? ` ${ctx.dataset.label}: ${v}%`
+                : ` ${ctx.dataset.label}: ${v}건`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: gridOpts },
+        y:  { grid: gridOpts, beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '건수' } },
+        y2: { position: 'right', beginAtZero: true, max: 100, grid: { display: false },
+               ticks: { callback: v => v + '%' }, title: { display: true, text: '커버리지율' } },
+      },
+    },
+  });
+}
+
+// ── 2) 상태 분포 도넛 ───────────────────────────────────
+{
+  const colors = [AMBER, BLUE, PURPLE, '#06b6d4', GREEN, '#6b7280'];
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusCounts,
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}건` } },
+      },
+    },
+  });
+
+  // 커스텀 범례
+  const legend = document.getElementById('statusLegend');
+  const total = statusCounts.reduce((a,b) => a+b, 0);
+  legend.innerHTML = statusLabels.map((l,i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};"></div>
+        <span style="font-size:12px;">${l}</span>
+      </div>
+      <span style="font-size:12px;font-weight:700;">${statusCounts[i]}건
+        <span style="color:var(--text-muted);font-weight:400;">
+          (${total ? Math.round(statusCounts[i]/total*100) : 0}%)
+        </span>
+      </span>
+    </div>
+  `).join('');
+}
+
+// ── 3) 판정결과 도넛 ────────────────────────────────────
+new Chart(document.getElementById('resultChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['합격', '불합격', '조건부합격'],
+    datasets: [{
+      data: [passCnt, failCnt, condCnt],
+      backgroundColor: [GREEN, RED, AMBER],
+      borderWidth: 2,
+      borderColor: '#fff',
+      hoverOffset: 6,
+    }],
+  },
+  options: {
+    cutout: '60%',
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}건` } },
+    },
+  },
+});
+
+// ── 4) 부서별 수평 막대 ──────────────────────────────────
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: deptLabels.length ? deptLabels : ['데이터 없음'],
+    datasets: [{
+      label: '의뢰 건수',
+      data: deptCounts.length ? deptCounts : [0],
+      backgroundColor: 'rgba(249,115,22,0.22)',
+      borderColor: ORANGE,
+      borderWidth: 1.5,
+      borderRadius: 4,
+    }],
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: gridOpts, beginAtZero: true, ticks: { stepSize: 1 } },
+      y: { grid: { display: false } },
+    },
+  },
+});
+
+// ── 5) 제품별 수평 막대 ──────────────────────────────────
+new Chart(document.getElementById('prodChart'), {
+  type: 'bar',
+  data: {
+    labels: prodLabels.length ? prodLabels : ['데이터 없음'],
+    datasets: [{
+      label: '의뢰 건수',
+      data: prodCounts.length ? prodCounts : [0],
+      backgroundColor: 'rgba(139,92,246,0.22)',
+      borderColor: PURPLE,
+      borderWidth: 1.5,
+      borderRadius: 4,
+    }],
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: gridOpts, beginAtZero: true, ticks: { stepSize: 1 } },
+      y: { grid: { display: false } },
+    },
+  },
+});
+
+// ── 6) 월별 판정결과 누적 막대 ──────────────────────────
+new Chart(document.getElementById('resultMonthChart'), {
+  type: 'bar',
+  data: {
+    labels: monthlyLabels,
+    datasets: [
+      { label: '합격',       data: monthlyPass, backgroundColor: 'rgba(22,163,74,0.75)', borderRadius: 3, stack: 'r' },
+      { label: '불합격',     data: monthlyFail, backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 3, stack: 'r' },
+      { label: '조건부합격', data: monthlyCond, backgroundColor: 'rgba(217,119,6,0.75)', borderRadius: 3, stack: 'r' },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      x: { stacked: true, grid: gridOpts },
+      y: { stacked: true, grid: gridOpts, beginAtZero: true, ticks: { stepSize: 1 } },
+    },
+  },
+});
+
+// ── 7) 월별 커버리지율 라인 ─────────────────────────────
+new Chart(document.getElementById('coverageChart'), {
+  type: 'line',
+  data: {
+    labels: monthlyLabels,
+    datasets: [
+      {
+        label: '커버리지율(%)',
+        data: monthlyRate,
+        borderColor: ORANGE,
+        backgroundColor: 'rgba(249,115,22,0.10)',
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: ORANGE,
+        pointBorderWidth: 2,
+        fill: true,
+        tension: 0.35,
+      },
+      {
+        label: '목표 (80%)',
+        data: Array(12).fill(80),
+        borderColor: 'rgba(22,163,74,0.5)',
+        borderWidth: 1.5,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        fill: false,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      x: { grid: gridOpts },
+      y: { grid: gridOpts, beginAtZero: true, max: 100,
+           ticks: { callback: v => v + '%' } },
+    },
+  },
+});
+</script>
+{% endblock %}

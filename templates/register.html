@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회원가입 — RTMS</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+<div class="login-box" style="width:420px;">
+  <div class="login-logo">
+    <!-- 아이콘: 흰색 플라스크 + INTOPS -->
+    <div style="width:80px;height:80px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:0 auto 18px;box-shadow:0 6px 22px rgba(249,115,22,0.38);">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 3h6v6l4.5 9A2 2 0 0 1 17.8 21H6.2a2 2 0 0 1-1.7-3L9 9V3z"/>
+        <line x1="9" y1="3" x2="15" y2="3"/>
+        <line x1="7.5" y1="11" x2="16.5" y2="11"/>
+      </svg>
+      <span style="font-size:9px;font-weight:900;color:white;letter-spacing:0.15em;line-height:1;">INTOPS</span>
+    </div>
+    <div class="logo-title">회원가입 신청</div>
+    <div class="logo-sub">관리자 승인 후 로그인 가능합니다</div>
+  </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  <form method="POST">
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">아이디 <span class="req">*</span></label>
+      <input type="text" name="username" class="form-control" placeholder="영문+숫자 조합" required>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">이름 <span class="req">*</span></label>
+      <input type="text" name="name" class="form-control" placeholder="실명 입력" required>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">부서</label>
+      <input type="text" name="department" class="form-control" placeholder="소속 부서">
+    </div>
+    <div class="form-group" style="margin-bottom:20px;">
+      <label class="form-label">비밀번호 <span class="req">*</span></label>
+      <input type="password" name="password" class="form-control" placeholder="6자리 이상" required minlength="6">
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">가입 신청</button>
+  </form>
+  <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);">
+    <a href="{{ url_for('auth.login') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">← 로그인으로 돌아가기</a>
+  </div>
+</div>
+</body>
+</html>

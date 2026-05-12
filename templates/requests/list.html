@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}시험 의뢰서 목록 — RTMS{% endblock %}
+{% block topbar_title %}📋 신뢰성 시험 의뢰서{% endblock %}
+
+{% block content %}
+<!-- 필터 / 검색 -->
+<div class="filter-bar" style="margin-bottom:16px;">
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;">
+    <input type="text" name="q" value="{{ search }}" class="form-control"
+           placeholder="의뢰번호 / 제품명 / 부서 검색…" style="width:240px;">
+    <select name="status" class="form-control" style="width:130px;">
+      <option value="">전체 상태</option>
+      {% for s in REQUEST_STATUSES %}
+      <option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">검색</button>
+    {% if status_filter or search %}
+    <a href="{{ url_for('requests.list_view') }}" class="btn btn-outline btn-sm">초기화</a>
+    {% endif %}
+  </form>
+  <a href="{{ url_for('requests.new') }}" class="btn btn-primary">＋ 신규 의뢰서 등록</a>
+</div>
+
+<!-- 상태별 빠른 필터 -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+  {% for s in REQUEST_STATUSES %}
+  {% set meta = STATUS_META.get(s, {}) %}
+  <a href="{{ url_for('requests.list_view') }}?status={{ s }}"
+     style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;
+            background:{{ meta.get('bg','#f1f5f9') }};color:{{ meta.get('color','#475569') }};
+            border:1.5px solid {{ 'currentColor' if status_filter == s else 'transparent' }};">
+    {{ s }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5>전체 {{ items|length }}건</h5>
+  </div>
+  {% if items %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:140px;">의뢰번호</th>
+          <th>제품명 / 모델</th>
+          <th style="width:100px;">의뢰부서</th>
+          <th style="width:80px;">의뢰자</th>
+          <th style="width:100px;">완료희망일</th>
+          <th style="width:70px;">우선순위</th>
+          <th style="width:90px;">상태</th>
+          <th style="width:90px;">판정결과</th>
+          <th style="width:100px;">작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        {% set meta = STATUS_META.get(item.status, {}) %}
+        <tr>
+          <td>
+            <a href="{{ url_for('requests.detail', rid=item.id) }}"
+               style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
+              {{ item.request_no or '-' }}
+            </a>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">
+              {{ item.created_at.strftime('%Y-%m-%d') if item.created_at else '' }}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:600;font-size:13px;">{{ item.product_name or '-' }}</div>
+            <div style="font-size:11px;color:#64748b;">{{ item.model_code or '' }}</div>
+          </td>
+          <td style="font-size:13px;">{{ item.request_dept or '-' }}</td>
+          <td style="font-size:13px;">{{ item.requester_name or '-' }}</td>
+          <td style="font-size:12px;">
+            {% if item.deadline %}
+              {% if item.deadline < today and item.status not in ['완료','보류'] %}
+                <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%m/%d') }} ⚠️</span>
+              {% else %}
+                {{ item.deadline.strftime('%Y-%m-%d') }}
+              {% endif %}
+            {% else %}-{% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if item.priority %}
+            <span style="font-size:12px;font-weight:700;
+                         color:{{ '#dc2626' if item.priority=='상' else ('#d97706' if item.priority=='중' else '#475569') }};">
+              {{ item.priority }}
+            </span>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            <span class="badge"
+              style="background:{{ meta.get('bg','#f1f5f9') }};color:{{ meta.get('color','#475569') }};">
+              {{ item.status }}
+            </span>
+          </td>
+          <td>
+            {% if item.result %}
+              {% set rmeta = STATUS_META.get(item.result.overall_result, {}) %}
+              <span class="badge"
+                style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};">
+                {{ item.result.overall_result or '-' }}
+              </span>
+            {% else %}
+              <span style="font-size:11px;color:#94a3b8;">미입력</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:4px;">
+              <a href="{{ url_for('requests.detail', rid=item.id) }}"
+                 class="btn btn-outline btn-sm">상세</a>
+              <a href="{{ url_for('requests.edit', rid=item.id) }}"
+                 class="btn btn-outline btn-sm">수정</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <p>{{ '검색 결과가 없습니다.' if search or status_filter else '등록된 의뢰서가 없습니다.' }}</p>
+    {% if not search and not status_filter %}
+    <a href="{{ url_for('requests.new') }}" class="btn btn-primary" style="margin-top:12px;">
+      첫 의뢰서 등록
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 날짜 계산 변수 (today)
+const today = new Date();
+</script>
+{% endblock %}

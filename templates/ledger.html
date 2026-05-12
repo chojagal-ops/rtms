@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}신뢰성 시험 관리대장 — RTMS{% endblock %}
+{% block topbar_title %}📒 신뢰성 시험 관리대장{% endblock %}
+
+{% block content %}
+
+<!-- 필터 -->
+<div class="card" style="margin-bottom:14px;">
+  <div class="card-body" style="padding:12px 18px;">
+    <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-size:11px;">연도</label>
+        <select name="year" class="form-control" style="width:88px;">
+          <option value="">전체</option>
+          {% for y in years %}
+          <option value="{{ y }}" {{ 'selected' if year == y|string }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-size:11px;">월</label>
+        <select name="month" class="form-control" style="width:68px;">
+          <option value="">전체</option>
+          {% for m in range(1,13) %}
+          <option value="{{ m }}" {{ 'selected' if month == m|string }}>{{ m }}월</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-size:11px;">의뢰부서</label>
+        <select name="dept" class="form-control" style="width:120px;">
+          <option value="">전체</option>
+          {% for d in depts %}
+          <option value="{{ d }}" {{ 'selected' if dept == d }}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-size:11px;">판정</label>
+        <select name="status" class="form-control" style="width:100px;">
+          <option value="">전체</option>
+          {% for s in REQUEST_STATUSES %}
+          <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-size:11px;">검색</label>
+        <input type="text" name="q" value="{{ q_str }}" class="form-control"
+               placeholder="의뢰번호·제품명·의뢰자" style="width:170px;">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">🔍 조회</button>
+      <a href="{{ url_for('ledger.index') }}" class="btn btn-outline btn-sm">초기화</a>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <a href="{{ url_for('ledger.export_excel', **request.args) }}"
+           class="btn btn-outline btn-sm" style="color:#15803d;border-color:#15803d;">📥 엑셀 저장</a>
+        <button type="button" onclick="window.print()" class="btn btn-outline btn-sm">🖨️ 인쇄</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 대장 본문 -->
+<div class="card">
+
+  <!-- 대장 제목 (엑셀 형식) -->
+  <div style="padding:16px 20px 10px;border-bottom:2px solid #1a3a5c;">
+    <div style="font-size:20px;font-weight:900;color:#1a3a5c;letter-spacing:0.05em;text-align:center;">
+      신뢰성 시험 관리대장
+    </div>
+    <div style="font-size:11px;color:#64748b;text-align:center;margin-top:4px;">
+      ※ 의뢰부서/의뢰자/시험자/시험항목/시험결과를 중심으로 시험 이력 추적이 가능하도록 구성한 대장입니다.
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:#475569;">
+      <span>조회 기간: {{ year+'년' if year else '전체' }} {{ month+'월' if month else '' }} {{ ('/ '+dept) if dept else '' }}</span>
+      <span>총 <strong>{{ items|length }}</strong>건 &nbsp;|&nbsp; 조회일: {{ today.strftime('%Y-%m-%d') }}</span>
+    </div>
+  </div>
+
+  {% if items %}
+  <div style="overflow-x:auto;">
+    <table class="ledger-tbl">
+      <thead>
+        <tr>
+          <th style="width:34px;">No.</th>
+          <th style="width:82px;">의뢰일자</th>
+          <th style="width:80px;">의뢰부서</th>
+          <th style="width:60px;">의뢰자</th>
+          <th style="width:110px;">품명 / 모델명</th>
+          <th style="width:90px;">LOT No./S/N</th>
+          <th style="width:80px;">시험 의뢰 목적</th>
+          <th style="width:120px;">시험 항목</th>
+          <th style="width:130px;">시험 조건</th>
+          <th style="width:82px;">시험 시작일</th>
+          <th style="width:82px;">시험 완료일</th>
+          <th style="width:60px;">시험자</th>
+          <th style="width:200px;">시험 결과</th>
+          <th style="width:68px;">판정</th>
+          <th style="width:82px;">결과 통보일</th>
+          <th>특이사항 / 조치사항</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        {% set res = item.result %}
+        {% set rmeta = STATUS_META.get(res.overall_result, {}) if res else {} %}
+        <tr onclick="location.href='{{ url_for('requests.detail', rid=item.id) }}'"
+            style="cursor:pointer;" class="ledger-r">
+
+          <td style="text-align:center;color:#94a3b8;">{{ loop.index }}</td>
+
+          <td>{{ item.write_date.strftime('%Y-%m-%d') if item.write_date else '-' }}</td>
+
+          <td>{{ item.request_dept or '-' }}</td>
+
+          <td>{{ item.requester_name or '-' }}</td>
+
+          <td>
+            <div style="font-weight:600;">{{ item.product_name or '-' }}</div>
+            {% if item.model_code %}<div style="font-size:10px;color:#64748b;">{{ item.model_code }}</div>{% endif %}
+          </td>
+
+          <td style="font-size:11px;color:#64748b;">{{ item.sample_id_method or '-' }}</td>
+
+          <td>{{ item.test_purpose or '-' }}</td>
+
+          <td>
+            {% if item.test_items %}
+              {% for ti in item.test_items %}
+                <div style="font-size:11px;{% if not loop.last %}margin-bottom:2px;{% endif %}">
+                  {{ ti.test_name or '' }}
+                </div>
+              {% endfor %}
+            {% else %}-{% endif %}
+          </td>
+
+          <td>
+            {% if item.test_items %}
+              {% for ti in item.test_items %}
+                {% if ti.test_condition %}
+                <div style="font-size:11px;color:#475569;{% if not loop.last %}margin-bottom:2px;{% endif %}">
+                  {{ ti.test_condition }}
+                </div>
+                {% endif %}
+              {% endfor %}
+            {% else %}-{% endif %}
+          </td>
+
+          <td>{{ item.req_start_date.strftime('%Y-%m-%d') if item.req_start_date else '-' }}</td>
+
+          <td>{{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '-' }}</td>
+
+          <td>{{ res.tester_name if res and res.tester_name else '-' }}</td>
+
+          <td style="font-size:11px;color:#334155;">
+            {% if res and res.summary %}
+              {{ res.summary }}
+            {% elif res and res.overall_result %}
+              {{ res.overall_result }}
+            {% else %}
+              <span style="color:#cbd5e1;">-</span>
+            {% endif %}
+          </td>
+
+          <td style="text-align:center;">
+            {% if res and res.overall_result %}
+              <span class="badge"
+                style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};
+                       font-size:11px;padding:2px 7px;font-weight:700;">
+                {{ res.overall_result }}
+              </span>
+            {% else %}
+              <span style="font-size:11px;color:#cbd5e1;">-</span>
+            {% endif %}
+          </td>
+
+          <td>{{ res.notify_date.strftime('%Y-%m-%d') if res and res.notify_date else '-' }}</td>
+
+          <td style="font-size:11px;color:#64748b;max-width:160px;">
+            {{ (res.notes or item.notes or '-') if (res or item.notes) else '-' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div style="padding:48px;text-align:center;color:#94a3b8;">
+    <div style="font-size:40px;margin-bottom:12px;">📒</div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:6px;">
+      {{ '조건에 맞는 데이터가 없습니다.' if (year or month or dept or status or q_str) else '등록된 시험 이력이 없습니다.' }}
+    </div>
+    <div style="font-size:12px;">
+      시험 의뢰서를 등록하면 이곳에 자동으로 집계됩니다.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+.ledger-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 1400px;
+}
+.ledger-tbl th {
+  background: #1a3a5c;
+  color: #fff;
+  padding: 7px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid #2d5a8e;
+  text-align: center;
+}
+.ledger-tbl td {
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+.ledger-r:hover td { background: #f0f7ff; }
+.ledger-r:nth-child(even) td { background: #fafbfc; }
+.ledger-r:nth-child(even):hover td { background: #f0f7ff; }
+
+@media print {
+  .sidebar, .topbar, .card:first-child, .btn { display:none!important; }
+  .main-wrap { margin-left:0!important; }
+  .page-content { padding:0!important; }
+  .card { box-shadow:none!important; border:none!important; }
+  .ledger-tbl { font-size:8px!important; min-width:unset!important; }
+  .ledger-tbl th { font-size:8px!important; padding:4px!important; }
+  .ledger-tbl td { padding:4px!important; }
+  .ledger-r:hover td { background:transparent!important; }
+  @page { size:A4 landscape; margin:8mm; }
+}
+</style>
+{% endblock %}

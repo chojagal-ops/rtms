@@ -1,0 +1,579 @@
+{% extends 'base.html' %}
+{% block title %}{{ '의뢰서 수정' if item else '의뢰서 등록' }} — RTMS{% endblock %}
+{% block topbar_title %}📋 신뢰성 시험 의뢰서 {{ '수정' if item else '신규 등록' }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('requests.list_view') }}">의뢰서 목록</a>
+  <span>›</span><span>{{ '수정' if item else '신규 등록' }}</span>
+</div>
+
+<!-- 엑셀 파일로 자동 입력 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <h5>📂 기존 엑셀 의뢰서 불러오기 <span style="font-size:11px;font-weight:400;color:#64748b;">(선택) — 엑셀 파일을 올리면 아래 항목이 자동으로 채워집니다</span></h5>
+  </div>
+  <div class="card-body" style="padding:14px 20px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="file" id="excel_upload" accept=".xlsx,.xls"
+             style="padding:6px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;">
+      <button type="button" id="btn_parse" class="btn btn-primary btn-sm">📥 자동 입력</button>
+      <span id="parse_msg" style="font-size:12px;color:#64748b;"></span>
+    </div>
+  </div>
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="req_form">
+
+<!-- 섹션1+2: 기본 정보 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>① 의뢰 부서 및 제품 정보</h5></div>
+  <div class="card-body">
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label class="form-label">작성일자</label>
+        <input type="date" name="write_date" id="f_write_date" class="form-control"
+               value="{{ item.write_date.strftime('%Y-%m-%d') if item and item.write_date else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">완료 희망일자</label>
+        <input type="date" name="deadline" id="f_deadline" class="form-control"
+               value="{{ item.deadline.strftime('%Y-%m-%d') if item and item.deadline else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">상태</label>
+        <select name="status" class="form-control">
+          {% for s in REQUEST_STATUSES %}
+          <option value="{{ s }}" {{ 'selected' if item and item.status == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">의뢰부서 <span class="req">*</span></label>
+        <input type="text" name="request_dept" id="f_request_dept" class="form-control"
+               value="{{ item.request_dept or '' if item else '' }}" placeholder="예: 개발팀" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">의뢰자 성명</label>
+        <input type="text" name="requester_name" id="f_requester_name" class="form-control"
+               value="{{ item.requester_name or '' if item else '' }}" placeholder="성명">
+      </div>
+      <div class="form-group">
+        <label class="form-label">직책</label>
+        <input type="text" name="requester_position" class="form-control"
+               value="{{ item.requester_position or '' if item else '' }}" placeholder="직책">
+      </div>
+      <div class="form-group">
+        <label class="form-label">연락처</label>
+        <input type="text" name="contact" id="f_contact" class="form-control"
+               value="{{ item.contact or '' if item else '' }}" placeholder="010-0000-0000">
+      </div>
+      <div class="form-group" style="grid-column:span 2;">
+        <label class="form-label">프로젝트 / 고객사</label>
+        <input type="text" name="project_customer" id="f_project_customer" class="form-control"
+               value="{{ item.project_customer or '' if item else '' }}" placeholder="프로젝트명 또는 고객사">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">제품명 <span class="req">*</span></label>
+        <input type="text" name="product_name" id="f_product_name" class="form-control"
+               value="{{ item.product_name or '' if item else '' }}" placeholder="제품명" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">모델명 / 코드</label>
+        <input type="text" name="model_code" id="f_model_code" class="form-control"
+               value="{{ item.model_code or '' if item else '' }}" placeholder="모델명 또는 코드">
+      </div>
+      <div class="form-group">
+        <label class="form-label">제품 종류</label>
+        <select name="product_type" id="f_product_type" class="form-control">
+          <option value="">- 선택 -</option>
+          {% for t in PRODUCT_TYPES %}
+          <option value="{{ t }}" {{ 'selected' if item and item.product_type == t }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">시험 단계</label>
+        <select name="test_stage" id="f_test_stage" class="form-control">
+          <option value="">- 선택 -</option>
+          {% for s in TEST_STAGES %}
+          <option value="{{ s }}" {{ 'selected' if item and item.test_stage == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:span 2;">
+        <label class="form-label">변경 내용</label>
+        <input type="text" name="change_content" class="form-control"
+               value="{{ item.change_content or '' if item else '' }}" placeholder="변경 사항 있을 경우 기재">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 섹션3+4: 시험 목적 + 시편 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>② 시험 목적 및 시편 정보</h5></div>
+  <div class="card-body">
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label class="form-label">시험 목적</label>
+        <select name="test_purpose" id="f_test_purpose" class="form-control">
+          <option value="">- 선택 -</option>
+          {% for p in TEST_PURPOSES %}
+          <option value="{{ p }}" {{ 'selected' if item and item.test_purpose == p }}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:span 2;">
+        <label class="form-label">상세 설명</label>
+        <input type="text" name="test_purpose_detail" id="f_test_purpose_detail" class="form-control"
+               value="{{ item.test_purpose_detail or '' if item else '' }}" placeholder="시험 목적 상세 기재">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">시편 수량</label>
+        <input type="number" name="sample_qty" id="f_sample_qty" class="form-control" min="1"
+               value="{{ item.sample_qty or '' if item else '' }}" placeholder="개수">
+      </div>
+      <div class="form-group">
+        <label class="form-label">시편 상태</label>
+        <select name="sample_state" id="f_sample_state" class="form-control">
+          <option value="">- 선택 -</option>
+          {% for s in SAMPLE_STATES %}
+          <option value="{{ s }}" {{ 'selected' if item and item.sample_state == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">식별 방법</label>
+        <input type="text" name="sample_id_method" class="form-control"
+               value="{{ item.sample_id_method or '' if item else '' }}" placeholder="넘버링, 라벨 등">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">시편 특이사항</label>
+        <textarea name="sample_notes" class="form-control" rows="2"
+                  placeholder="시편 관련 특이사항">{{ item.sample_notes or '' if item else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 섹션5: 시험 항목 (동적 추가) -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header" style="justify-content:space-between;">
+    <h5>③ 시험 항목 및 조건</h5>
+    <div style="display:flex;gap:6px;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="openCopyModal()">📋 기존 의뢰서에서 복사</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="addItem()">＋ 항목 추가</button>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <table id="item_table" style="font-size:13px;">
+      <thead>
+        <tr>
+          <th style="width:40px;">No</th>
+          <th>시험 항목</th>
+          <th>시험 조건</th>
+          <th style="width:120px;">규격</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="item_tbody">
+        {% if item and item.test_items %}
+          {% for ti in item.test_items %}
+          <tr>
+            <td style="text-align:center;color:#64748b;">{{ loop.index }}</td>
+            <td><input type="text" name="item_test_name" class="form-control"
+                       value="{{ ti.test_name or '' }}" placeholder="시험 항목명"></td>
+            <td><input type="text" name="item_test_condition" class="form-control"
+                       value="{{ ti.test_condition or '' }}" placeholder="조건 상세"></td>
+            <td><input type="text" name="item_standard" class="form-control"
+                       value="{{ ti.standard or '' }}" placeholder="IEC, KS 등"></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <!-- 기본 4개 행 -->
+          {% for i in range(1,5) %}
+          <tr>
+            <td style="text-align:center;color:#64748b;">{{ i }}</td>
+            <td><input type="text" name="item_test_name" class="form-control" placeholder="시험 항목명"></td>
+            <td><input type="text" name="item_test_condition" class="form-control" placeholder="조건 상세"></td>
+            <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+          </tr>
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 섹션6: 판정 기준 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header" style="justify-content:space-between;">
+    <h5>④ 판정 기준</h5>
+    <button type="button" class="btn btn-outline btn-sm" onclick="addCrit()">＋ 기준 추가</button>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <table id="crit_table" style="font-size:13px;">
+      <thead>
+        <tr>
+          <th style="width:40px;">No</th>
+          <th style="width:130px;">기준 유형</th>
+          <th>기준 내용</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="crit_tbody">
+        {% if item and item.criteria %}
+          {% for c in item.criteria %}
+          <tr>
+            <td style="text-align:center;color:#64748b;">{{ loop.index }}</td>
+            <td>
+              <select name="crit_type" class="form-control">
+                <option value="">- 선택 -</option>
+                {% for ct in CRITERION_TYPES %}
+                <option value="{{ ct }}" {{ 'selected' if c.criterion_type == ct }}>{{ ct }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td><input type="text" name="crit_content" class="form-control"
+                       value="{{ c.criterion_content or '' }}" placeholder="기준 내용 입력"></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          {% for i in range(1,3) %}
+          <tr>
+            <td style="text-align:center;color:#64748b;">{{ i }}</td>
+            <td>
+              <select name="crit_type" class="form-control">
+                <option value="">- 선택 -</option>
+                {% for ct in CRITERION_TYPES %}<option value="{{ ct }}">{{ ct }}</option>{% endfor %}
+              </select>
+            </td>
+            <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+          </tr>
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 섹션7+8: 일정 + 특이사항 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>⑤ 시험 일정 및 특이사항</h5></div>
+  <div class="card-body">
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label class="form-label">요청 시작일</label>
+        <input type="date" name="req_start_date" class="form-control"
+               value="{{ item.req_start_date.strftime('%Y-%m-%d') if item and item.req_start_date else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">요청 완료일</label>
+        <input type="date" name="req_end_date" class="form-control"
+               value="{{ item.req_end_date.strftime('%Y-%m-%d') if item and item.req_end_date else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">우선순위</label>
+        <select name="priority" class="form-control">
+          <option value="">- 선택 -</option>
+          {% for p in PRIORITIES %}
+          <option value="{{ p }}" {{ 'selected' if item and item.priority == p }}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">일정 요청사항</label>
+        <input type="text" name="schedule_notes" class="form-control"
+               value="{{ item.schedule_notes or '' if item else '' }}" placeholder="일정 관련 특이사항">
+      </div>
+      <div class="form-group">
+        <label class="form-label">시험 조건</label>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:8px 0;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" name="test_unit" {{ 'checked' if item and item.test_unit }}>
+            단품 상태 시험
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" name="test_package" {{ 'checked' if item and item.test_package }}>
+            포장 상태 시험
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" name="test_assembly" {{ 'checked' if item and item.test_assembly }}>
+            조립 상태 시험
+          </label>
+        </div>
+      </div>
+      <div class="form-group" style="grid-column:span 2;">
+        <label class="form-label">기타 특이사항</label>
+        <textarea name="other_conditions" class="form-control" rows="3"
+                  placeholder="기타 조건이나 주의사항">{{ item.other_conditions or '' if item else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 섹션9+10+11: 첨부 + 승인 -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>⑥ 첨부 문서 및 승인</h5></div>
+  <div class="card-body">
+    <div class="form-grid cols-3">
+      <div class="form-group form-full">
+        <label class="form-label">첨부 문서 유형</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;">
+          {% set sel_types = (item.attach_types or '').split(',') if item else [] %}
+          {% for t in ATTACH_TYPES %}
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" name="attach_types" value="{{ t }}"
+                   {{ 'checked' if t in sel_types }}>
+            {{ t }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">첨부 문서명</label>
+        <input type="text" name="attach_doc_name" class="form-control"
+               value="{{ item.attach_doc_name or '' if item else '' }}" placeholder="첨부 파일 이름 기재">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">파일 첨부</label>
+        {% if item and item.attachment %}
+        <div style="margin-bottom:8px;padding:8px 12px;background:#f1f5f9;border-radius:6px;font-size:13px;">
+          📎 현재: <a href="{{ url_for('requests.download_file', filename=item.attachment) }}"
+                     style="color:#1a3a5c;font-weight:600;">
+            {{ item.attachment.split('_',1)[1] if '_' in item.attachment else item.attachment }}
+          </a>
+          <span style="color:#94a3b8;margin-left:8px;">(새 파일 선택 시 교체)</span>
+        </div>
+        {% endif %}
+        <input type="file" name="attachment" class="form-control"
+               accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc,.zip,.hwp"
+               style="padding:6px;">
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">허용: PDF, 이미지, Excel, Word, ZIP, HWP</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">작성자 (의뢰팀)</label>
+        <input type="text" name="writer_name" class="form-control"
+               value="{{ item.writer_name or '' if item else '' }}" placeholder="작성자명">
+      </div>
+      <div class="form-group">
+        <label class="form-label">승인자 (의뢰팀)</label>
+        <input type="text" name="dept_approver" class="form-control"
+               value="{{ item.dept_approver or '' if item else '' }}" placeholder="의뢰팀 승인자">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">비고</label>
+        <textarea name="notes" class="form-control" rows="2"
+                  placeholder="기타 메모">{{ item.notes or '' if item else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flex gap-8 mt-16" style="justify-content:flex-end;">
+  <a href="{{ url_for('requests.list_view') }}" class="btn btn-outline">취소</a>
+  <button type="submit" class="btn btn-primary">
+    {{ '수정 완료' if item else '의뢰서 등록' }}
+  </button>
+</div>
+</form>
+
+<!-- 시험 항목 복사 모달 -->
+<div id="copyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+    <div style="padding:18px 20px 14px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="margin:0;font-size:15px;">📋 기존 의뢰서 시험 항목 복사</h5>
+      <button type="button" onclick="closeCopyModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;">✕</button>
+    </div>
+    <div style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+      <input type="text" id="copySearch" class="form-control" placeholder="의뢰번호 또는 제품명 검색…" oninput="searchRequests(this.value)">
+    </div>
+    <div id="copyList" style="overflow-y:auto;flex:1;padding:8px 0;min-height:200px;">
+      <div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">검색어를 입력하거나 아래 최근 의뢰서를 선택하세요.</div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;">
+      ※ 복사 시 기존 항목 목록이 <strong>대체</strong>됩니다. 필요 시 항목을 추가/삭제하세요.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── 시험 항목 행 추가 ──────────────────────────────────────
+let itemCount = document.querySelectorAll('#item_tbody tr').length;
+function addItem() {
+  itemCount++;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:center;color:#64748b;">${itemCount}</td>
+    <td><input type="text" name="item_test_name" class="form-control" placeholder="시험 항목명"></td>
+    <td><input type="text" name="item_test_condition" class="form-control" placeholder="조건 상세"></td>
+    <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
+    <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+  `;
+  document.getElementById('item_tbody').appendChild(tr);
+}
+
+// ── 판정 기준 행 추가 ─────────────────────────────────────
+const critTypes = {{ CRITERION_TYPES | tojson }};
+let critCount = document.querySelectorAll('#crit_tbody tr').length;
+function addCrit() {
+  critCount++;
+  const opts = critTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:center;color:#64748b;">${critCount}</td>
+    <td><select name="crit_type" class="form-control"><option value="">- 선택 -</option>${opts}</select></td>
+    <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
+    <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+  `;
+  document.getElementById('crit_tbody').appendChild(tr);
+}
+
+function removeRow(btn) { btn.closest('tr').remove(); renumberRows(); }
+
+function renumberRows() {
+  document.querySelectorAll('#item_tbody tr').forEach((tr, i) => {
+    tr.querySelector('td:first-child').textContent = i + 1;
+  });
+}
+
+// ── 시험 항목 복사 모달 ────────────────────────────────
+let searchTimer = null;
+
+function openCopyModal() {
+  document.getElementById('copyModal').style.display = 'flex';
+  document.getElementById('copySearch').value = '';
+  loadRecentRequests('');
+}
+
+function closeCopyModal() {
+  document.getElementById('copyModal').style.display = 'none';
+}
+
+function searchRequests(q) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadRecentRequests(q), 300);
+}
+
+function loadRecentRequests(q) {
+  const list = document.getElementById('copyList');
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">검색 중…</div>';
+  fetch(`{{ url_for('requests.recent_json') }}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.length) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">결과 없음</div>';
+        return;
+      }
+      list.innerHTML = data.map(r => `
+        <div onclick="copyItems(${r.id},'${r.request_no}','${r.product_name}')"
+             style="padding:11px 20px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background .1s;"
+             onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+          <div style="font-weight:700;font-size:13px;color:#1a3a5c;">${r.request_no || '(번호없음)'}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">${r.product_name || '-'} &nbsp;·&nbsp; 시험항목 ${r.item_count}개</div>
+        </div>`).join('');
+    })
+    .catch(() => { list.innerHTML = '<div style="padding:20px;text-align:center;color:#dc2626;font-size:13px;">오류가 발생했습니다.</div>'; });
+}
+
+function copyItems(rid, reqNo, prodName) {
+  if (!confirm(`[${reqNo}] ${prodName}\n위 의뢰서의 시험 항목을 복사합니다.\n기존 항목은 대체됩니다. 계속하시겠습니까?`)) return;
+  fetch(`/requests/${rid}/items-json`)
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('item_tbody');
+      tbody.innerHTML = '';
+      itemCount = 0;
+      if (!data.items || !data.items.length) {
+        alert('복사할 시험 항목이 없습니다.');
+        closeCopyModal();
+        return;
+      }
+      data.items.forEach((it, i) => {
+        itemCount++;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center;color:#64748b;">${i + 1}</td>
+          <td><input type="text" name="item_test_name" class="form-control" value="${it.test_name}" placeholder="시험 항목명"></td>
+          <td><input type="text" name="item_test_condition" class="form-control" value="${it.test_condition}" placeholder="조건 상세"></td>
+          <td><input type="text" name="item_standard" class="form-control" value="${it.standard}" placeholder="IEC, KS 등"></td>
+          <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
+        tbody.appendChild(tr);
+      });
+      closeCopyModal();
+    })
+    .catch(() => alert('항목을 불러오는 중 오류가 발생했습니다.'));
+}
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('copyModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCopyModal();
+});
+
+// ── 엑셀 파싱 자동 입력 ───────────────────────────────────
+document.getElementById('btn_parse').addEventListener('click', function() {
+  const file = document.getElementById('excel_upload').files[0];
+  if (!file) { alert('엑셀 파일을 선택해주세요.'); return; }
+  const msg = document.getElementById('parse_msg');
+  msg.textContent = '📥 파싱 중…';
+  const fd = new FormData();
+  fd.append('excel_file', file);
+  fetch('{{ url_for("requests.parse_excel") }}', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(res => {
+      if (!res.ok) { msg.textContent = '❌ ' + res.msg; return; }
+      const d = res.data;
+      // 기본 필드 채우기
+      const map = {
+        'f_write_date': d.write_date, 'f_deadline': d.deadline,
+        'f_request_dept': d.request_dept, 'f_requester_name': d.requester_name,
+        'f_contact': d.contact, 'f_project_customer': d.project_customer,
+        'f_product_name': d.product_name, 'f_model_code': d.model_code,
+        'f_test_purpose_detail': d.test_purpose_detail,
+        'f_sample_qty': d.sample_qty, 'f_sample_id_method': d.sample_id_method,
+      };
+      Object.entries(map).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+      });
+      // select 채우기
+      ['f_product_type','f_test_stage','f_test_purpose','f_sample_state'].forEach(id => {
+        const key = id.replace('f_','');
+        const el = document.getElementById(id);
+        if (el && d[key]) el.value = d[key];
+      });
+      // 시험 항목 채우기
+      if (d.items && d.items.length > 0) {
+        const tbody = document.getElementById('item_tbody');
+        tbody.innerHTML = '';
+        d.items.forEach((it, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="text-align:center;color:#64748b;">${i+1}</td>
+            <td><input type="text" name="item_test_name" class="form-control" value="${it.test_name||''}"></td>
+            <td><input type="text" name="item_test_condition" class="form-control" value="${it.test_condition||''}"></td>
+            <td><input type="text" name="item_standard" class="form-control" value="${it.standard||''}"></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+        itemCount = d.items.length;
+      }
+      msg.textContent = '✅ 자동 입력 완료! 내용을 확인 후 저장하세요.';
+      msg.style.color = '#15803d';
+    })
+    .catch(() => { msg.textContent = '❌ 오류가 발생했습니다.'; });
+});
+</script>
+{% endblock %}
