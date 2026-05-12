@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}결과서 {{ '수정' if res else '입력' }} — {{ req.request_no }}{% endblock %}
 {% block topbar_title %}📊 신뢰성 시험 결과서 {{ '수정' if res else '입력' }}{% endblock %}
 
@@ -155,7 +155,7 @@
           <td>
             <select name="item_result" class="form-control" style="font-size:12px;">
               <option value="">- 선택 -</option>
-              {% for r in ['합격','불합격','해당없음','진행중'] %}
+              {% for r in ['적합','부적합','해당없음','진행중'] %}
               <option value="{{ r }}" {{ 'selected' if ti.item_result == r }}>{{ r }}</option>
               {% endfor %}
             </select>

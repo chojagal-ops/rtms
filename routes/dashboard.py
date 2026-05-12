@@ -1,4 +1,4 @@
-# routes/dashboard.py — 대시보드 (통계 요약)
+﻿# routes/dashboard.py — 대시보드 (통계 요약)
 
 from flask import Blueprint, render_template
 from flask_login import login_required
@@ -29,9 +29,9 @@ def index():
                   .limit(15).all())
 
         # 결과 판정 통계
-        pass_cnt = TestResult.query.filter_by(overall_result='합격').count()
-        fail_cnt = TestResult.query.filter_by(overall_result='불합격').count()
-        cond_cnt = TestResult.query.filter_by(overall_result='조건부합격').count()
+        pass_cnt = TestResult.query.filter_by(overall_result='적합').count()
+        fail_cnt = TestResult.query.filter_by(overall_result='부적합').count()
+        cond_cnt = TestResult.query.filter_by(overall_result='조건부적합').count()
 
         # 최근 결과 상세 (결과서가 있는 의뢰 최근 10건)
         recent_results = (TestRequest.query

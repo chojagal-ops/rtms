@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — RTMS{% endblock %}
+{% block topbar_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+  <a href="{{ url_for('nc.list_view') }}" class="btn btn-outline">← 부적합 목록</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:140px;">부적합 번호</th>
+          <th>제품명</th>
+          <th>조치 내용</th>
+          <th style="width:80px;">담당자</th>
+          <th style="width:90px;">완료 예정일</th>
+          <th style="width:90px;">실제 완료일</th>
+          <th style="width:70px;text-align:center;">상태</th>
+          <th style="width:80px;">효과성</th>
+          <th style="width:70px;">작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in actions %}
+        <tr>
+          <td>
+            <a href="{{ url_for('nc.detail', nid=a.nc_id) }}"
+               style="color:#f97316;font-weight:700;font-size:13px;text-decoration:none;">
+              {{ a.nc.nc_no if a.nc else '-' }}
+            </a>
+          </td>
+          <td style="font-size:13px;">{{ a.nc.product_name if a.nc else '-' }}</td>
+          <td style="font-size:13px;">{{ a.action_desc or '-' }}</td>
+          <td style="font-size:12px;">{{ a.responsible or '-' }}</td>
+          <td style="font-size:12px;">
+            {% if a.due_date %}
+              {% set today_d = today %}
+              {% if a.status != '완료' and a.due_date < today_d %}
+                <span style="color:#dc2626;font-weight:700;">{{ a.due_date.strftime('%Y-%m-%d') }} ⚠️</span>
+              {% else %}
+                {{ a.due_date.strftime('%Y-%m-%d') }}
+              {% endif %}
+            {% else %}-{% endif %}
+          </td>
+          <td style="font-size:12px;">
+            {{ a.completion_date.strftime('%Y-%m-%d') if a.completion_date else '-' }}
+          </td>
+          <td style="text-align:center;">
+            <span class="badge" style="font-size:11px;
+              {% if a.status == '완료' %}background:#dcfce7;color:#16a34a;
+              {% elif a.status == '진행중' %}background:#dbeafe;color:#2563eb;
+              {% else %}background:#f3f4f6;color:#6b7280;{% endif %}">
+              {{ a.status }}
+            </span>
+          </td>
+          <td style="font-size:11px;color:#6b7280;">
+            {{ (a.effectiveness or '')[:20] }}{{ '…' if a.effectiveness and a.effectiveness|length > 20 else '' }}
+          </td>
+          <td>
+            {% if a.status != '완료' %}
+            <form action="{{ url_for('nc.complete_action', aid=a.id) }}" method="POST">
+              <button type="submit" class="btn btn-sm"
+                      style="background:#16a34a;color:#fff;border:none;font-size:11px;">완료</button>
+            </form>
+            {% else %}
+            <span style="color:#16a34a;font-size:11px;">✅</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align:center;padding:40px;color:#94a3b8;">
+            등록된 {{ view_type }} 조치가 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

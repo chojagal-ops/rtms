@@ -1,4 +1,4 @@
-# routes/stats.py — 통계 / 모니터링 (SQLite · PostgreSQL 공용)
+﻿# routes/stats.py — 통계 / 모니터링 (SQLite · PostgreSQL 공용)
 
 import calendar
 from datetime import date, timedelta
@@ -84,9 +84,9 @@ def index():
                         ['접수대기', '접수완료', '시험중', '결과회신'])])
     coverage_rate  = round(completed_year / total_year * 100, 1) if total_year else 0
 
-    pass_cnt     = _res_count('합격',       yf)
-    fail_cnt     = _res_count('불합격',     yf)
-    cond_cnt     = _res_count('조건부합격', yf)
+    pass_cnt     = _res_count('적합',       yf)
+    fail_cnt     = _res_count('부적합',     yf)
+    cond_cnt     = _res_count('조건부적합', yf)
     total_result = pass_cnt + fail_cnt + cond_cnt
     pass_rate    = round(pass_cnt / total_result * 100, 1) if total_result else 0
 
@@ -104,9 +104,9 @@ def index():
         monthly_total.append(t)
         monthly_done.append(d)
         monthly_active.append(a)
-        monthly_pass.append(_res_count('합격',       mf))
-        monthly_fail.append(_res_count('불합격',     mf))
-        monthly_cond.append(_res_count('조건부합격', mf))
+        monthly_pass.append(_res_count('적합',       mf))
+        monthly_fail.append(_res_count('부적합',     mf))
+        monthly_cond.append(_res_count('조건부적합', mf))
 
     monthly_rate = [
         round(monthly_done[i] / monthly_total[i] * 100, 1) if monthly_total[i] else 0

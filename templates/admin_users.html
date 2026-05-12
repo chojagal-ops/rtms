@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}회원 관리 — RTMS{% endblock %}
 {% block topbar_title %}👥 회원 관리{% endblock %}
 
@@ -116,7 +116,7 @@
             </td>
             <td style="font-size:12px;color:#64748b;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
             <td>
-              <span class="badge {{ 'badge-합격' if u.is_approved else 'badge-지연' }}"
+              <span class="badge {{ 'badge-적합' if u.is_approved else 'badge-지연' }}"
                     style="font-size:10px;">
                 {{ '승인됨' if u.is_approved else '대기중' }}
               </span>

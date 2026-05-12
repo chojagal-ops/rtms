@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}통계 / 모니터링 — RTMS{% endblock %}
 {% block topbar_title %}📈 통계 / 모니터링{% endblock %}
 
@@ -87,19 +87,19 @@
   </div>
 
   <div class="stat-card success">
-    <div class="stat-label">합격</div>
+    <div class="stat-label">적합</div>
     <div class="stat-value">{{ pass_cnt }}</div>
     <div class="stat-icon">🏆</div>
   </div>
 
   <div class="stat-card danger">
-    <div class="stat-label">불합격</div>
+    <div class="stat-label">부적합</div>
     <div class="stat-value">{{ fail_cnt }}</div>
     <div class="stat-icon">❌</div>
   </div>
 
   <div class="stat-card" style="">
-    <div class="stat-label">합격률</div>
+    <div class="stat-label">적합률</div>
     <div class="stat-value" style="color:#15803d;">{{ pass_rate }}<span style="font-size:14px;">%</span></div>
     <div class="stat-icon">🎯</div>
   </div>
@@ -126,7 +126,7 @@
       <div style="flex:1;min-width:280px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
           <span style="font-size:13px;font-weight:700;color:var(--text);">
-            🎯 합격률 (합격 / 결과회신 전체)
+            🎯 적합률 (적합 / 결과회신 전체)
           </span>
           <span style="font-size:18px;font-weight:800;color:#15803d;">{{ pass_rate }}%</span>
         </div>
@@ -134,7 +134,7 @@
           <div style="height:14px;border-radius:8px;background:linear-gradient(90deg,#16a34a,#22c55e);width:{{ pass_rate }}%;transition:width 0.5s;"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;">
-          <span>합격 {{ pass_cnt }}건</span><span>불합격 {{ fail_cnt }}건 / 조건부 {{ cond_cnt }}건</span>
+          <span>적합 {{ pass_cnt }}건</span><span>부적합 {{ fail_cnt }}건 / 조건부 {{ cond_cnt }}건</span>
         </div>
       </div>
     </div>
@@ -229,9 +229,9 @@
           <th>완료</th>
           <th>진행중</th>
           <th>커버리지율</th>
-          <th>합격</th>
-          <th>불합격</th>
-          <th>조건부합격</th>
+          <th>적합</th>
+          <th>부적합</th>
+          <th>조건부적합</th>
         </tr>
       </thead>
       <tbody>
@@ -466,7 +466,7 @@ const gridOpts = {
 new Chart(document.getElementById('resultChart'), {
   type: 'doughnut',
   data: {
-    labels: ['합격', '불합격', '조건부합격'],
+    labels: ['적합', '부적합', '조건부적합'],
     datasets: [{
       data: [passCnt, failCnt, condCnt],
       backgroundColor: [GREEN, RED, AMBER],
@@ -540,9 +540,9 @@ new Chart(document.getElementById('resultMonthChart'), {
   data: {
     labels: monthlyLabels,
     datasets: [
-      { label: '합격',       data: monthlyPass, backgroundColor: 'rgba(22,163,74,0.75)', borderRadius: 3, stack: 'r' },
-      { label: '불합격',     data: monthlyFail, backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 3, stack: 'r' },
-      { label: '조건부합격', data: monthlyCond, backgroundColor: 'rgba(217,119,6,0.75)', borderRadius: 3, stack: 'r' },
+      { label: '적합',       data: monthlyPass, backgroundColor: 'rgba(22,163,74,0.75)', borderRadius: 3, stack: 'r' },
+      { label: '부적합',     data: monthlyFail, backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 3, stack: 'r' },
+      { label: '조건부적합', data: monthlyCond, backgroundColor: 'rgba(217,119,6,0.75)', borderRadius: 3, stack: 'r' },
     ],
   },
   options: {

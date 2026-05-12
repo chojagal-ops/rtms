@@ -1,4 +1,4 @@
-# routes/results.py — 신뢰성 시험 결과서 CRUD + 엑셀 파싱
+﻿# routes/results.py — 신뢰성 시험 결과서 CRUD + 엑셀 파싱
 
 import os, tempfile
 from io import BytesIO
@@ -127,14 +127,14 @@ def edit(rid):
                     item.result_detail = item_details[i].strip()
 
             # 의뢰서 상태를 결과 회신으로 업데이트
-            if res_obj.overall_result in ('합격', '불합격', '조건부합격'):
+            if res_obj.overall_result in ('적합', '부적합', '조건부적합'):
                 req_obj.status = '결과회신'
 
             db.session.commit()
             flash('결과서가 저장되었습니다.', 'success')
 
             # 의뢰자 결과 통보 메일 발송 (비동기, overall_result 있을 때만)
-            if res_obj.overall_result in ('합격', '불합격', '조건부합격'):
+            if res_obj.overall_result in ('적합', '부적합', '조건부적합'):
                 try:
                     from models import User
                     creator = db.session.get(User, req_obj.created_by)

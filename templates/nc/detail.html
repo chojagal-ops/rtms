@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% block title %}{{ nc.nc_no }} — 부적합 상세 — RTMS{% endblock %}
+{% block topbar_title %}⚠️ 부적합 상세{% endblock %}
+
+{% block content %}
+
+{# ── 헤더 카드 ── #}
+<div class="card" style="margin-bottom:16px;">
+  <div style="padding:20px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:22px;font-weight:900;color:#f97316;letter-spacing:-0.5px;">{{ nc.nc_no }}</div>
+      <div style="font-size:15px;font-weight:700;margin-top:4px;">{{ nc.product_name or '-' }}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">
+        {{ nc.defect_type or '-' }} · 발생: {{ nc.detection_date.strftime('%Y-%m-%d') if nc.detection_date else '-' }}
+        · 발견: {{ nc.detected_by or '-' }}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+      <span class="badge" style="font-size:14px;padding:6px 14px;background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};border:1.5px solid {{ sc.get(nc.status,'#6b7280') }}44;">
+        {{ nc.status }}
+      </span>
+      {% if nc.severity %}
+      <span class="badge" style="font-size:13px;padding:5px 12px;
+        {% if nc.severity == '상' %}background:#fee2e2;color:#dc2626;
+        {% elif nc.severity == '중' %}background:#fef3c7;color:#d97706;
+        {% else %}background:#f0fdf4;color:#16a34a;{% endif %}">
+        심각도 {{ nc.severity }}
+      </span>
+      {% endif %}
+      <a href="{{ url_for('nc.edit', nid=nc.id) }}" class="btn btn-outline btn-sm">✏️ 수정</a>
+      {% if nc.status != '종료' %}
+      <form action="{{ url_for('nc.close_nc', nid=nc.id) }}" method="POST"
+            onsubmit="return confirm('이 부적합을 종료 처리하시겠습니까?')">
+        <button type="submit" class="btn btn-sm"
+                style="background:#374151;color:#fff;border:none;">🔒 종료</button>
+      </form>
+      {% endif %}
+      <form action="{{ url_for('nc.delete', nid=nc.id) }}" method="POST" class="delete-form">
+        <button type="submit" class="btn btn-sm btn-danger">🗑️ 삭제</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ── 탭 ── #}
+<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+  <button class="tab-btn active" data-tab="tab_basic">📋 기본 정보</button>
+  <button class="tab-btn" data-tab="tab_analysis">🔍 원인 분석</button>
+  <button class="tab-btn" data-tab="tab_capa">🔧 CAPA
+    {% if capa_list %}<span class="nav-badge" style="position:static;margin-left:4px;">{{ capa_list|length }}</span>{% endif %}
+  </button>
+  <button class="tab-btn" data-tab="tab_improve">📈 개선조치
+    {% if improve_list %}<span class="nav-badge" style="position:static;margin-left:4px;">{{ improve_list|length }}</span>{% endif %}
+  </button>
+  <button class="tab-btn" data-tab="tab_prevention">🛡️ 재발방지</button>
+</div>
+
+{# ── 탭1: 기본 정보 ── #}
+<div id="tab_basic" class="tab-pane active">
+  <div class="card">
+    <div class="card-header"><h5>📋 기본 정보</h5></div>
+    <div style="padding:20px 24px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">부적합 번호</div>
+          <div style="font-weight:700;color:#f97316;">{{ nc.nc_no }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">발생일</div>
+          <div>{{ nc.detection_date.strftime('%Y-%m-%d') if nc.detection_date else '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">발견자</div>
+          <div>{{ nc.detected_by or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">발생 부서</div>
+          <div>{{ nc.dept or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">제품명/모델</div>
+          <div style="font-weight:600;">{{ nc.product_name or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">불량 유형</div>
+          <div>{{ nc.defect_type or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">부적합 수량</div>
+          <div>{{ nc.quantity if nc.quantity is not none else '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">심각도</div>
+          <div>{{ nc.severity or '-' }}</div>
+        </div>
+      </div>
+      {% if nc.defect_desc %}
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">불량 내용 상세</div>
+        <div style="background:#f8fafc;padding:12px 16px;border-radius:8px;font-size:14px;white-space:pre-wrap;">{{ nc.defect_desc }}</div>
+      </div>
+      {% endif %}
+      {% if nc.request %}
+      <div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">관련 시험 의뢰서</div>
+        <a href="{{ url_for('requests.detail', rid=nc.request_id) }}"
+           style="color:#f97316;font-weight:600;text-decoration:none;">
+          {{ nc.request.request_no }} — {{ nc.request.product_name or '' }}
+        </a>
+      </div>
+      {% endif %}
+      {% if nc.notes %}
+      <div style="margin-top:12px;">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">비고</div>
+        <div style="color:#374151;font-size:13px;">{{ nc.notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── 탭2: 원인 분석 ── #}
+<div id="tab_analysis" class="tab-pane">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><h5>🔍 원인 분석 현황</h5></div>
+    <div style="padding:20px 24px;">
+      {% if nc.root_cause %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">원인 분류</div>
+          <div>{{ nc.cause_category or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">분석 방법</div>
+          <div>{{ nc.analysis_method or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">분석자</div>
+          <div>{{ nc.analyzed_by or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">분석일</div>
+          <div>{{ nc.analysis_date.strftime('%Y-%m-%d') if nc.analysis_date else '-' }}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">근본 원인</div>
+        <div style="background:#f8fafc;padding:12px 16px;border-radius:8px;font-size:14px;white-space:pre-wrap;">{{ nc.root_cause }}</div>
+      </div>
+      {% else %}
+      <div style="color:#94a3b8;font-size:13px;margin-bottom:4px;">원인 분석 내용이 없습니다.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# 원인 분석 입력폼 #}
+  {% if nc.status != '종료' %}
+  <div class="card">
+    <div class="card-header"><h5>원인 분석 입력/수정</h5></div>
+    <div style="padding:20px 24px;">
+      <form action="{{ url_for('nc.save_analysis', nid=nc.id) }}" method="POST">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label class="form-label">원인 분류</label>
+            <select name="cause_category" class="form-control">
+              <option value="">-- 선택 --</option>
+              {% for c in ['설계', '원자재', '공정', '설비', '작업자', '환경', '기타'] %}
+              <option value="{{ c }}" {{ 'selected' if nc.cause_category == c }}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label">분석 방법</label>
+            <select name="analysis_method" class="form-control">
+              <option value="">-- 선택 --</option>
+              {% for m in ['5WHY', '특성요인도(어골도)', 'FTA', 'FMEA', '기타'] %}
+              <option value="{{ m }}" {{ 'selected' if nc.analysis_method == m }}>{{ m }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label">분석자</label>
+            <input type="text" name="analyzed_by" class="form-control"
+                   value="{{ nc.analyzed_by or '' }}" placeholder="분석 담당자">
+          </div>
+          <div>
+            <label class="form-label">분석일</label>
+            <input type="date" name="analysis_date" class="form-control"
+                   value="{{ nc.analysis_date.strftime('%Y-%m-%d') if nc.analysis_date else today.strftime('%Y-%m-%d') }}">
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">근본 원인 <span style="color:#ef4444;">*</span></label>
+          <textarea name="root_cause" class="form-control" rows="4"
+                    placeholder="근본 원인을 상세히 기술하세요.">{{ nc.root_cause or '' }}</textarea>
+        </div>
+        <div style="text-align:right;">
+          <button type="submit" class="btn btn-primary">💾 분석 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{# ── 탭3: CAPA ── #}
+<div id="tab_capa" class="tab-pane">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <h5>🔧 CAPA (시정 및 예방 조치)</h5>
+    </div>
+    <div style="padding:20px 24px;">
+      {% if capa_list %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>조치 내용</th>
+              <th style="width:80px;">담당자</th>
+              <th style="width:90px;">완료 예정일</th>
+              <th style="width:90px;">실제 완료일</th>
+              <th style="width:70px;text-align:center;">상태</th>
+              <th style="width:80px;">효과성</th>
+              <th style="width:80px;">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in capa_list %}
+            <tr>
+              <td style="font-size:13px;">{{ a.action_desc or '-' }}</td>
+              <td style="font-size:12px;">{{ a.responsible or '-' }}</td>
+              <td style="font-size:12px;">{{ a.due_date.strftime('%Y-%m-%d') if a.due_date else '-' }}</td>
+              <td style="font-size:12px;">{{ a.completion_date.strftime('%Y-%m-%d') if a.completion_date else '-' }}</td>
+              <td style="text-align:center;">
+                <span class="badge" style="font-size:11px;
+                  {% if a.status == '완료' %}background:#dcfce7;color:#16a34a;
+                  {% elif a.status == '진행중' %}background:#dbeafe;color:#2563eb;
+                  {% else %}background:#f3f4f6;color:#6b7280;{% endif %}">
+                  {{ a.status }}
+                </span>
+              </td>
+              <td style="font-size:12px;">{{ a.effectiveness[:20] if a.effectiveness else '-' }}</td>
+              <td>
+                {% if a.status != '완료' %}
+                <form action="{{ url_for('nc.complete_action', aid=a.id) }}" method="POST"
+                      style="display:inline;">
+                  <button type="submit" class="btn btn-sm"
+                          style="background:#16a34a;color:#fff;border:none;font-size:11px;">완료</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="color:#94a3b8;font-size:13px;">등록된 CAPA 조치가 없습니다.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if nc.status != '종료' %}
+  <div class="card">
+    <div class="card-header"><h5>CAPA 조치 등록</h5></div>
+    <div style="padding:20px 24px;">
+      <form action="{{ url_for('nc.new_action', nid=nc.id) }}" method="POST">
+        <input type="hidden" name="action_type" value="CAPA">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label class="form-label">담당자</label>
+            <input type="text" name="responsible" class="form-control" placeholder="조치 담당자">
+          </div>
+          <div>
+            <label class="form-label">완료 예정일</label>
+            <input type="date" name="due_date" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">조치 상태</label>
+            <select name="action_status" class="form-control">
+              <option value="계획">계획</option>
+              <option value="진행중">진행중</option>
+              <option value="완료">완료</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">CAPA 조치 내용 <span style="color:#ef4444;">*</span></label>
+          <textarea name="action_desc" class="form-control" rows="3"
+                    placeholder="시정 및 예방 조치 내용을 기술하세요." required></textarea>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">효과성 확인 내용 (선택)</label>
+          <textarea name="effectiveness" class="form-control" rows="2"
+                    placeholder="조치 효과성 확인 방법 또는 결과"></textarea>
+        </div>
+        <div style="text-align:right;">
+          <button type="submit" class="btn btn-primary">➕ CAPA 등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{# ── 탭4: 개선조치 ── #}
+<div id="tab_improve" class="tab-pane">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><h5>📈 개선조치 현황</h5></div>
+    <div style="padding:20px 24px;">
+      {% if improve_list %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>조치 내용</th>
+              <th style="width:80px;">담당자</th>
+              <th style="width:90px;">완료 예정일</th>
+              <th style="width:90px;">실제 완료일</th>
+              <th style="width:70px;text-align:center;">상태</th>
+              <th style="width:80px;">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in improve_list %}
+            <tr>
+              <td style="font-size:13px;">{{ a.action_desc or '-' }}</td>
+              <td style="font-size:12px;">{{ a.responsible or '-' }}</td>
+              <td style="font-size:12px;">{{ a.due_date.strftime('%Y-%m-%d') if a.due_date else '-' }}</td>
+              <td style="font-size:12px;">{{ a.completion_date.strftime('%Y-%m-%d') if a.completion_date else '-' }}</td>
+              <td style="text-align:center;">
+                <span class="badge" style="font-size:11px;
+                  {% if a.status == '완료' %}background:#dcfce7;color:#16a34a;
+                  {% elif a.status == '진행중' %}background:#dbeafe;color:#2563eb;
+                  {% else %}background:#f3f4f6;color:#6b7280;{% endif %}">
+                  {{ a.status }}
+                </span>
+              </td>
+              <td>
+                {% if a.status != '완료' %}
+                <form action="{{ url_for('nc.complete_action', aid=a.id) }}" method="POST"
+                      style="display:inline;">
+                  <button type="submit" class="btn btn-sm"
+                          style="background:#16a34a;color:#fff;border:none;font-size:11px;">완료</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="color:#94a3b8;font-size:13px;">등록된 개선조치가 없습니다.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if nc.status != '종료' %}
+  <div class="card">
+    <div class="card-header"><h5>개선조치 등록</h5></div>
+    <div style="padding:20px 24px;">
+      <form action="{{ url_for('nc.new_action', nid=nc.id) }}" method="POST">
+        <input type="hidden" name="action_type" value="개선조치">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label class="form-label">담당자</label>
+            <input type="text" name="responsible" class="form-control" placeholder="조치 담당자">
+          </div>
+          <div>
+            <label class="form-label">완료 예정일</label>
+            <input type="date" name="due_date" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">조치 상태</label>
+            <select name="action_status" class="form-control">
+              <option value="계획">계획</option>
+              <option value="진행중">진행중</option>
+              <option value="완료">완료</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">개선 내용 <span style="color:#ef4444;">*</span></label>
+          <textarea name="action_desc" class="form-control" rows="3"
+                    placeholder="개선조치 내용을 기술하세요." required></textarea>
+        </div>
+        <div style="text-align:right;">
+          <button type="submit" class="btn btn-primary">➕ 개선조치 등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{# ── 탭5: 재발방지 ── #}
+<div id="tab_prevention" class="tab-pane">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><h5>🛡️ 재발방지 현황</h5></div>
+    <div style="padding:20px 24px;">
+      {% if nc.prevention_desc %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">담당자</div>
+          <div>{{ nc.prevention_by or '-' }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">완료 예정일</div>
+          <div>{{ nc.prevention_date.strftime('%Y-%m-%d') if nc.prevention_date else '-' }}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">재발방지 내용</div>
+        <div style="background:#f8fafc;padding:12px 16px;border-radius:8px;font-size:14px;white-space:pre-wrap;">{{ nc.prevention_desc }}</div>
+      </div>
+      {% else %}
+      <div style="color:#94a3b8;font-size:13px;">재발방지 내용이 없습니다.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if nc.status != '종료' %}
+  <div class="card">
+    <div class="card-header"><h5>재발방지 입력/수정</h5></div>
+    <div style="padding:20px 24px;">
+      <form action="{{ url_for('nc.save_prevention', nid=nc.id) }}" method="POST">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label class="form-label">담당자</label>
+            <input type="text" name="prevention_by" class="form-control"
+                   value="{{ nc.prevention_by or '' }}" placeholder="재발방지 담당자">
+          </div>
+          <div>
+            <label class="form-label">완료 예정일</label>
+            <input type="date" name="prevention_date" class="form-control"
+                   value="{{ nc.prevention_date.strftime('%Y-%m-%d') if nc.prevention_date else '' }}">
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">재발방지 내용 <span style="color:#ef4444;">*</span></label>
+          <textarea name="prevention_desc" class="form-control" rows="5"
+                    placeholder="재발방지를 위한 조치 사항을 상세히 기술하세요.">{{ nc.prevention_desc or '' }}</textarea>
+        </div>
+        <div style="text-align:right;">
+          <button type="submit" class="btn btn-primary">💾 재발방지 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// URL 해시로 탭 자동 활성화
+(function(){
+  const hash = location.hash;
+  if (hash) {
+    const tabId = hash.replace('#', '');
+    const btn = document.querySelector(`[data-tab="${tabId}"]`);
+    if (btn) btn.click();
+  }
+})();
+</script>
+{% endblock %}

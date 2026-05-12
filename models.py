@@ -139,7 +139,7 @@ class TestResult(db.Model):
     complete_date      = db.Column(db.Date)                           # 완료 일자
     test_complete_date = db.Column(db.Date)                           # 시험 완료일
     notify_date        = db.Column(db.Date)                           # 통보일
-    overall_result     = db.Column(db.String(20))                     # 합격/불합격/조건부합격
+    overall_result     = db.Column(db.String(20))                     # 적합/부적합/조건부적합
     summary            = db.Column(db.Text)                           # 결과 요약
     sample_returned    = db.Column(db.Boolean, default=False)         # 시료 전달 여부
     tester_name        = db.Column(db.String(50))                     # 시험자
@@ -151,3 +151,68 @@ class TestResult(db.Model):
     created_by         = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at         = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at         = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ── 부적합 보고서 (NC Report) ──────────────────────────────
+class NCReport(db.Model):
+    __tablename__ = 'nc_report'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    nc_no          = db.Column(db.String(50), unique=True)          # 부적합 번호 (NC-YYYYMM-NNN)
+
+    # 연결 (선택)
+    request_id     = db.Column(db.Integer, db.ForeignKey('test_request.id'))  # 관련 의뢰서
+
+    # 기본 정보
+    detection_date = db.Column(db.Date)                             # 발생일
+    detected_by    = db.Column(db.String(50))                       # 발견자
+    product_name   = db.Column(db.String(100))                      # 제품명/모델
+    defect_type    = db.Column(db.String(50))                       # 불량 유형
+    defect_desc    = db.Column(db.Text)                             # 불량 내용
+    quantity       = db.Column(db.Integer)                          # 부적합 수량
+    severity       = db.Column(db.String(10))                       # 심각도: 상/중/하
+    dept           = db.Column(db.String(50))                       # 발생 부서
+
+    # 원인 분석
+    cause_category = db.Column(db.String(50))                       # 원인 분류
+    root_cause     = db.Column(db.Text)                             # 근본 원인
+    analysis_method= db.Column(db.String(50))                       # 분석 방법 (5WHY/특성요인도 등)
+    analyzed_by    = db.Column(db.String(50))                       # 분석자
+    analysis_date  = db.Column(db.Date)                             # 분석일
+
+    # 재발방지
+    prevention_desc= db.Column(db.Text)                             # 재발방지 내용
+    prevention_by  = db.Column(db.String(50))                       # 담당자
+    prevention_date= db.Column(db.Date)                             # 완료일
+
+    # 상태
+    status         = db.Column(db.String(20), default='등록')       # 등록/원인분석중/CAPA진행/개선완료/종료
+    notes          = db.Column(db.Text)
+
+    created_by     = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at     = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 관계
+    actions        = db.relationship('NCAction', backref='nc', lazy=True,
+                                     cascade='all, delete-orphan',
+                                     order_by='NCAction.created_at')
+    request        = db.relationship('TestRequest', backref='nc_reports', lazy=True)
+
+
+# ── 부적합 조치 (CAPA / 개선조치 / 재발방지) ──────────────
+class NCAction(db.Model):
+    __tablename__ = 'nc_action'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    nc_id           = db.Column(db.Integer, db.ForeignKey('nc_report.id'), nullable=False)
+
+    action_type     = db.Column(db.String(20))                      # CAPA / 개선조치 / 재발방지
+    action_desc     = db.Column(db.Text)                            # 조치 내용
+    responsible     = db.Column(db.String(50))                      # 담당자
+    due_date        = db.Column(db.Date)                            # 완료 예정일
+    completion_date = db.Column(db.Date)                            # 실제 완료일
+    effectiveness   = db.Column(db.Text)                            # 효과성 확인 내용
+    status          = db.Column(db.String(20), default='계획')      # 계획/진행중/완료
+
+    created_at      = db.Column(db.DateTime, default=datetime.utcnow)

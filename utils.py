@@ -1,4 +1,4 @@
-# utils.py — 공통 도우미 함수
+﻿# utils.py — 공통 도우미 함수
 
 import logging
 import os
@@ -155,7 +155,7 @@ def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '
     if not requester_email:
         return
     fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
-    result_color = {'합격': '#16a34a', '불합격': '#dc2626', '조건부합격': '#d97706'}.get(
+    result_color = {'적합': '#16a34a', '부적합': '#dc2626', '조건부적합': '#d97706'}.get(
         res_obj.overall_result or '', '#374151')
     detail_url = f'{base_url}/requests/{req_obj.id}' if base_url else ''
     link_html  = f'<p><a href="{detail_url}" style="color:#f97316;">→ 시스템에서 결과 확인하기</a></p>' if detail_url else ''

@@ -80,6 +80,7 @@ from routes.results   import results_bp
 from routes.ledger    import ledger_bp
 from routes.stats     import stats_bp
 from routes.calendar  import calendar_bp
+from routes.nc        import nc_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
@@ -88,6 +89,7 @@ app.register_blueprint(results_bp)
 app.register_blueprint(ledger_bp)
 app.register_blueprint(stats_bp)
 app.register_blueprint(calendar_bp)
+app.register_blueprint(nc_bp)
 
 
 # ── DB 마이그레이션 (컬럼 추가) ──────────────────────────
@@ -128,6 +130,27 @@ def migrate_db():
     add_col('test_result',  'test_complete_date',  'DATE')
     add_col('test_result',  'notify_date',         'DATE')
     add_col('user',         'email',               'VARCHAR(120)')
+
+    # ── NC 테이블 컬럼 (db.create_all 이후 보완용) ──────────
+    # nc_report / nc_action 은 create_all 로 생성되므로 add_col 불필요
+    # 기존 test_result의 합격/불합격 → 적합/부적합 데이터 마이그레이션
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text(
+                "UPDATE test_result SET overall_result='적합' WHERE overall_result='합격'"
+            ))
+            conn.execute(text(
+                "UPDATE test_result SET overall_result='부적합' WHERE overall_result='불합격'"
+            ))
+            conn.execute(text(
+                "UPDATE test_item SET item_result='적합' WHERE item_result='합격'"
+            ))
+            conn.execute(text(
+                "UPDATE test_item SET item_result='부적합' WHERE item_result='불합격'"
+            ))
+            conn.commit()
+    except Exception as e:
+        print(f'[RTMS] 용어 마이그레이션 건너뜀: {e}')
 
 
 def init_db():

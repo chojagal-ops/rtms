@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title or '부적합 관리' }} — RTMS{% endblock %}
+{% block topbar_title %}{{ page_title or '⚠️ 부적합 관리' }}{% endblock %}
+
+{% block content %}
+
+{# ── 필터 바 ── #}
+<form method="get" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+  <select name="status" class="form-control" style="width:130px;">
+    <option value="">전체 상태</option>
+    {% for s in NC_STATUSES %}
+    <option value="{{ s }}" {% if s == status_f %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="severity" class="form-control" style="width:100px;">
+    <option value="">전체 심각도</option>
+    {% for sv in NC_SEVERITIES %}
+    <option value="{{ sv }}" {% if sv == severity_f %}selected{% endif %}>{{ sv }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ search }}" placeholder="번호·제품명·불량유형·발견자 검색"
+         class="form-control" style="flex:1;min-width:180px;">
+  <button type="submit" class="btn btn-primary">🔍 검색</button>
+  <a href="{{ url_for('nc.list_view') }}" class="btn btn-outline">초기화</a>
+  <a href="{{ url_for('nc.new') }}" class="btn btn-primary" style="margin-left:auto;">
+    ➕ 불량 등록
+  </a>
+</form>
+
+{# ── 목록 ── #}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:140px;">부적합 번호</th>
+          <th style="width:80px;">발생일</th>
+          <th>제품명/모델</th>
+          <th style="width:90px;">불량 유형</th>
+          <th style="width:50px;text-align:center;">심각도</th>
+          <th style="width:80px;">발생 부서</th>
+          <th style="width:100px;text-align:center;">상태</th>
+          <th style="width:80px;">발견자</th>
+          <th style="width:80px;text-align:center;">조치수</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nc in items %}
+        <tr style="cursor:pointer;" onclick="location.href='{{ url_for('nc.detail', nid=nc.id) }}'">
+          <td style="font-weight:700;color:#f97316;font-size:13px;">{{ nc.nc_no }}</td>
+          <td style="font-size:12px;color:#64748b;">
+            {{ nc.detection_date.strftime('%Y-%m-%d') if nc.detection_date else '-' }}
+          </td>
+          <td>
+            <span style="font-weight:600;">{{ nc.product_name or '-' }}</span>
+          </td>
+          <td style="font-size:13px;">{{ nc.defect_type or '-' }}</td>
+          <td style="text-align:center;">
+            {% if nc.severity == '상' %}
+              <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:11px;">상</span>
+            {% elif nc.severity == '중' %}
+              <span class="badge" style="background:#fef3c7;color:#d97706;font-size:11px;">중</span>
+            {% else %}
+              <span class="badge" style="background:#f0fdf4;color:#16a34a;font-size:11px;">하</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;">{{ nc.dept or '-' }}</td>
+          <td style="text-align:center;">
+            {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+            <span class="badge" style="background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};font-size:11px;">
+              {{ nc.status }}
+            </span>
+          </td>
+          <td style="font-size:12px;">{{ nc.detected_by or '-' }}</td>
+          <td style="text-align:center;font-size:12px;">
+            {{ nc.actions|length if nc.actions else 0 }}건
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align:center;padding:40px;color:#94a3b8;">
+            등록된 부적합이 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -25,21 +25,44 @@ FEASIBILITY_OPTIONS = ['가능', '조건조정', '불가']
 CRITERION_TYPES = ['기능기준', '외관기준', '성능기준', '기타기준']
 
 # 종합 결과
-OVERALL_RESULTS = ['합격', '불합격', '조건부합격', '진행중']
+OVERALL_RESULTS = ['적합', '부적합', '조건부적합', '진행중']
 
 # 첨부 문서 유형
 ATTACH_TYPES = ['SPEC', '도면', '고객 요구서', '변경관리서', '과거결과', '신뢰성기준서', '시험표준', '기타']
 
+# 부적합(NC) 상태
+NC_STATUSES = ['등록', '원인분석중', 'CAPA진행', '개선완료', '종료']
+
+# 부적합 원인 분류
+NC_CAUSE_CATEGORIES = ['설계', '공정', '재료/부품', '작업자', '설비/환경', '기타']
+
+# 조치 유형
+NC_ACTION_TYPES = ['CAPA', '개선조치', '재발방지']
+
+# 심각도
+NC_SEVERITIES = ['상', '중', '하']
+
 # 상태별 뱃지 색상
 STATUS_META = {
+    # 의뢰서 상태
     '접수대기': {'color': '#475569', 'bg': '#f1f5f9'},
     '접수완료': {'color': '#1d4ed8', 'bg': '#dbeafe'},
     '시험중':   {'color': '#d97706', 'bg': '#fef3c7'},
     '결과회신': {'color': '#7c3aed', 'bg': '#ede9fe'},
     '완료':     {'color': '#15803d', 'bg': '#dcfce7'},
     '보류':     {'color': '#92400e', 'bg': '#fef3c7'},
-    '합격':     {'color': '#15803d', 'bg': '#dcfce7'},
-    '불합격':   {'color': '#b91c1c', 'bg': '#fee2e2'},
-    '조건부합격': {'color': '#d97706', 'bg': '#fef3c7'},
-    '진행중':   {'color': '#1d4ed8', 'bg': '#dbeafe'},
+    # 시험 결과
+    '적합':       {'color': '#15803d', 'bg': '#dcfce7'},
+    '부적합':     {'color': '#b91c1c', 'bg': '#fee2e2'},
+    '조건부적합': {'color': '#d97706', 'bg': '#fef3c7'},
+    '진행중':     {'color': '#1d4ed8', 'bg': '#dbeafe'},
+    # 부적합 관리
+    '등록':       {'color': '#475569', 'bg': '#f1f5f9'},
+    '원인분석중': {'color': '#d97706', 'bg': '#fef3c7'},
+    'CAPA진행':   {'color': '#7c3aed', 'bg': '#ede9fe'},
+    '개선완료':   {'color': '#1d4ed8', 'bg': '#dbeafe'},
+    '종료':       {'color': '#15803d', 'bg': '#dcfce7'},
+    # 조치 상태
+    '계획':       {'color': '#475569', 'bg': '#f1f5f9'},
+    '진행중':     {'color': '#d97706', 'bg': '#fef3c7'},
 }
