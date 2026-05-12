@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}시험 일정 캘린더 — RTMS{% endblock %}
+{% block topbar_title %}📅 시험 일정 캘린더{% endblock %}
+
+{% block content %}
+
+<!-- 범례 -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+            margin-bottom:14px;padding:10px 16px;
+            background:#fff;border-radius:10px;border:1px solid var(--border);">
+  <span style="font-size:11px;font-weight:700;color:#6b7280;margin-right:4px;">상태</span>
+  {% for label, color in [
+      ('접수대기','#f59e0b'),('접수완료','#3b82f6'),
+      ('시험중','#ca8a04'),('결과회신','#16a34a'),
+      ('완료','#94a3b8'),('보류','#6b7280')] %}
+  <div style="display:flex;align-items:center;gap:5px;font-size:12px;">
+    <span style="width:11px;height:11px;border-radius:3px;background:{{ color }};display:inline-block;flex-shrink:0;"></span>
+    {{ label }}
+  </div>
+  {% endfor %}
+  <div style="width:1px;height:16px;background:#e5e7eb;margin:0 4px;"></div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:12px;">
+    <span style="width:11px;height:11px;border-radius:3px;background:#f97316;display:inline-block;flex-shrink:0;"></span>완료희망일
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:12px;">
+    <span style="width:11px;height:11px;border-radius:3px;background:#dc2626;display:inline-block;flex-shrink:0;"></span>마감 초과
+  </div>
+</div>
+
+<!-- 캘린더 -->
+<div class="card" style="padding:20px 18px;">
+  <div id="rtms-calendar"></div>
+</div>
+
+<!-- 이벤트 팝업 -->
+<div id="evtPopup" style="
+  display:none;position:fixed;z-index:3000;
+  background:#fff;border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.18);
+  padding:20px 22px 16px;width:290px;
+  border-top:4px solid var(--primary);">
+  <button id="popupClose"
+    style="position:absolute;top:10px;right:12px;background:none;border:none;
+           font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;">×</button>
+  <div id="popupBody"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar v6 (한국어 포함 글로벌 번들) -->
+<link  href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<style>
+/* ── FullCalendar 커스터마이징 ───────────────────────────── */
+.fc { font-family:'Segoe UI','Malgun Gothic','맑은 고딕',sans-serif; }
+
+/* 헤더 버튼 */
+.fc .fc-button-primary {
+  background:var(--primary) !important;
+  border-color:var(--primary) !important;
+  border-radius:7px !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+  padding:5px 12px !important;
+  box-shadow:none !important;
+}
+.fc .fc-button-primary:hover,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background:var(--primary-dark) !important;
+  border-color:var(--primary-dark) !important;
+}
+.fc .fc-toolbar-title {
+  font-size:17px !important;
+  font-weight:800 !important;
+  color:var(--text) !important;
+}
+
+/* 날짜 셀 */
+.fc .fc-daygrid-day-number {
+  font-size:12px;
+  font-weight:600;
+  color:#374151;
+  padding:6px 8px !important;
+}
+.fc .fc-daygrid-day.fc-day-today {
+  background:rgba(249,115,22,0.07) !important;
+}
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  background:var(--primary);
+  color:#fff;
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+}
+
+/* 요일 헤더 */
+.fc .fc-col-header-cell-cushion {
+  font-size:12px;
+  font-weight:700;
+  color:#6b7280;
+  padding:8px 0 !important;
+}
+.fc-day-sun .fc-col-header-cell-cushion { color:#dc2626 !important; }
+.fc-day-sat .fc-col-header-cell-cushion { color:#2563eb !important; }
+.fc-day-sun .fc-daygrid-day-number       { color:#dc2626 !important; }
+.fc-day-sat .fc-daygrid-day-number       { color:#2563eb !important; }
+
+/* 이벤트 바 */
+.fc-event {
+  border-radius:5px !important;
+  font-size:11px !important;
+  font-weight:600 !important;
+  padding:1px 5px !important;
+  cursor:pointer !important;
+  border:none !important;
+  margin-bottom:1px !important;
+}
+.fc-event:hover { opacity:.82 !important; }
+
+/* 목록 뷰 */
+.fc-list-event-title { font-size:13px; font-weight:600; }
+.fc-list-day-cushion { background:var(--bg-subtle) !important; }
+
+/* 테두리 */
+.fc .fc-scrollgrid { border-radius:10px; overflow:hidden; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* ── 팝업 ──────────────────────────────────────────────── */
+  const popup = document.getElementById('evtPopup');
+  const body  = document.getElementById('popupBody');
+  document.getElementById('popupClose').onclick = () => popup.style.display = 'none';
+  document.addEventListener('click', e => {
+    if (!popup.contains(e.target) && !e.target.closest('.fc-event'))
+      popup.style.display = 'none';
+  });
+
+  function showPopup(info) {
+    const p   = info.event.extendedProps;
+    const clr = info.event.backgroundColor || 'var(--primary)';
+    const typeLabel = { period:'시험 기간', start:'시험 시작', deadline:'완료 희망일' }[p.type] || '';
+    const prioColor = p.prio === '상' ? '#dc2626' : p.prio === '중' ? '#d97706' : '#6b7280';
+
+    let dateStr = '';
+    if (p.type === 'period') {
+      const s = info.event.startStr?.slice(0,10) || '';
+      const e = info.event.endStr?.slice(0,10)   || '';
+      dateStr = `${s} ~ ${e}`;
+    } else {
+      dateStr = info.event.startStr?.slice(0,10) || '';
+    }
+
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px;">
+        <span style="padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;
+                     background:${clr};color:#fff;">${p.status}</span>
+        <span style="font-size:11px;color:#94a3b8;">${typeLabel}</span>
+      </div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px;line-height:1.4;color:var(--text);">
+        ${info.event.title.replace(/^[▶⏰⚠️]\s*/u,'')}
+      </div>
+      <table style="font-size:12px;width:100%;margin-bottom:12px;">
+        ${dateStr ? `<tr><td style="color:#6b7280;padding:2px 0;width:60px;">기간</td>
+                         <td style="font-weight:600;">${dateStr}</td></tr>` : ''}
+        ${p.dept   ? `<tr><td style="color:#6b7280;padding:2px 0;">의뢰부서</td>
+                          <td>${p.dept}</td></tr>` : ''}
+        ${p.person ? `<tr><td style="color:#6b7280;padding:2px 0;">의뢰자</td>
+                          <td>${p.person}</td></tr>` : ''}
+        ${p.prio   ? `<tr><td style="color:#6b7280;padding:2px 0;">우선순위</td>
+                          <td style="font-weight:700;color:${prioColor};">${p.prio}</td></tr>` : ''}
+      </table>
+      <a href="/requests/${p.rid}"
+         style="display:block;text-align:center;padding:8px;background:var(--primary);
+                color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">
+        상세 보기 →
+      </a>`;
+
+    // 팝업 위치 (화면 벗어나지 않게)
+    const x = Math.min(info.jsEvent.clientX + 8, window.innerWidth  - 310);
+    const y = Math.min(info.jsEvent.clientY + 8, window.innerHeight - 280);
+    popup.style.left    = x + 'px';
+    popup.style.top     = y + 'px';
+    popup.style.display = 'block';
+  }
+
+  /* ── FullCalendar 초기화 ────────────────────────────────── */
+  const cal = new FullCalendar.Calendar(document.getElementById('rtms-calendar'), {
+    locale: 'ko',
+    initialView: 'dayGridMonth',
+    height: 'auto',
+    headerToolbar: {
+      left:   'prev,next today',
+      center: 'title',
+      right:  'dayGridMonth,dayGridWeek,listMonth',
+    },
+    buttonText: {
+      today:     '오늘',
+      month:     '월간',
+      week:      '주간',
+      list:      '목록',
+    },
+    dayMaxEvents: 4,          // 셀당 최대 표시 이벤트 수
+    moreLinkText: n => `+${n}건`,
+    eventSources: [{
+      url: '/calendar/events.json',
+      failure: () => console.warn('캘린더 이벤트 로드 실패'),
+    }],
+    eventClick: function(info) {
+      info.jsEvent.preventDefault();
+      showPopup(info);
+    },
+    eventDidMount: function(info) {
+      const p = info.event.extendedProps;
+      info.el.title = `[${p.status}] ${info.event.title.replace(/^[▶⏰⚠️]\s*/u,'')}`;
+    },
+    loading: function(isLoading) {
+      document.getElementById('rtms-calendar').style.opacity = isLoading ? '0.5' : '1';
+    },
+  });
+
+  cal.render();
+});
+</script>
+{% endblock %}

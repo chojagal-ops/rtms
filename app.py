@@ -79,6 +79,7 @@ from routes.requests  import requests_bp
 from routes.results   import results_bp
 from routes.ledger    import ledger_bp
 from routes.stats     import stats_bp
+from routes.calendar  import calendar_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
@@ -86,6 +87,7 @@ app.register_blueprint(requests_bp)
 app.register_blueprint(results_bp)
 app.register_blueprint(ledger_bp)
 app.register_blueprint(stats_bp)
+app.register_blueprint(calendar_bp)
 
 
 # ── DB 마이그레이션 (컬럼 추가) ──────────────────────────

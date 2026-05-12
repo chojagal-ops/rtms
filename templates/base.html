@@ -94,6 +94,12 @@
 
     <div class="nav-section" style="margin-top:8px;">분석</div>
     <div class="nav-item">
+      <a href="{{ url_for('calendar.index') }}"
+         class="{{ 'active' if request.blueprint == 'calendar' }}">
+        <span class="nav-icon">📅</span><span>시험 일정 캘린더</span>
+      </a>
+    </div>
+    <div class="nav-item">
       <a href="{{ url_for('stats.index') }}"
          class="{{ 'active' if request.blueprint == 'stats' }}">
         <span class="nav-icon">📈</span><span>통계 / 모니터링</span>
