@@ -93,3 +93,96 @@ def approve_user(uid):
         log_error('사용자 승인 오류', e)
         flash('처리 중 오류가 발생했습니다.', 'danger')
     return redirect(url_for('auth.admin_users'))
+
+
+@auth_bp.route('/admin/users/<int:uid>/reject', methods=['POST'])
+@login_required
+def reject_user(uid):
+    """미승인 회원 거절 (삭제)"""
+    if current_user.role != 'admin':
+        flash('관리자만 접근 가능합니다.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    if uid == current_user.id:
+        flash('본인 계정은 거절할 수 없습니다.', 'warning')
+        return redirect(url_for('auth.admin_users'))
+    user = db.get_or_404(User, uid)
+    try:
+        name = user.name
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'가입 거절 완료: {name}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        log_error('회원 거절 오류', e)
+        flash('처리 중 오류가 발생했습니다.', 'danger')
+    return redirect(url_for('auth.admin_users'))
+
+
+@auth_bp.route('/admin/users/<int:uid>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_edit_user(uid):
+    """관리자 전용: 회원 정보 수정"""
+    if current_user.role != 'admin':
+        flash('관리자만 접근 가능합니다.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    user = db.get_or_404(User, uid)
+    if request.method == 'POST':
+        try:
+            user.name       = request.form.get('name', '').strip() or user.name
+            user.email      = request.form.get('email', '').strip() or None
+            user.department = request.form.get('department', '').strip()
+            user.role       = request.form.get('role', 'user')
+            user.is_approved = request.form.get('is_approved') == 'on'
+            new_pw = request.form.get('new_password', '').strip()
+            if new_pw:
+                if len(new_pw) < 6:
+                    flash('비밀번호는 6자 이상이어야 합니다.', 'warning')
+                    return render_template('admin_edit_user.html', u=user)
+                user.set_password(new_pw)
+            db.session.commit()
+            flash(f'{user.name} 정보가 수정되었습니다.', 'success')
+            return redirect(url_for('auth.admin_users'))
+        except Exception as e:
+            db.session.rollback()
+            log_error('관리자 회원 수정 오류', e)
+            flash('수정 중 오류가 발생했습니다.', 'danger')
+    return render_template('admin_edit_user.html', u=user)
+
+
+@auth_bp.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def profile_edit():
+    """본인 회원 정보 수정"""
+    if request.method == 'POST':
+        try:
+            name  = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            dept  = request.form.get('department', '').strip()
+            cur_pw  = request.form.get('current_password', '')
+            new_pw  = request.form.get('new_password', '').strip()
+            new_pw2 = request.form.get('new_password2', '').strip()
+
+            # 비밀번호 변경 요청 시 현재 비밀번호 확인
+            if new_pw:
+                if not current_user.check_password(cur_pw):
+                    flash('현재 비밀번호가 올바르지 않습니다.', 'danger')
+                    return render_template('profile_edit.html')
+                if new_pw != new_pw2:
+                    flash('새 비밀번호가 일치하지 않습니다.', 'danger')
+                    return render_template('profile_edit.html')
+                if len(new_pw) < 6:
+                    flash('비밀번호는 6자 이상이어야 합니다.', 'warning')
+                    return render_template('profile_edit.html')
+                current_user.set_password(new_pw)
+
+            current_user.name       = name or current_user.name
+            current_user.email      = email or None
+            current_user.department = dept
+            db.session.commit()
+            flash('회원 정보가 수정되었습니다.', 'success')
+            return redirect(url_for('auth.profile_edit'))
+        except Exception as e:
+            db.session.rollback()
+            log_error('프로필 수정 오류', e)
+            flash('수정 중 오류가 발생했습니다.', 'danger')
+    return render_template('profile_edit.html')

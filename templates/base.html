@@ -119,11 +119,22 @@
 
   <div class="sidebar-footer">
     <div class="user-name">{{ current_user.name }}</div>
-    <div>{{ current_user.department }}</div>
-    <a href="{{ url_for('auth.logout') }}"
-       style="display:inline-block;margin-top:8px;font-size:11px;color:#ef4444;text-decoration:none;font-weight:600;">
-      🚪 로그아웃
-    </a>
+    <div style="font-size:11px;margin-top:1px;">{{ current_user.department }}</div>
+    {% if current_user.email %}
+    <div style="font-size:10px;color:#78716c;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      {{ current_user.email }}
+    </div>
+    {% endif %}
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <a href="{{ url_for('auth.profile_edit') }}"
+         style="font-size:11px;color:#a8a29e;text-decoration:none;font-weight:600;">
+        ✏️ 내 정보
+      </a>
+      <a href="{{ url_for('auth.logout') }}"
+         style="font-size:11px;color:#ef4444;text-decoration:none;font-weight:600;">
+        🚪 로그아웃
+      </a>
+    </div>
   </div>
 </aside>
 

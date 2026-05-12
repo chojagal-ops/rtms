@@ -3,48 +3,154 @@
 {% block topbar_title %}👥 회원 관리{% endblock %}
 
 {% block content %}
-<div class="page-header"><h2>👥 회원 관리</h2></div>
-<div class="card">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>아이디</th><th>이름</th><th>부서</th><th>권한</th>
-          <th>가입일</th><th style="width:100px;">승인 상태</th><th style="width:80px;">작업</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in users %}
-        <tr>
-          <td style="font-weight:600;">{{ u.username }}</td>
-          <td>{{ u.name }}</td>
-          <td>{{ u.department }}</td>
-          <td>
-            <span class="badge {{ 'badge-완료' if u.role == 'admin' else 'badge-대기' }}">
-              {{ '관리자' if u.role == 'admin' else '일반' }}
-            </span>
-          </td>
-          <td style="font-size:12px;color:#64748b;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
-          <td>
-            <span class="badge {{ 'badge-합격' if u.is_approved else 'badge-지연' }}">
-              {{ '승인됨' if u.is_approved else '대기중' }}
-            </span>
-          </td>
-          <td>
-            {% if u.id != current_user.id %}
-            <form action="{{ url_for('auth.approve_user', uid=u.id) }}" method="POST">
-              <button type="submit" class="btn btn-sm {{ 'btn-outline' if u.is_approved else 'btn-success' }}">
-                {{ '승인 취소' if u.is_approved else '승인' }}
-              </button>
-            </form>
-            {% else %}
-            <span style="font-size:11px;color:#94a3b8;">본인</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+<!-- 탭: 승인대기 / 전체 -->
+{% set waiting = users | selectattr('is_approved', 'equalto', false) | list %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+  <div style="display:flex;gap:8px;">
+    <button class="tab-btn active" data-tab="tab_waiting">
+      ⏳ 승인 대기
+      {% if waiting %}
+      <span class="nav-badge" style="position:static;margin-left:4px;">{{ waiting|length }}</span>
+      {% endif %}
+    </button>
+    <button class="tab-btn" data-tab="tab_all">👥 전체 회원 ({{ users|length }}명)</button>
   </div>
 </div>
+
+<!-- ── 승인 대기 탭 ─────────────────────────────────────── -->
+<div id="tab_waiting" class="tab-pane active">
+  {% if waiting %}
+  <div class="card">
+    <div class="card-header">
+      <h5>⏳ 승인 대기 — {{ waiting|length }}명</h5>
+      <span style="font-size:12px;color:#9ca3af;">승인 또는 거절을 처리해 주세요.</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>아이디</th><th>이름</th><th>부서</th><th>이메일</th>
+            <th style="width:90px;">가입일</th>
+            <th style="width:200px;">작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in waiting %}
+          <tr>
+            <td style="font-weight:600;">{{ u.username }}</td>
+            <td>{{ u.name }}</td>
+            <td style="font-size:13px;">{{ u.department or '-' }}</td>
+            <td style="font-size:12px;color:#6b7280;">{{ u.email or '-' }}</td>
+            <td style="font-size:12px;color:#64748b;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <!-- 승인 -->
+                <form action="{{ url_for('auth.approve_user', uid=u.id) }}" method="POST">
+                  <button type="submit" class="btn btn-sm"
+                    style="background:#16a34a;color:#fff;border:none;">
+                    ✅ 승인
+                  </button>
+                </form>
+                <!-- 거절 -->
+                <form action="{{ url_for('auth.reject_user', uid=u.id) }}" method="POST"
+                      onsubmit="return confirm('{{ u.name }}의 가입 신청을 거절하고 삭제하시겠습니까?')">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    ❌ 거절
+                  </button>
+                </form>
+                <!-- 수정 -->
+                <a href="{{ url_for('auth.admin_edit_user', uid=u.id) }}"
+                   class="btn btn-outline btn-sm">수정</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div style="padding:32px;text-align:center;color:#94a3b8;">
+      <div style="font-size:32px;margin-bottom:8px;">✅</div>
+      <div style="font-size:14px;">승인 대기 중인 회원이 없습니다.</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── 전체 회원 탭 ────────────────────────────────────── -->
+<div id="tab_all" class="tab-pane">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:100px;">아이디</th>
+            <th style="width:80px;">이름</th>
+            <th style="width:90px;">부서</th>
+            <th>이메일</th>
+            <th style="width:60px;">권한</th>
+            <th style="width:90px;">가입일</th>
+            <th style="width:80px;">상태</th>
+            <th style="width:170px;">작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          {% set is_me = (u.id == current_user.id) %}
+          <tr style="{{ 'background:rgba(249,115,22,0.04);' if is_me }}">
+            <td style="font-weight:600;">
+              {{ u.username }}
+              {% if is_me %}<span style="font-size:10px;color:#f97316;font-weight:700;"> (나)</span>{% endif %}
+            </td>
+            <td>{{ u.name }}</td>
+            <td style="font-size:13px;">{{ u.department or '-' }}</td>
+            <td style="font-size:12px;color:#6b7280;">{{ u.email or '-' }}</td>
+            <td>
+              <span class="badge {{ 'badge-완료' if u.role == 'admin' else 'badge-대기' }}"
+                    style="font-size:10px;">
+                {{ '관리자' if u.role == 'admin' else '일반' }}
+              </span>
+            </td>
+            <td style="font-size:12px;color:#64748b;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+              <span class="badge {{ 'badge-합격' if u.is_approved else 'badge-지연' }}"
+                    style="font-size:10px;">
+                {{ '승인됨' if u.is_approved else '대기중' }}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <!-- 수정 -->
+                <a href="{{ url_for('auth.admin_edit_user', uid=u.id) }}"
+                   class="btn btn-outline btn-sm">✏️ 수정</a>
+                {% if not is_me %}
+                  <!-- 승인/취소 -->
+                  <form action="{{ url_for('auth.approve_user', uid=u.id) }}" method="POST">
+                    <button type="submit"
+                      class="btn btn-sm {{ 'btn-outline' if u.is_approved else 'btn-success' }}"
+                      style="{{ '' if u.is_approved else 'background:#16a34a;color:#fff;border:none;' }}">
+                      {{ '승인취소' if u.is_approved else '✅ 승인' }}
+                    </button>
+                  </form>
+                  {% if not u.is_approved %}
+                  <!-- 거절 (미승인만) -->
+                  <form action="{{ url_for('auth.reject_user', uid=u.id) }}" method="POST"
+                        onsubmit="return confirm('{{ u.name }}을 거절 및 삭제하시겠습니까?')">
+                    <button type="submit" class="btn btn-sm btn-danger">❌ 거절</button>
+                  </form>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
