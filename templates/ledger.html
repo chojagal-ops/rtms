@@ -151,7 +151,7 @@
                   {% endif %}
                 {% endfor %}
               </div>
-              <button type="button" class="cond-btn" onclick="toggleCond('{{ cond_id }}', this)">
+              <button type="button" class="cond-btn" onclick="toggleCond('{{ cond_id }}', this, event)">
                 ▼ 확인
               </button>
             {% else %}-{% endif %}
@@ -299,7 +299,8 @@
 </style>
 
 <script>
-function toggleCond(id, btn) {
+function toggleCond(id, btn, e) {
+  e.stopPropagation();   // 행 클릭(상세이동) 차단
   const wrap = document.getElementById(id);
   const expanded = wrap.classList.toggle('expanded');
   btn.textContent = expanded ? '▲ 닫기' : '▼ 확인';
