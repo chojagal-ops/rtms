@@ -7,9 +7,8 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="login-body">
-<div class="login-box" style="width:420px;">
+<div class="login-box" style="width:440px;">
   <div class="login-logo">
-    <!-- 아이콘: 흰색 플라스크 + INTOPS -->
     <div style="width:80px;height:80px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:0 auto 18px;box-shadow:0 6px 22px rgba(249,115,22,0.38);">
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 3h6v6l4.5 9A2 2 0 0 1 17.8 21H6.2a2 2 0 0 1-1.7-3L9 9V3z"/>
@@ -21,37 +20,100 @@
     <div class="logo-title">회원가입 신청</div>
     <div class="logo-sub">관리자 승인 후 로그인 가능합니다</div>
   </div>
+
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
       <div class="alert alert-{{ category }}">{{ message }}</div>
     {% endfor %}
   {% endwith %}
-  <form method="POST">
+
+  <form method="POST" id="regForm">
     <div class="form-group" style="margin-bottom:12px;">
       <label class="form-label">아이디 <span class="req">*</span></label>
-      <input type="text" name="username" class="form-control" placeholder="영문+숫자 조합" required>
+      <input type="text" name="username" class="form-control"
+             placeholder="영문·숫자 조합" required autofocus>
     </div>
+
     <div class="form-group" style="margin-bottom:12px;">
-      <label class="form-label">이름 <span class="req">*</span></label>
-      <input type="text" name="name" class="form-control" placeholder="실명 입력" required>
+      <label class="form-label">성명 <span class="req">*</span></label>
+      <input type="text" name="name" class="form-control"
+             placeholder="실명 입력" required>
     </div>
+
     <div class="form-group" style="margin-bottom:12px;">
-      <label class="form-label">부서</label>
-      <input type="text" name="department" class="form-control" placeholder="소속 부서">
+      <label class="form-label">소속 팀 <span class="req">*</span></label>
+      <select name="department" class="form-control" required>
+        <option value="">소속 팀을 선택하세요</option>
+        {% for dept in DEPARTMENTS %}
+        <option value="{{ dept }}">{{ dept }}</option>
+        {% endfor %}
+      </select>
     </div>
+
     <div class="form-group" style="margin-bottom:12px;">
-      <label class="form-label">이메일 <span style="font-size:11px;color:#9ca3af;font-weight:400;">(결과 통보 수신용)</span></label>
-      <input type="email" name="email" class="form-control" placeholder="example@company.com">
+      <label class="form-label">
+        이메일 주소 <span class="req">*</span>
+        <span style="font-size:11px;color:#9ca3af;font-weight:400;">(비밀번호 찾기·결과 수신용)</span>
+      </label>
+      <input type="email" name="email" class="form-control"
+             placeholder="example@intops.co.kr" required>
     </div>
-    <div class="form-group" style="margin-bottom:20px;">
+
+    <div class="form-group" style="margin-bottom:12px;">
       <label class="form-label">비밀번호 <span class="req">*</span></label>
-      <input type="password" name="password" class="form-control" placeholder="6자리 이상" required minlength="6">
+      <input type="password" name="password" id="pw1" class="form-control"
+             placeholder="6자리 이상" required minlength="6">
     </div>
-    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">가입 신청</button>
+
+    <div class="form-group" style="margin-bottom:20px;">
+      <label class="form-label">비밀번호 확인 <span class="req">*</span></label>
+      <input type="password" name="password2" id="pw2" class="form-control"
+             placeholder="비밀번호 재입력" required minlength="6">
+      <div id="pwMsg" style="font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary"
+            style="width:100%;justify-content:center;padding:12px;">
+      ✅ 가입 신청
+    </button>
   </form>
+
   <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);">
-    <a href="{{ url_for('auth.login') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">← 로그인으로 돌아가기</a>
+    <a href="{{ url_for('auth.login') }}"
+       style="color:var(--primary);text-decoration:none;font-weight:600;">← 로그인으로 돌아가기</a>
   </div>
 </div>
+
+<script>
+// 비밀번호 일치 실시간 확인
+const pw1 = document.getElementById('pw1');
+const pw2 = document.getElementById('pw2');
+const msg = document.getElementById('pwMsg');
+
+function checkPw() {
+  if (!pw2.value) { msg.style.display='none'; return; }
+  msg.style.display = 'block';
+  if (pw1.value === pw2.value) {
+    msg.textContent = '✅ 비밀번호가 일치합니다.';
+    msg.style.color = '#16a34a';
+  } else {
+    msg.textContent = '❌ 비밀번호가 일치하지 않습니다.';
+    msg.style.color = '#dc2626';
+  }
+}
+pw1.addEventListener('input', checkPw);
+pw2.addEventListener('input', checkPw);
+
+// 제출 전 최종 확인
+document.getElementById('regForm').addEventListener('submit', function(e) {
+  if (pw1.value !== pw2.value) {
+    e.preventDefault();
+    msg.style.display = 'block';
+    msg.textContent = '❌ 비밀번호가 일치하지 않습니다.';
+    msg.style.color = '#dc2626';
+    pw2.focus();
+  }
+});
+</script>
 </body>
 </html>

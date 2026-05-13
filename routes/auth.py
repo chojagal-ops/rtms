@@ -1,9 +1,12 @@
 # routes/auth.py — 로그인 / 로그아웃 / 회원가입
 
+import random
+import string
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User
-from utils import log_error
+from utils import log_error, mail_temp_password
+from constants import DEPARTMENTS
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -44,17 +47,37 @@ def register():
     if request.method == 'POST':
         try:
             username = request.form.get('username', '').strip()
+            name     = request.form.get('name', '').strip()
+            email    = request.form.get('email', '').strip()
+            dept     = request.form.get('department', '').strip()
+            password = request.form.get('password', '')
+            password2 = request.form.get('password2', '')
+
+            # 유효성 검사
+            if not email:
+                flash('이메일 주소는 필수 입력 항목입니다.', 'danger')
+                return render_template('register.html', DEPARTMENTS=DEPARTMENTS)
+            if not dept:
+                flash('소속 팀을 선택해 주세요.', 'danger')
+                return render_template('register.html', DEPARTMENTS=DEPARTMENTS)
+            if password != password2:
+                flash('비밀번호가 일치하지 않습니다.', 'danger')
+                return render_template('register.html', DEPARTMENTS=DEPARTMENTS)
+            if len(password) < 6:
+                flash('비밀번호는 6자리 이상이어야 합니다.', 'danger')
+                return render_template('register.html', DEPARTMENTS=DEPARTMENTS)
             if User.query.filter_by(username=username).first():
                 flash('이미 사용 중인 아이디입니다.', 'danger')
-                return redirect(url_for('auth.register'))
+                return render_template('register.html', DEPARTMENTS=DEPARTMENTS)
+
             user = User(
                 username=username,
-                name=request.form.get('name', '').strip(),
-                email=request.form.get('email', '').strip() or None,
-                department=request.form.get('department', '').strip(),
+                name=name,
+                email=email,
+                department=dept,
                 is_approved=False,
             )
-            user.set_password(request.form.get('password', ''))
+            user.set_password(password)
             db.session.add(user)
             db.session.commit()
             flash('가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 'success')
@@ -63,7 +86,37 @@ def register():
             db.session.rollback()
             log_error('회원가입 오류', e)
             flash('가입 중 오류가 발생했습니다.', 'danger')
-    return render_template('register.html')
+    return render_template('register.html', DEPARTMENTS=DEPARTMENTS)
+
+
+# ── 비밀번호 찾기 ─────────────────────────────────────────
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.index'))
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email    = request.form.get('email', '').strip()
+        user = User.query.filter_by(username=username).first()
+        # 보안: 아이디/이메일 불일치 여부를 구별하지 않고 동일 메시지
+        if user and user.email and user.email.lower() == email.lower():
+            try:
+                # 임시 비밀번호 생성 (영문+숫자 8자리)
+                chars = string.ascii_letters + string.digits
+                temp_pw = ''.join(random.choices(chars, k=8))
+                user.set_password(temp_pw)
+                db.session.commit()
+                mail_temp_password(user.name, user.username, temp_pw, user.email)
+                flash('임시 비밀번호를 이메일로 발송했습니다. 받은 편지함을 확인해 주세요.', 'success')
+                return redirect(url_for('auth.login'))
+            except Exception as e:
+                db.session.rollback()
+                log_error('비밀번호 찾기 오류', e)
+                flash('처리 중 오류가 발생했습니다. 관리자에게 문의하세요.', 'danger')
+        else:
+            # 존재하지 않는 계정도 동일 메시지 (정보 노출 방지)
+            flash('입력하신 정보와 일치하는 계정이 없습니다.', 'warning')
+    return render_template('forgot_password.html')
 
 
 @auth_bp.route('/admin/users')

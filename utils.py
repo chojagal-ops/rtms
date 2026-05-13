@@ -101,6 +101,43 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '') -> N
     threading.Thread(target=_send, daemon=True).start()
 
 
+def mail_temp_password(user_name: str, username: str, temp_pw: str, to_email: str) -> None:
+    """비밀번호 찾기 — 임시 비밀번호 발송"""
+    html = f"""
+<div style="font-family:'Segoe UI','Malgun Gothic',sans-serif;max-width:520px;margin:0 auto;">
+  <div style="background:linear-gradient(135deg,#f97316,#ea580c);padding:24px 28px;border-radius:12px 12px 0 0;">
+    <h2 style="color:#fff;margin:0;font-size:18px;">🔑 임시 비밀번호 안내</h2>
+    <p style="color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px;">RTMS — 신뢰성 시험 관리 시스템</p>
+  </div>
+  <div style="background:#fff;padding:28px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+    <p style="font-size:14px;color:#374151;margin:0 0 20px;">
+      안녕하세요, <strong>{user_name}</strong>님.<br>
+      아래 임시 비밀번호로 로그인 후 반드시 비밀번호를 변경해 주세요.
+    </p>
+    <div style="background:#f8fafc;border:2px solid #f97316;border-radius:10px;padding:18px 24px;text-align:center;margin-bottom:20px;">
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:6px;">임시 비밀번호</div>
+      <div style="font-size:28px;font-weight:900;letter-spacing:0.15em;color:#f97316;font-family:monospace;">{temp_pw}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+      <tr><td style="padding:6px 0;color:#6b7280;width:90px;">아이디</td>
+          <td style="padding:6px 0;font-weight:700;">{username}</td></tr>
+    </table>
+    <p style="font-size:12px;color:#ef4444;margin-bottom:0;">
+      ⚠️ 보안을 위해 로그인 즉시 비밀번호를 변경해 주세요.<br>
+      본인이 요청하지 않았다면 관리자에게 문의 바랍니다.
+    </p>
+    <p style="font-size:12px;color:#9ca3af;margin-top:20px;border-top:1px solid #f3f4f6;padding-top:12px;">
+      본 메일은 RTMS 시스템에서 자동 발송되었습니다.
+    </p>
+  </div>
+</div>"""
+    send_mail(
+        subject='[RTMS] 임시 비밀번호 안내',
+        to_emails=to_email,
+        html_body=html,
+    )
+
+
 def mail_new_request(req_obj, base_url: str = '') -> None:
     """신규 의뢰서 등록 → 품질팀 알림 메일"""
     qa_email = os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')

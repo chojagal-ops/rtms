@@ -30,9 +30,13 @@
                  value="{{ u.email or '' }}" placeholder="example@company.com">
         </div>
         <div class="form-group" style="margin-bottom:14px;">
-          <label class="form-label">부서</label>
-          <input type="text" name="department" class="form-control"
-                 value="{{ u.department or '' }}">
+          <label class="form-label">소속 팀</label>
+          <select name="department" class="form-control">
+            <option value="">-- 선택 --</option>
+            {% for dept in ['품질팀','EMS제조팀','생산기술팀','개발팀','환경안전팀','사출팀','코팅팀','관리지원팀'] %}
+            <option value="{{ dept }}" {{ 'selected' if u.department == dept }}>{{ dept }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div class="form-grid cols-2" style="margin-bottom:0;">
           <div class="form-group">

@@ -42,7 +42,11 @@
     </label>
     <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">로그인</button>
   </form>
-  <div style="text-align:center;margin-top:18px;font-size:12px;color:var(--text-muted);">
+  <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-muted);">
+    <a href="{{ url_for('auth.forgot_password') }}"
+       style="color:#6b7280;text-decoration:none;font-weight:600;">🔑 비밀번호 찾기</a>
+  </div>
+  <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--text-muted);">
     계정이 없으신가요?
     <a href="{{ url_for('auth.register') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">회원가입 신청</a>
   </div>
