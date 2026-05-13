@@ -82,22 +82,22 @@
     <table class="ledger-tbl">
       <thead>
         <tr>
-          <th style="width:34px;">No.</th>
-          <th style="width:82px;">의뢰일자</th>
-          <th style="width:80px;">의뢰부서</th>
-          <th style="width:60px;">의뢰자</th>
-          <th style="width:110px;">품명 / 모델명</th>
-          <th style="width:90px;">LOT No./S/N</th>
-          <th style="width:80px;">시험 의뢰 목적</th>
-          <th style="width:120px;">시험 항목</th>
-          <th style="width:130px;">시험 조건</th>
-          <th style="width:82px;">시험 시작일</th>
-          <th style="width:82px;">시험 완료일</th>
-          <th style="width:60px;">시험자</th>
-          <th style="width:200px;">시험 결과</th>
-          <th style="width:68px;">판정</th>
-          <th style="width:82px;">결과 통보일</th>
-          <th>특이사항 / 조치사항</th>
+          <th style="width:28px;">No.</th>
+          <th style="width:70px;">의뢰일자</th>
+          <th style="width:62px;">의뢰부서</th>
+          <th style="width:52px;">의뢰자</th>
+          <th style="width:90px;">품명/모델명</th>
+          <th style="width:65px;">LOT/S/N</th>
+          <th style="width:60px;">목적</th>
+          <th style="width:80px;">시험 항목</th>
+          <th style="min-width:160px;">시험 조건</th>
+          <th style="width:68px;">시작일</th>
+          <th style="width:68px;">완료일</th>
+          <th style="width:48px;">시험자</th>
+          <th style="width:160px;">시험 결과</th>
+          <th style="width:52px;">판정</th>
+          <th style="width:68px;">통보일</th>
+          <th style="width:100px;">특이사항</th>
         </tr>
       </thead>
       <tbody>
@@ -109,48 +109,55 @@
 
           <td style="text-align:center;color:#94a3b8;">{{ loop.index }}</td>
 
-          <td>{{ item.write_date.strftime('%Y-%m-%d') if item.write_date else '-' }}</td>
+          <td>{{ item.write_date.strftime('%m-%d') if item.write_date else '-' }}<div style="font-size:9px;color:#94a3b8;">{{ item.write_date.strftime('%Y') if item.write_date else '' }}</div></td>
 
           <td>{{ item.request_dept or '-' }}</td>
 
           <td>{{ item.requester_name or '-' }}</td>
 
           <td>
-            <div style="font-weight:600;">{{ item.product_name or '-' }}</div>
+            <div style="font-weight:600;word-break:keep-all;">{{ item.product_name or '-' }}</div>
             {% if item.model_code %}<div style="font-size:10px;color:#64748b;">{{ item.model_code }}</div>{% endif %}
           </td>
 
-          <td style="font-size:11px;color:#64748b;">{{ item.sample_id_method or '-' }}</td>
+          <td style="font-size:10px;color:#64748b;word-break:break-all;">{{ item.sample_id_method or '-' }}</td>
 
-          <td>{{ item.test_purpose or '-' }}</td>
+          <td style="font-size:11px;">{{ item.test_purpose or '-' }}</td>
 
           <td>
             {% if item.test_items %}
               {% for ti in item.test_items %}
-                <div style="font-size:11px;{% if not loop.last %}margin-bottom:2px;{% endif %}">
+                <div style="font-size:11px;{% if not loop.last %}margin-bottom:2px;padding-bottom:2px;border-bottom:1px solid #f1f5f9;{% endif %}">
                   {{ ti.test_name or '' }}
                 </div>
               {% endfor %}
             {% else %}-{% endif %}
           </td>
 
-          <td>
+          {# ▶ 기준으로 줄바꿈 처리 #}
+          <td class="cond-cell">
             {% if item.test_items %}
               {% for ti in item.test_items %}
                 {% if ti.test_condition %}
-                <div style="font-size:11px;color:#475569;{% if not loop.last %}margin-bottom:2px;{% endif %}">
-                  {{ ti.test_condition }}
-                </div>
+                  {% if not loop.first %}<div class="cond-sep"></div>{% endif %}
+                  {% set parts = ti.test_condition.split('▶') %}
+                  {% for part in parts %}
+                    {% if part.strip() %}
+                    <div class="cond-line">
+                      {% if not loop.first or not ti.test_condition.startswith('▶') %}▶ {% endif %}{{ part.strip() }}
+                    </div>
+                    {% endif %}
+                  {% endfor %}
                 {% endif %}
               {% endfor %}
             {% else %}-{% endif %}
           </td>
 
-          <td>{{ item.req_start_date.strftime('%Y-%m-%d') if item.req_start_date else '-' }}</td>
+          <td style="font-size:11px;">{{ item.req_start_date.strftime('%Y-%m-%d') if item.req_start_date else '-' }}</td>
 
-          <td>{{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '-' }}</td>
+          <td style="font-size:11px;">{{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '-' }}</td>
 
-          <td>{{ res.tester_name if res and res.tester_name else '-' }}</td>
+          <td style="font-size:11px;">{{ res.tester_name if res and res.tester_name else '-' }}</td>
 
           <td style="font-size:11px;color:#334155;">
             {% if res and res.summary %}
@@ -166,7 +173,7 @@
             {% if res and res.overall_result %}
               <span class="badge"
                 style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};
-                       font-size:11px;padding:2px 7px;font-weight:700;">
+                       font-size:10px;padding:2px 5px;font-weight:700;">
                 {{ res.overall_result }}
               </span>
             {% else %}
@@ -174,9 +181,9 @@
             {% endif %}
           </td>
 
-          <td>{{ res.notify_date.strftime('%Y-%m-%d') if res and res.notify_date else '-' }}</td>
+          <td style="font-size:11px;">{{ res.notify_date.strftime('%Y-%m-%d') if res and res.notify_date else '-' }}</td>
 
-          <td style="font-size:11px;color:#64748b;max-width:160px;">
+          <td style="font-size:10px;color:#64748b;">
             {{ (res.notes or item.notes or '-') if (res or item.notes) else '-' }}
           </td>
         </tr>
@@ -205,38 +212,59 @@
 .ledger-tbl {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-  min-width: 1400px;
+  font-size: 11px;
+  min-width: 1100px;
+  table-layout: fixed;
 }
 .ledger-tbl th {
   background: #1a3a5c;
   color: #fff;
-  padding: 7px 8px;
-  font-size: 11px;
+  padding: 6px 5px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
   border: 1px solid #2d5a8e;
   text-align: center;
 }
 .ledger-tbl td {
-  padding: 6px 8px;
+  padding: 5px 6px;
   border: 1px solid #e2e8f0;
-  vertical-align: middle;
+  vertical-align: top;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .ledger-r:hover td { background: #f0f7ff; }
 .ledger-r:nth-child(even) td { background: #fafbfc; }
 .ledger-r:nth-child(even):hover td { background: #f0f7ff; }
+
+/* ▶ 시험 조건 줄바꿈 */
+.cond-cell { font-size: 10px; color: #374151; }
+.cond-line {
+  padding: 1px 0;
+  line-height: 1.45;
+  word-break: break-all;
+}
+.cond-line + .cond-line {
+  border-top: 1px dashed #e2e8f0;
+  margin-top: 2px;
+  padding-top: 2px;
+}
+.cond-sep {
+  border-top: 1px solid #cbd5e1;
+  margin: 3px 0;
+}
 
 @media print {
   .sidebar, .topbar, .card:first-child, .btn { display:none!important; }
   .main-wrap { margin-left:0!important; }
   .page-content { padding:0!important; }
   .card { box-shadow:none!important; border:none!important; }
-  .ledger-tbl { font-size:8px!important; min-width:unset!important; }
-  .ledger-tbl th { font-size:8px!important; padding:4px!important; }
-  .ledger-tbl td { padding:4px!important; }
+  .ledger-tbl { font-size:7px!important; min-width:unset!important; }
+  .ledger-tbl th { font-size:7px!important; padding:3px 2px!important; }
+  .ledger-tbl td { padding:3px 2px!important; }
+  .cond-line { font-size:7px!important; }
   .ledger-r:hover td { background:transparent!important; }
-  @page { size:A4 landscape; margin:8mm; }
+  @page { size:A4 landscape; margin:6mm; }
 }
 </style>
 {% endblock %}
