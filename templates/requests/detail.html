@@ -88,15 +88,22 @@
 <div id="tab_items" class="tab-pane active">
   {% if item.test_items %}
   <div class="card">
-    <div class="table-wrap">
-      <table>
+    <div style="overflow-x:auto;">
+      <table class="item-tbl">
+        <colgroup>
+          <col style="width:44px;">
+          <col style="width:130px;">
+          <col><!-- 시험 조건: 남은 폭 -->
+          <col style="width:110px;">
+          <col style="width:90px;">
+        </colgroup>
         <thead>
           <tr>
-            <th style="width:50px;">No</th>
+            <th>No</th>
             <th>시험 항목</th>
             <th>시험 조건</th>
-            <th style="width:120px;">규격</th>
-            <th style="width:100px;">항목 결과</th>
+            <th>규격</th>
+            <th>항목 결과</th>
           </tr>
         </thead>
         <tbody>
@@ -105,9 +112,22 @@
           <tr>
             <td style="text-align:center;color:#64748b;">{{ ti.item_no }}</td>
             <td style="font-weight:600;">{{ ti.test_name or '-' }}</td>
-            <td style="font-size:12px;">{{ ti.test_condition or '-' }}</td>
+            <td style="padding:0;">
+              {% if ti.test_condition %}
+                {% set cid = 'dc_' ~ ti.id %}
+                <div class="cond-wrap" id="{{ cid }}">
+                  {% for part in ti.test_condition.split('▶') %}
+                    {% if part.strip() %}
+                    <div class="cond-line">▶ {{ part.strip() }}</div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                <button type="button" class="cond-btn"
+                        onclick="toggleCond('{{ cid }}',this,event)">▼ 확인</button>
+              {% else %}-{% endif %}
+            </td>
             <td style="font-size:12px;">{{ ti.standard or '-' }}</td>
-            <td>
+            <td style="text-align:center;">
               {% if ti.item_result %}
               <span class="badge" style="background:{{ rmeta.get('bg','#f1f5f9') }};color:{{ rmeta.get('color','#475569') }};">
                 {{ ti.item_result }}
@@ -315,8 +335,30 @@
 {% block scripts %}
 <script>
 const today = new Date('{{ today.strftime("%Y-%m-%d") }}');
+function toggleCond(id, btn, e) {
+  if (e) e.stopPropagation();
+  const wrap = document.getElementById(id);
+  const expanded = wrap.classList.toggle('expanded');
+  btn.textContent = expanded ? '▲ 닫기' : '▼ 확인';
+  btn.style.background = expanded ? '#64748b' : '#2563eb';
+}
 </script>
 <style>
+/* 시험 조건 접기/펼치기 */
+.item-tbl { width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }
+.item-tbl th { background:#f1f5f9; color:#374151; padding:8px 10px; font-size:12px;
+               font-weight:700; border:1px solid #e2e8f0; text-align:center; white-space:nowrap; }
+.item-tbl td { padding:7px 10px; border:1px solid #e2e8f0; vertical-align:top;
+               overflow:hidden; word-break:break-all; overflow-wrap:break-word; }
+.cond-wrap { max-height:44px; overflow:hidden; transition:max-height .25s ease;
+             padding:5px 8px 2px; font-size:12px; color:#374151; }
+.cond-wrap.expanded { max-height:800px; }
+.cond-line { line-height:1.45; word-break:break-all; padding:1px 0; }
+.cond-line + .cond-line { border-top:1px dashed #e9ecef; margin-top:2px; padding-top:2px; }
+.cond-btn { display:block; width:100%; padding:2px 0; font-size:10px; font-weight:700;
+            color:#fff; background:#2563eb; border:none; cursor:pointer; text-align:center; }
+.cond-btn:hover { background:#1d4ed8; }
+
 @media print {
   .sidebar, .topbar, .breadcrumb, .tabs, .tab-btn,
   .delete-form, .page-header > div:last-child,
@@ -326,6 +368,8 @@ const today = new Date('{{ today.strftime("%Y-%m-%d") }}');
   .tab-pane   { display:block!important; }
   .card { box-shadow:none!important; border:1px solid #bbb!important; margin-bottom:8px!important; page-break-inside:avoid; }
   .page-header { margin-bottom:6px!important; }
+  .cond-wrap  { max-height:none!important; }
+  .cond-btn   { display:none!important; }
   @page { size:A4 portrait; margin:12mm; }
 }
 </style>
