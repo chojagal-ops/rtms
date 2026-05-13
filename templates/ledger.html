@@ -90,14 +90,14 @@
           <th style="width:65px;">LOT/S/N</th>
           <th style="width:60px;">목적</th>
           <th style="width:80px;">시험 항목</th>
-          <th style="min-width:160px;">시험 조건</th>
+          <th style="width:200px;">시험 조건</th>
           <th style="width:68px;">시작일</th>
           <th style="width:68px;">완료일</th>
           <th style="width:48px;">시험자</th>
-          <th style="width:160px;">시험 결과</th>
-          <th style="width:52px;">판정</th>
+          <th style="width:150px;">시험 결과</th>
+          <th style="width:48px;">판정</th>
           <th style="width:68px;">통보일</th>
-          <th style="width:100px;">특이사항</th>
+          <th style="width:90px;">특이사항</th>
         </tr>
       </thead>
       <tbody>
@@ -230,19 +230,28 @@
   padding: 5px 6px;
   border: 1px solid #e2e8f0;
   vertical-align: top;
-  word-break: keep-all;
+  overflow: hidden;
+  word-break: break-all;
   overflow-wrap: break-word;
+  white-space: normal;
 }
 .ledger-r:hover td { background: #f0f7ff; }
 .ledger-r:nth-child(even) td { background: #fafbfc; }
 .ledger-r:nth-child(even):hover td { background: #f0f7ff; }
 
 /* ▶ 시험 조건 줄바꿈 */
-.cond-cell { font-size: 10px; color: #374151; }
+.cond-cell {
+  font-size: 10px;
+  color: #374151;
+  max-width: 200px;
+  overflow: hidden;
+}
 .cond-line {
-  padding: 1px 0;
+  padding: 2px 0;
   line-height: 1.45;
   word-break: break-all;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 .cond-line + .cond-line {
   border-top: 1px dashed #e2e8f0;
