@@ -206,6 +206,18 @@ class NCReport(db.Model):
     request        = db.relationship('TestRequest', backref='nc_reports', lazy=True)
 
 
+# ── 시험 기준서 마스터 (MX 사출 기구부품 기준서) ──────────
+class TestStandard(db.Model):
+    __tablename__ = 'test_standard'
+    id               = db.Column(db.Integer, primary_key=True)
+    std_no           = db.Column(db.Integer, index=True)           # 기준서 번호
+    test_name        = db.Column(db.String(200), nullable=False)   # 시험항목
+    condition_full   = db.Column(db.Text)                          # 시험조건 및 판정기준 전문
+    condition_summary= db.Column(db.String(500))                   # 시험조건 요약
+    sample_qty       = db.Column(db.String(50))                    # 시료수
+    updated_at       = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 # ── 부적합 조치 (CAPA / 개선조치 / 재발방지) ──────────────
 class NCAction(db.Model):
     __tablename__ = 'nc_action'

@@ -166,6 +166,7 @@
     <h5>③ 시험 항목 및 조건</h5>
     <div style="display:flex;gap:6px;">
       <button type="button" class="btn btn-outline btn-sm" onclick="openCopyModal()">📋 기존 의뢰서에서 복사</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openStdModal()">📚 기준서에서 선택</button>
       <button type="button" class="btn btn-outline btn-sm" onclick="addItem()">＋ 항목 추가</button>
     </div>
   </div>
@@ -387,6 +388,39 @@
 </div>
 </form>
 
+<!-- ── 기준서 선택 모달 ───────────────────────────────────── -->
+<div id="stdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1010;align-items:flex-start;justify-content:center;padding-top:40px;">
+  <div style="background:#fff;border-radius:12px;width:820px;max-width:96vw;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+    <!-- 헤더 -->
+    <div style="padding:16px 20px 12px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h5 style="margin:0;font-size:15px;color:#1a3a5c;">📚 MX 사출 기구부품 기준서 — 시험항목 선택</h5>
+      <button type="button" onclick="closeStdModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1;">✕</button>
+    </div>
+    <!-- 검색 -->
+    <div style="padding:12px 20px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;">
+      <input type="text" id="stdSearch" class="form-control" style="max-width:320px;"
+             placeholder="시험항목 검색 (예: 열충격, 염수, 도막…)" oninput="stdSearchDebounce()">
+      <span id="stdCount" style="font-size:12px;color:#64748b;white-space:nowrap;"></span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="stdSelectAll()" style="margin-left:auto;">전체선택</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="stdClearAll()">선택해제</button>
+    </div>
+    <!-- 목록 -->
+    <div id="stdList" style="overflow-y:auto;flex:1;min-height:280px;font-size:13px;">
+      <div style="padding:24px;text-align:center;color:#94a3b8;">로딩 중…</div>
+    </div>
+    <!-- 페이지 + 추가 버튼 -->
+    <div style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div id="stdPager" style="display:flex;gap:4px;flex:1;"></div>
+      <span id="stdSelCount" style="font-size:12px;color:#475569;"></span>
+      <button type="button" class="btn btn-primary" onclick="addSelectedStandards()" style="min-width:120px;">
+        ＋ 선택 항목 추가
+      </button>
+    </div>
+  </div>
+</div>
+<!-- 상세조건 팝업 -->
+<div id="stdDetailPopup" style="display:none;position:fixed;z-index:1020;background:#1e293b;color:#f1f5f9;border-radius:8px;padding:14px 16px;max-width:420px;font-size:12px;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,.4);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;"></div>
+
 <!-- 시험 항목 복사 모달 -->
 <div id="copyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:12px;width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2);">
@@ -519,6 +553,187 @@ function copyItems(rid, reqNo, prodName) {
 // 모달 외부 클릭 시 닫기
 document.getElementById('copyModal').addEventListener('click', function(e) {
   if (e.target === this) closeCopyModal();
+});
+
+// ── 기준서 선택 모달 ───────────────────────────────────────
+let stdPage = 1, stdQ = '', stdTimer = null;
+const stdSelected = new Map(); // id → {no,name,full,summary,qty}
+
+function openStdModal() {
+  document.getElementById('stdModal').style.display = 'flex';
+  document.getElementById('stdSearch').value = '';
+  stdQ = ''; stdPage = 1; stdSelected.clear();
+  loadStandards();
+}
+
+function closeStdModal() {
+  document.getElementById('stdModal').style.display = 'none';
+  document.getElementById('stdDetailPopup').style.display = 'none';
+}
+
+function stdSearchDebounce() {
+  clearTimeout(stdTimer);
+  stdTimer = setTimeout(() => {
+    stdQ = document.getElementById('stdSearch').value.trim();
+    stdPage = 1;
+    loadStandards();
+  }, 300);
+}
+
+function loadStandards() {
+  const list = document.getElementById('stdList');
+  list.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">검색 중…</div>';
+  fetch(`/api/test-standards?q=${encodeURIComponent(stdQ)}&page=${stdPage}`)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('stdCount').textContent = `총 ${data.total}개`;
+      renderStdList(data.items);
+      renderStdPager(data.total, 20);
+      updateStdSelCount();
+    })
+    .catch(() => { list.innerHTML = '<div style="padding:24px;text-align:center;color:#dc2626;">오류가 발생했습니다.</div>'; });
+}
+
+function renderStdList(items) {
+  const list = document.getElementById('stdList');
+  if (!items.length) {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">검색 결과가 없습니다.</div>';
+    return;
+  }
+  list.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead style="background:#f8fafc;position:sticky;top:0;">
+        <tr>
+          <th style="width:36px;padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8f0;"></th>
+          <th style="width:44px;padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">No</th>
+          <th style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">시험항목</th>
+          <th style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">조건 요약</th>
+          <th style="width:70px;padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">시료수</th>
+          <th style="width:52px;padding:8px;border-bottom:1px solid #e2e8f0;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(s => {
+          const chk = stdSelected.has(s.id) ? 'checked' : '';
+          const rowBg = stdSelected.has(s.id) ? 'background:#eff6ff;' : '';
+          return `<tr id="stdrow_${s.id}" style="${rowBg}cursor:pointer;" onclick="toggleStd(${s.id}, event)"
+                      onmouseover="this.style.background='${stdSelected.has(s.id)?'#dbeafe':'#f0f7ff'}'"
+                      onmouseout="this.style.background='${stdSelected.has(s.id)?'#eff6ff':''}'">
+            <td style="text-align:center;padding:8px 10px;">
+              <input type="checkbox" id="stdchk_${s.id}" ${chk} style="width:15px;height:15px;"
+                     onclick="event.stopPropagation();toggleStd(${s.id},event)">
+            </td>
+            <td style="padding:8px;text-align:center;color:#94a3b8;">${s.no}</td>
+            <td style="padding:8px;font-weight:600;color:#1a3a5c;">${escHtml(s.name)}</td>
+            <td style="padding:8px;color:#475569;font-size:12px;">${escHtml(s.summary||'-')}</td>
+            <td style="padding:8px;text-align:center;color:#64748b;">${escHtml(s.qty||'-')}</td>
+            <td style="padding:8px;text-align:center;">
+              <button type="button" style="background:none;border:1px solid #cbd5e1;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;color:#475569;"
+                      onmouseover="showStdDetail(event,${JSON.stringify(s.full).replace(/'/g,"&apos;")})"
+                      onmouseout="hideStdDetail()" onclick="event.stopPropagation();">상세</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  // 데이터 캐싱
+  items.forEach(s => { if (!stdSelected.has(s.id)) window._stdCache = window._stdCache || {}; (window._stdCache = window._stdCache||{})[s.id] = s; });
+}
+
+function toggleStd(id, e) {
+  if (e && e.target && e.target.tagName === 'BUTTON') return;
+  const cache = window._stdCache || {};
+  if (stdSelected.has(id)) {
+    stdSelected.delete(id);
+    const row = document.getElementById(`stdrow_${id}`);
+    const chk = document.getElementById(`stdchk_${id}`);
+    if (row) row.style.background = '';
+    if (chk) chk.checked = false;
+  } else {
+    if (cache[id]) stdSelected.set(id, cache[id]);
+    const row = document.getElementById(`stdrow_${id}`);
+    const chk = document.getElementById(`stdchk_${id}`);
+    if (row) row.style.background = '#eff6ff';
+    if (chk) chk.checked = true;
+  }
+  updateStdSelCount();
+}
+
+function stdSelectAll() {
+  document.querySelectorAll('[id^="stdchk_"]').forEach(chk => {
+    const id = parseInt(chk.id.replace('stdchk_', ''));
+    const cache = window._stdCache || {};
+    if (!stdSelected.has(id) && cache[id]) stdSelected.set(id, cache[id]);
+    chk.checked = true;
+    const row = document.getElementById(`stdrow_${id}`);
+    if (row) row.style.background = '#eff6ff';
+  });
+  updateStdSelCount();
+}
+
+function stdClearAll() {
+  stdSelected.clear();
+  document.querySelectorAll('[id^="stdchk_"]').forEach(chk => {
+    chk.checked = false;
+    const id = parseInt(chk.id.replace('stdchk_',''));
+    const row = document.getElementById(`stdrow_${id}`);
+    if (row) row.style.background = '';
+  });
+  updateStdSelCount();
+}
+
+function updateStdSelCount() {
+  const el = document.getElementById('stdSelCount');
+  if (el) el.textContent = stdSelected.size ? `${stdSelected.size}개 선택됨` : '';
+}
+
+function renderStdPager(total, per) {
+  const pages = Math.ceil(total / per);
+  const pager = document.getElementById('stdPager');
+  if (pages <= 1) { pager.innerHTML = ''; return; }
+  let html = '';
+  for (let p = 1; p <= pages; p++) {
+    const active = p === stdPage ? 'background:#1a3a5c;color:#fff;' : 'background:#f1f5f9;color:#475569;';
+    html += `<button type="button" onclick="goStdPage(${p})"
+               style="${active}border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">${p}</button>`;
+  }
+  pager.innerHTML = html;
+}
+
+function goStdPage(p) { stdPage = p; loadStandards(); }
+
+function addSelectedStandards() {
+  if (!stdSelected.size) { alert('항목을 선택해주세요.'); return; }
+  const tbody = document.getElementById('item_tbody');
+  stdSelected.forEach(s => {
+    itemCount++;
+    const tr = document.createElement('tr');
+    const nm  = (s.name  || '').replace(/"/g, '&quot;').replace(/</g,'&lt;');
+    const cnd = (s.full  || s.summary || '').replace(/"/g, '&quot;').replace(/</g,'&lt;');
+    tr.innerHTML = `
+      <td style="text-align:center;color:#64748b;">${itemCount}</td>
+      <td><input type="text" name="item_test_name" class="form-control" value="${nm}" placeholder="시험 항목명"></td>
+      <td><input type="text" name="item_test_condition" class="form-control" value="${cnd}" placeholder="조건 상세" title="${cnd}"></td>
+      <td><input type="text" name="item_standard" class="form-control" value="MX기구부품기준서" placeholder="IEC, KS 등"></td>
+      <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+  closeStdModal();
+  renumberRows();
+}
+
+function showStdDetail(e, fullText) {
+  const popup = document.getElementById('stdDetailPopup');
+  popup.textContent = fullText || '(내용 없음)';
+  popup.style.display = 'block';
+  popup.style.left = Math.min(e.clientX + 12, window.innerWidth - 440) + 'px';
+  popup.style.top  = Math.min(e.clientY + 12, window.innerHeight - 320) + 'px';
+}
+function hideStdDetail() { document.getElementById('stdDetailPopup').style.display = 'none'; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('stdModal').addEventListener('click', function(e) {
+  if (e.target === this) closeStdModal();
 });
 
 // ── 엑셀 파싱 자동 입력 ───────────────────────────────────

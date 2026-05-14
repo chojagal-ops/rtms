@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, current_app, send_from_directory, jsonify, send_file)
 from flask_login import login_required, current_user
-from models import db, TestRequest, TestItem, TestCriterion
+from models import db, TestRequest, TestItem, TestCriterion, TestStandard
 from utils import parse_date, log_error, mail_new_request
 from constants import (PRODUCT_TYPES, TEST_STAGES, TEST_PURPOSES,
                        SAMPLE_STATES, PRIORITIES, FEASIBILITY_OPTIONS,
@@ -162,6 +162,38 @@ def _form_to_request(req_obj, form, files=None):
         saved = _save_file(files.get('attachment'))
         if saved:
             req_obj.attachment = saved
+
+
+# ── 시험 기준서 API (자동입력용) ────────────────────────────
+@requests_bp.route('/api/test-standards')
+@login_required
+def api_test_standards():
+    """기준서 항목 검색 API — 의뢰서 작성 시 시험항목 자동입력용"""
+    q    = request.args.get('q', '').strip()
+    page = int(request.args.get('page', 1))
+    per  = 20  # 한 페이지 항목 수
+    query = TestStandard.query
+    if q:
+        query = query.filter(
+            db.or_(
+                TestStandard.test_name.ilike(f'%{q}%'),
+                TestStandard.condition_summary.ilike(f'%{q}%')
+            )
+        )
+    total = query.count()
+    items = query.order_by(TestStandard.std_no).offset((page-1)*per).limit(per).all()
+    return jsonify({
+        'total': total,
+        'page':  page,
+        'items': [{
+            'id':      s.id,
+            'no':      s.std_no,
+            'name':    s.test_name,
+            'summary': s.condition_summary,
+            'full':    s.condition_full,
+            'qty':     s.sample_qty,
+        } for s in items]
+    })
 
 
 # ── 목록 ────────────────────────────────────────────────────

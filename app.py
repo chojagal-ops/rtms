@@ -36,7 +36,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024   # 업로드 최대 50MB
 # 서버 재시작마다 새 버전 → CSS/JS 변경이 브라우저에 즉시 반영
 APP_VERSION = str(int(time.time()))
 
-from models import db, User
+from models import db, User, TestStandard
 db.init_app(app)
 
 login_manager = LoginManager(app)
@@ -159,10 +159,35 @@ def migrate_db():
         print(f'[RTMS] 용어 마이그레이션 건너뜀: {e}')
 
 
+def seed_test_standards():
+    """MX 사출 기구부품 기준서 데이터 DB 적재 (최초 1회)"""
+    from models import TestStandard
+    if TestStandard.query.first():
+        return  # 이미 데이터 있으면 건너뜀
+    json_path = BASE_DIR / 'test_standards.json'
+    if not json_path.exists():
+        print('[RTMS] test_standards.json 없음 — 기준서 시드 건너뜀')
+        return
+    import json
+    with open(json_path, encoding='utf-8') as f:
+        items = json.load(f)
+    for d in items:
+        db.session.add(TestStandard(
+            std_no=d.get('no'),
+            test_name=d.get('name', ''),
+            condition_full=d.get('full', ''),
+            condition_summary=d.get('summary', ''),
+            sample_qty=d.get('qty', ''),
+        ))
+    db.session.commit()
+    print(f'[RTMS] 시험 기준서 {len(items)}개 항목 적재 완료')
+
+
 def init_db():
-    """테이블 생성 + 기본 관리자 계정 생성"""
+    """테이블 생성 + 기본 관리자 계정 생성 + 기준서 시드"""
     db.create_all()
     migrate_db()
+    seed_test_standards()
     if not User.query.filter_by(username='admin').first():
         admin = User(username='admin', name='관리자',
                      department='품질팀', role='admin', is_approved=True)
