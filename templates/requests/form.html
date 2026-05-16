@@ -160,103 +160,77 @@
   </div>
 </div>
 
-<!-- 섹션5: 시험 항목 (동적 추가) -->
+<!-- 섹션5+6: 시험 항목 및 판정 기준 (통합) -->
 <div class="card" style="margin-bottom:16px;">
   <div class="card-header" style="justify-content:space-between;">
-    <h5>③ 시험 항목 및 조건</h5>
+    <h5>③ 시험 항목 및 판정 기준</h5>
     <div style="display:flex;gap:6px;">
       <button type="button" class="btn btn-outline btn-sm" onclick="openCopyModal()">📋 기존 의뢰서에서 복사</button>
       <button type="button" class="btn btn-primary btn-sm" onclick="openStdModal()">📚 기준서에서 선택</button>
       <button type="button" class="btn btn-outline btn-sm" onclick="addItem()">＋ 항목 추가</button>
     </div>
   </div>
-  <div class="card-body" style="padding:0;">
-    <table id="item_table" style="font-size:13px;">
+  <div class="card-body" style="padding:0;overflow-x:auto;">
+    <table id="item_table" style="font-size:13px;min-width:860px;">
+      <colgroup>
+        <col style="width:40px;">
+        <col style="width:130px;">
+        <col>
+        <col style="width:110px;">
+        <col style="width:180px;">
+        <col style="width:100px;">
+        <col style="width:40px;">
+      </colgroup>
       <thead>
         <tr>
-          <th style="width:40px;">No</th>
+          <th>No</th>
           <th>시험 항목</th>
           <th>시험 조건</th>
-          <th style="width:120px;">규격</th>
-          <th style="width:40px;"></th>
+          <th>판정기준 유형</th>
+          <th>판정기준 내용</th>
+          <th>규격</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="item_tbody">
         {% if item and item.test_items %}
           {% for ti in item.test_items %}
+          {% set cr = item.criteria[loop.index0] if item.criteria and loop.index0 < item.criteria|length else none %}
           <tr>
             <td style="text-align:center;color:#64748b;">{{ loop.index }}</td>
             <td><input type="text" name="item_test_name" class="form-control"
                        value="{{ ti.test_name or '' }}" placeholder="시험 항목명"></td>
             <td><input type="text" name="item_test_condition" class="form-control"
                        value="{{ ti.test_condition or '' }}" placeholder="조건 상세"></td>
+            <td>
+              <select name="crit_type" class="form-control" style="font-size:12px;">
+                <option value="">- 선택 -</option>
+                {% for ct in CRITERION_TYPES %}
+                <option value="{{ ct }}" {{ 'selected' if cr and cr.criterion_type == ct }}>{{ ct }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td><input type="text" name="crit_content" class="form-control"
+                       value="{{ cr.criterion_content if cr else '' }}" placeholder="기준 내용 입력"></td>
             <td><input type="text" name="item_standard" class="form-control"
                        value="{{ ti.standard or '' }}" placeholder="IEC, KS 등"></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
           </tr>
           {% endfor %}
         {% else %}
-          <!-- 기본 4개 행 -->
           {% for i in range(1,5) %}
           <tr>
             <td style="text-align:center;color:#64748b;">{{ i }}</td>
             <td><input type="text" name="item_test_name" class="form-control" placeholder="시험 항목명"></td>
             <td><input type="text" name="item_test_condition" class="form-control" placeholder="조건 상세"></td>
-            <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
-          </tr>
-          {% endfor %}
-        {% endif %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 섹션6: 판정 기준 -->
-<div class="card" style="margin-bottom:16px;">
-  <div class="card-header" style="justify-content:space-between;">
-    <h5>④ 판정 기준</h5>
-    <button type="button" class="btn btn-outline btn-sm" onclick="addCrit()">＋ 기준 추가</button>
-  </div>
-  <div class="card-body" style="padding:0;">
-    <table id="crit_table" style="font-size:13px;">
-      <thead>
-        <tr>
-          <th style="width:40px;">No</th>
-          <th style="width:130px;">기준 유형</th>
-          <th>기준 내용</th>
-          <th style="width:40px;"></th>
-        </tr>
-      </thead>
-      <tbody id="crit_tbody">
-        {% if item and item.criteria %}
-          {% for c in item.criteria %}
-          <tr>
-            <td style="text-align:center;color:#64748b;">{{ loop.index }}</td>
             <td>
-              <select name="crit_type" class="form-control">
-                <option value="">- 선택 -</option>
-                {% for ct in CRITERION_TYPES %}
-                <option value="{{ ct }}" {{ 'selected' if c.criterion_type == ct }}>{{ ct }}</option>
-                {% endfor %}
-              </select>
-            </td>
-            <td><input type="text" name="crit_content" class="form-control"
-                       value="{{ c.criterion_content or '' }}" placeholder="기준 내용 입력"></td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
-          </tr>
-          {% endfor %}
-        {% else %}
-          {% for i in range(1,3) %}
-          <tr>
-            <td style="text-align:center;color:#64748b;">{{ i }}</td>
-            <td>
-              <select name="crit_type" class="form-control">
+              <select name="crit_type" class="form-control" style="font-size:12px;">
                 <option value="">- 선택 -</option>
                 {% for ct in CRITERION_TYPES %}<option value="{{ ct }}">{{ ct }}</option>{% endfor %}
               </select>
             </td>
             <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
+            <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
           </tr>
           {% endfor %}
@@ -443,7 +417,15 @@
 
 {% block scripts %}
 <script>
-// ── 시험 항목 행 추가 ──────────────────────────────────────
+// ── 공통: 판정기준 유형 옵션 ─────────────────────────────
+const critTypes = {{ CRITERION_TYPES | tojson }};
+function critOpts(selected) {
+  return critTypes.map(t =>
+    `<option value="${t}"${t===selected?' selected':''}>${t}</option>`
+  ).join('');
+}
+
+// ── 시험 항목 행 추가 (판정기준 통합) ────────────────────
 let itemCount = document.querySelectorAll('#item_tbody tr').length;
 function addItem() {
   itemCount++;
@@ -452,26 +434,13 @@ function addItem() {
     <td style="text-align:center;color:#64748b;">${itemCount}</td>
     <td><input type="text" name="item_test_name" class="form-control" placeholder="시험 항목명"></td>
     <td><input type="text" name="item_test_condition" class="form-control" placeholder="조건 상세"></td>
+    <td><select name="crit_type" class="form-control" style="font-size:12px;">
+          <option value="">- 선택 -</option>${critOpts('')}</select></td>
+    <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
     <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
     <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
   `;
   document.getElementById('item_tbody').appendChild(tr);
-}
-
-// ── 판정 기준 행 추가 ─────────────────────────────────────
-const critTypes = {{ CRITERION_TYPES | tojson }};
-let critCount = document.querySelectorAll('#crit_tbody tr').length;
-function addCrit() {
-  critCount++;
-  const opts = critTypes.map(t => `<option value="${t}">${t}</option>`).join('');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td style="text-align:center;color:#64748b;">${critCount}</td>
-    <td><select name="crit_type" class="form-control"><option value="">- 선택 -</option>${opts}</select></td>
-    <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
-    <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
-  `;
-  document.getElementById('crit_tbody').appendChild(tr);
 }
 
 function removeRow(btn) { btn.closest('tr').remove(); renumberRows(); }
@@ -539,9 +508,12 @@ function copyItems(rid, reqNo, prodName) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="text-align:center;color:#64748b;">${i + 1}</td>
-          <td><input type="text" name="item_test_name" class="form-control" value="${it.test_name}" placeholder="시험 항목명"></td>
-          <td><input type="text" name="item_test_condition" class="form-control" value="${it.test_condition}" placeholder="조건 상세"></td>
-          <td><input type="text" name="item_standard" class="form-control" value="${it.standard}" placeholder="IEC, KS 등"></td>
+          <td><input type="text" name="item_test_name" class="form-control" value="${escHtml(it.test_name||'')}" placeholder="시험 항목명"></td>
+          <td><input type="text" name="item_test_condition" class="form-control" value="${escHtml(it.test_condition||'')}" placeholder="조건 상세"></td>
+          <td><select name="crit_type" class="form-control" style="font-size:12px;">
+                <option value="">- 선택 -</option>${critOpts('')}</select></td>
+          <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
+          <td><input type="text" name="item_standard" class="form-control" value="${escHtml(it.standard||'')}" placeholder="IEC, KS 등"></td>
           <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
         tbody.appendChild(tr);
       });
@@ -708,12 +680,15 @@ function addSelectedStandards() {
   stdSelected.forEach(s => {
     itemCount++;
     const tr = document.createElement('tr');
-    const nm  = (s.name  || '').replace(/"/g, '&quot;').replace(/</g,'&lt;');
-    const cnd = (s.full  || s.summary || '').replace(/"/g, '&quot;').replace(/</g,'&lt;');
+    const nm  = escHtml(s.name  || '');
+    const cnd = escHtml(s.full  || s.summary || '');
     tr.innerHTML = `
       <td style="text-align:center;color:#64748b;">${itemCount}</td>
       <td><input type="text" name="item_test_name" class="form-control" value="${nm}" placeholder="시험 항목명"></td>
       <td><input type="text" name="item_test_condition" class="form-control" value="${cnd}" placeholder="조건 상세" title="${cnd}"></td>
+      <td><select name="crit_type" class="form-control" style="font-size:12px;">
+            <option value="">- 선택 -</option>${critOpts('')}</select></td>
+      <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
       <td><input type="text" name="item_standard" class="form-control" value="MX기구부품기준서" placeholder="IEC, KS 등"></td>
       <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
     tbody.appendChild(tr);
@@ -776,9 +751,12 @@ document.getElementById('btn_parse').addEventListener('click', function() {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td style="text-align:center;color:#64748b;">${i+1}</td>
-            <td><input type="text" name="item_test_name" class="form-control" value="${it.test_name||''}"></td>
-            <td><input type="text" name="item_test_condition" class="form-control" value="${it.test_condition||''}"></td>
-            <td><input type="text" name="item_standard" class="form-control" value="${it.standard||''}"></td>
+            <td><input type="text" name="item_test_name" class="form-control" value="${escHtml(it.test_name||'')}"></td>
+            <td><input type="text" name="item_test_condition" class="form-control" value="${escHtml(it.test_condition||'')}"></td>
+            <td><select name="crit_type" class="form-control" style="font-size:12px;">
+                  <option value="">- 선택 -</option>${critOpts('')}</select></td>
+            <td><input type="text" name="crit_content" class="form-control" placeholder="기준 내용 입력"></td>
+            <td><input type="text" name="item_standard" class="form-control" value="${escHtml(it.standard||'')}"></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
           `;
           tbody.appendChild(tr);
