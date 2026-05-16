@@ -36,6 +36,7 @@
     </div>
 
     <div class="nav-section" style="margin-top:8px;">업무</div>
+    {% if current_user.department == '품질팀' or current_user.role == 'admin' %}
     <div class="nav-item">
       <a href="{{ url_for('requests.qteam') }}"
          class="{{ 'active' if request.endpoint == 'requests.qteam' }}"
@@ -46,6 +47,7 @@
         {% endif %}
       </a>
     </div>
+    {% endif %}
     <div class="nav-item nav-item-with-add">
       <a href="{{ url_for('requests.list_view') }}"
          class="{{ 'active' if request.blueprint == 'requests' and request.endpoint != 'requests.qteam' }}">
