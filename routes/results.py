@@ -89,17 +89,22 @@ def _form_to_result(res_obj, form, files=None):
 @login_required
 def list_view():
     status_filter = request.args.get('status', '')
+    result_filter = request.args.get('result', '')
     try:
         q = TestRequest.query
         if status_filter:
             q = q.filter(TestRequest.status == status_filter)
         else:
             q = q.filter(TestRequest.status.in_(['접수완료', '시험중', '결과회신', '완료']))
+        if result_filter:
+            q = q.join(TestResult, TestRequest.id == TestResult.request_id)
+            q = q.filter(TestResult.overall_result == result_filter)
         items = q.order_by(TestRequest.created_at.desc()).all()
     except Exception as e:
         log_error('결과서 목록 조회 오류', e)
         items = []
-    return render_template('results/list.html', items=items, status_filter=status_filter)
+    return render_template('results/list.html', items=items,
+                           status_filter=status_filter, result_filter=result_filter)
 
 
 # ── 결과서 등록/수정 ────────────────────────────────────────

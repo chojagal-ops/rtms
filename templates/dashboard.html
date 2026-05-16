@@ -185,7 +185,8 @@
     <!-- 상단: 판정 통계 + 프로그레스 바 -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;">
       <!-- 적합 -->
-      <div style="background:rgba(22,163,74,0.06);border:1px solid rgba(22,163,74,0.2);border-radius:10px;padding:16px 20px;">
+      <a href="{{ url_for('results.list_view') }}?result=적합" style="text-decoration:none;">
+      <div style="background:rgba(22,163,74,0.06);border:1px solid rgba(22,163,74,0.2);border-radius:10px;padding:16px 20px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(22,163,74,0.2)'" onmouseout="this.style.boxShadow=''">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
             <div style="font-size:11px;font-weight:700;color:#15803d;letter-spacing:0.05em;text-transform:uppercase;">적합 PASS</div>
@@ -200,9 +201,11 @@
           {{ ((pass_cnt/result_total*100)|round(1) if result_total > 0 else 0) }}%
         </div>
       </div>
+      </a>
 
       <!-- 부적합 -->
-      <div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:10px;padding:16px 20px;">
+      <a href="{{ url_for('results.list_view') }}?result=부적합" style="text-decoration:none;">
+      <div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:10px;padding:16px 20px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(220,38,38,0.2)'" onmouseout="this.style.boxShadow=''">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
             <div style="font-size:11px;font-weight:700;color:#b91c1c;letter-spacing:0.05em;text-transform:uppercase;">부적합 FAIL</div>
@@ -217,9 +220,11 @@
           {{ ((fail_cnt/result_total*100)|round(1) if result_total > 0 else 0) }}%
         </div>
       </div>
+      </a>
 
       <!-- 조건부적합 -->
-      <div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:16px 20px;">
+      <a href="{{ url_for('results.list_view') }}?result=조건부적합" style="text-decoration:none;">
+      <div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.2);border-radius:10px;padding:16px 20px;cursor:pointer;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(217,119,6,0.2)'" onmouseout="this.style.boxShadow=''">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
             <div style="font-size:11px;font-weight:700;color:#d97706;letter-spacing:0.05em;text-transform:uppercase;">조건부적합 COND.</div>
@@ -234,6 +239,7 @@
           {{ ((cond_cnt/result_total*100)|round(1) if result_total > 0 else 0) }}%
         </div>
       </div>
+      </a>
     </div>
 
     <!-- 하단: 최근 결과 상세 테이블 -->
@@ -287,8 +293,13 @@
               </td>
               <td>{{ res.tester_name if res and res.tester_name else '-' }}</td>
               <td style="text-align:center;">
-                {% if res and res.report_attached %}
-                  <span style="color:#15803d;font-weight:700;">✅</span>
+                {% if res and res.overall_result %}
+                  <div style="display:flex;gap:3px;justify-content:center;">
+                    <a href="{{ url_for('results.certificate', rid=item.id) }}" target="_blank"
+                       style="font-size:13px;padding:3px 7px;background:#f97316;color:#fff;border-radius:4px;text-decoration:none;">🖨️</a>
+                    <a href="{{ url_for('results.certificate_excel', rid=item.id) }}"
+                       style="font-size:13px;padding:3px 7px;background:#15803d;color:#fff;border-radius:4px;text-decoration:none;">📥</a>
+                  </div>
                 {% else %}
                   <span style="color:var(--text-muted);">-</span>
                 {% endif %}
