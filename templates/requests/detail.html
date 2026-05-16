@@ -112,18 +112,13 @@
           <tr>
             <td style="text-align:center;color:#64748b;">{{ ti.item_no }}</td>
             <td style="font-weight:600;">{{ ti.test_name or '-' }}</td>
-            <td style="padding:0;">
+            <td style="padding:6px 10px;">
               {% if ti.test_condition %}
-                {% set cid = 'dc_' ~ ti.id %}
-                <div class="cond-wrap" id="{{ cid }}">
-                  {% for part in ti.test_condition.split('▶') %}
-                    {% if part.strip() %}
-                    <div class="cond-line">▶ {{ part.strip() }}</div>
-                    {% endif %}
-                  {% endfor %}
-                </div>
-                <button type="button" class="cond-btn"
-                        onclick="toggleCond('{{ cid }}',this,event)">▼ 확인</button>
+                {% for part in ti.test_condition.split('▶') %}
+                  {% if part.strip() %}
+                  <div class="cond-line">▶ {{ part.strip() }}</div>
+                  {% endif %}
+                {% endfor %}
               {% else %}-{% endif %}
             </td>
             <td style="font-size:12px;">{{ ti.standard or '-' }}</td>
@@ -335,29 +330,16 @@
 {% block scripts %}
 <script>
 const today = new Date('{{ today.strftime("%Y-%m-%d") }}');
-function toggleCond(id, btn, e) {
-  if (e) e.stopPropagation();
-  const wrap = document.getElementById(id);
-  const expanded = wrap.classList.toggle('expanded');
-  btn.textContent = expanded ? '▲ 닫기' : '▼ 확인';
-  btn.style.background = expanded ? '#64748b' : '#2563eb';
-}
 </script>
 <style>
-/* 시험 조건 접기/펼치기 */
 .item-tbl { width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }
 .item-tbl th { background:#f1f5f9; color:#374151; padding:8px 10px; font-size:12px;
                font-weight:700; border:1px solid #e2e8f0; text-align:center; white-space:nowrap; }
 .item-tbl td { padding:7px 10px; border:1px solid #e2e8f0; vertical-align:top;
-               overflow:hidden; word-break:break-all; overflow-wrap:break-word; }
-.cond-wrap { max-height:44px; overflow:hidden; transition:max-height .25s ease;
-             padding:5px 8px 2px; font-size:12px; color:#374151; }
-.cond-wrap.expanded { max-height:800px; }
-.cond-line { line-height:1.45; word-break:break-all; padding:1px 0; }
-.cond-line + .cond-line { border-top:1px dashed #e9ecef; margin-top:2px; padding-top:2px; }
-.cond-btn { display:block; width:100%; padding:2px 0; font-size:10px; font-weight:700;
-            color:#fff; background:#2563eb; border:none; cursor:pointer; text-align:center; }
-.cond-btn:hover { background:#1d4ed8; }
+               word-break:break-word; overflow-wrap:break-word; white-space:normal; }
+.cond-line { font-size:12px; line-height:1.55; color:#374151;
+             word-break:break-word; overflow-wrap:break-word; }
+.cond-line + .cond-line { border-top:1px dashed #e9ecef; margin-top:4px; padding-top:4px; }
 
 @media print {
   /* 브라우저 기본 날짜/URL 헤더·푸터 제거 */
