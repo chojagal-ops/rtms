@@ -75,11 +75,23 @@
             {{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '-' }}
           </td>
           <td style="font-size:12px;">{{ res.tester_name if res and res.tester_name else '-' }}</td>
-          <td style="text-align:center;font-size:12px;">
-            {% if res and res.report_attached %}
-              <span style="color:#15803d;font-weight:700;">✅</span>
+          <td style="text-align:center;">
+            {% if res and res.overall_result %}
+              <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+                <a href="{{ url_for('results.certificate', rid=item.id) }}"
+                   target="_blank"
+                   class="btn btn-sm"
+                   style="font-size:10px;padding:2px 7px;background:#f97316;color:#fff;border:none;border-radius:4px;text-decoration:none;white-space:nowrap;">
+                  🖨️ 인쇄
+                </a>
+                <a href="{{ url_for('results.certificate_excel', rid=item.id) }}"
+                   class="btn btn-sm"
+                   style="font-size:10px;padding:2px 7px;background:#15803d;color:#fff;border:none;border-radius:4px;text-decoration:none;white-space:nowrap;">
+                  📥 엑셀
+                </a>
+              </div>
             {% else %}
-              <span style="color:#94a3b8;">-</span>
+              <span style="color:#94a3b8;font-size:11px;">-</span>
             {% endif %}
           </td>
           <td>

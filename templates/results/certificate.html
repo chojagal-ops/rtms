@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% block title %}시험 성적서 — {{ req.request_no }}{% endblock %}
+{% block topbar_title %}📄 신뢰성 시험 성적서{% endblock %}
+
+{% block content %}
+{% set res = res %}
+{% set fd = namespace() %}
+
+<div class="breadcrumb no-print">
+  <a href="{{ url_for('results.list_view') }}">결과서 관리</a>
+  <span>›</span>
+  <a href="{{ url_for('requests.detail', rid=req.id) }}">{{ req.request_no }}</a>
+  <span>›</span><span>성적서</span>
+</div>
+
+<!-- 액션 버튼 -->
+<div class="no-print" style="display:flex;gap:8px;margin-bottom:16px;justify-content:flex-end;">
+  <a href="{{ url_for('results.certificate_excel', rid=req.id) }}"
+     class="btn btn-outline btn-sm" style="color:#15803d;border-color:#15803d;">
+    📥 엑셀 다운로드
+  </a>
+  <button onclick="window.print()" class="btn btn-primary btn-sm">🖨️ 인쇄</button>
+</div>
+
+<!-- 성적서 본문 -->
+<div class="certificate-wrap" id="cert">
+
+  <!-- 헤더 -->
+  <div class="cert-header">
+    <div class="cert-header-left">
+      <div class="cert-logo-text">INTOPS</div>
+      <div class="cert-sub">Reliability Test Management System</div>
+    </div>
+    <div class="cert-header-center">
+      <h1 class="cert-title">신뢰성 시험 성적서</h1>
+      <div class="cert-title-en">Reliability Test Certificate</div>
+    </div>
+    <div class="cert-header-right">
+      <div class="cert-no-label">성적서번호</div>
+      <div class="cert-no">{{ req.request_no or '-' }}</div>
+      <div class="cert-date">발행일: {{ res.result_date.strftime('%Y-%m-%d') if res.result_date else (res.created_at.strftime('%Y-%m-%d') if res.created_at else '-') }}</div>
+    </div>
+  </div>
+
+  <!-- 종합 판정 배너 -->
+  {% set ov = res.overall_result or '' %}
+  {% if ov %}
+  <div class="cert-verdict cert-verdict-{{ 'pass' if ov == '적합' else 'fail' if ov == '부적합' else 'cond' }}">
+    <span class="cert-verdict-label">종합 판정</span>
+    <span class="cert-verdict-value">{{ ov }}</span>
+  </div>
+  {% endif %}
+
+  <!-- 1. 의뢰 정보 -->
+  <div class="cert-section">
+    <div class="cert-section-title">1. 시험 의뢰 정보</div>
+    <table class="cert-table">
+      <colgroup>
+        <col style="width:100px;"><col style="width:160px;">
+        <col style="width:100px;"><col style="width:160px;">
+        <col style="width:100px;"><col>
+      </colgroup>
+      <tbody>
+        <tr>
+          <th>의뢰번호</th><td>{{ req.request_no or '-' }}</td>
+          <th>의뢰부서</th><td>{{ req.request_dept or '-' }}</td>
+          <th>의뢰자</th><td>{{ req.requester_name or '-' }} {{ req.requester_position or '' }}</td>
+        </tr>
+        <tr>
+          <th>제품명</th><td><strong>{{ req.product_name or '-' }}</strong></td>
+          <th>모델명/코드</th><td>{{ req.model_code or '-' }}</td>
+          <th>의뢰일자</th><td>{{ req.write_date.strftime('%Y-%m-%d') if req.write_date else '-' }}</td>
+        </tr>
+        <tr>
+          <th>제품 종류</th><td>{{ req.product_type or '-' }}</td>
+          <th>시험 단계</th><td>{{ req.test_stage or '-' }}</td>
+          <th>시험 목적</th><td>{{ req.test_purpose or '-' }}</td>
+        </tr>
+        <tr>
+          <th>시편 수량</th><td>{{ req.sample_qty or '-' }}{% if req.sample_qty %}개{% endif %}</td>
+          <th>시편 상태</th><td>{{ req.sample_state or '-' }}</td>
+          <th>완료희망일</th><td>{{ req.deadline.strftime('%Y-%m-%d') if req.deadline else '-' }}</td>
+        </tr>
+        {% if req.project_customer %}
+        <tr>
+          <th>프로젝트/고객사</th><td colspan="5">{{ req.project_customer }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2. 시험 항목별 결과 -->
+  <div class="cert-section">
+    <div class="cert-section-title">2. 시험 항목별 결과</div>
+    {% if req.test_items %}
+    <table class="cert-table cert-items">
+      <colgroup>
+        <col style="width:36px;">
+        <col style="width:130px;">
+        <col>
+        <col style="width:100px;">
+        <col style="width:70px;">
+        <col style="width:180px;">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>시험 항목</th>
+          <th>시험 조건</th>
+          <th>규격</th>
+          <th>판정</th>
+          <th>결과 상세</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ti in req.test_items %}
+        {% set r = ti.item_result or '' %}
+        <tr>
+          <td style="text-align:center;color:#64748b;">{{ ti.item_no }}</td>
+          <td><strong>{{ ti.test_name or '-' }}</strong></td>
+          <td style="font-size:11px;white-space:pre-wrap;line-height:1.4;">{{ ti.test_condition or '-' }}</td>
+          <td style="font-size:11px;color:#475569;">{{ ti.standard or '-' }}</td>
+          <td style="text-align:center;">
+            <span class="item-badge item-{{ 'pass' if r == '적합' else 'fail' if r == '부적합' else 'na' }}">
+              {{ r or '-' }}
+            </span>
+          </td>
+          <td style="font-size:11px;">{{ ti.result_detail or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#64748b;font-size:13px;padding:12px;">등록된 시험 항목이 없습니다.</p>
+    {% endif %}
+  </div>
+
+  <!-- 3. 종합 판정 및 결과 요약 -->
+  <div class="cert-section">
+    <div class="cert-section-title">3. 종합 판정 및 결과 요약</div>
+    <table class="cert-table">
+      <colgroup>
+        <col style="width:100px;"><col style="width:120px;"><col>
+      </colgroup>
+      <tbody>
+        <tr>
+          <th>종합 판정</th>
+          <td>
+            <span class="overall-badge overall-{{ 'pass' if ov == '적합' else 'fail' if ov == '부적합' else 'cond' }}">
+              {{ ov or '-' }}
+            </span>
+          </td>
+          <th style="width:80px;">결과 요약</th>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:10px 12px;line-height:1.6;font-size:13px;min-height:50px;">
+            {{ res.summary or '(결과 요약 없음)' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. 시험 완료 정보 -->
+  <div class="cert-section">
+    <div class="cert-section-title">4. 시험 완료 정보</div>
+    <table class="cert-table">
+      <colgroup>
+        <col style="width:100px;"><col style="width:140px;">
+        <col style="width:100px;"><col style="width:140px;">
+        <col style="width:100px;"><col>
+      </colgroup>
+      <tbody>
+        <tr>
+          <th>시험 완료일</th>
+          <td>{{ res.test_complete_date.strftime('%Y-%m-%d') if res.test_complete_date else '-' }}</td>
+          <th>통보일</th>
+          <td>{{ res.notify_date.strftime('%Y-%m-%d') if res.notify_date else '-' }}</td>
+          <th>시료 반환</th>
+          <td>{{ 'YES' if res.sample_returned else 'NO' }}</td>
+        </tr>
+        <tr>
+          <th>시험자</th>
+          <td>{{ res.tester_name or '-' }}</td>
+          <th>통보자</th>
+          <td>{{ res.notifier_name or '-' }}</td>
+          <th>QA 승인자</th>
+          <td>{{ req.qa_approver or '-' }}</td>
+        </tr>
+        {% if req.receiver_name or req.review_opinion %}
+        <tr>
+          <th>접수자</th>
+          <td>{{ req.receiver_name or '-' }}</td>
+          <th>검토 의견</th>
+          <td colspan="3">{{ req.review_opinion or '-' }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 서명란 -->
+  <div class="cert-section">
+    <div class="cert-section-title">5. 확인 서명</div>
+    <table class="cert-table cert-sign">
+      <colgroup><col><col><col></colgroup>
+      <thead>
+        <tr>
+          <th>시험자 (Tester)</th>
+          <th>QA 담당자</th>
+          <th>QA 승인자 (Approver)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="sign-cell">
+            <div class="sign-name">{{ res.tester_name or '' }}</div>
+            <div class="sign-line"></div>
+            <div class="sign-date-label">서명 / 날인</div>
+          </td>
+          <td class="sign-cell">
+            <div class="sign-name">{{ res.notifier_name or '' }}</div>
+            <div class="sign-line"></div>
+            <div class="sign-date-label">서명 / 날인</div>
+          </td>
+          <td class="sign-cell">
+            <div class="sign-name">{{ req.qa_approver or '' }}</div>
+            <div class="sign-line"></div>
+            <div class="sign-date-label">서명 / 날인</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 푸터 -->
+  <div class="cert-footer">
+    본 성적서는 RTMS(신뢰성 시험 관리 시스템)에서 자동 생성되었습니다. &nbsp;|&nbsp;
+    INTOPS &nbsp;|&nbsp;
+    발행일시: {{ res.result_date.strftime('%Y-%m-%d') if res.result_date else '' }}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* ── 성적서 레이아웃 ── */
+.certificate-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: 'Malgun Gothic', 'Segoe UI', sans-serif;
+  font-size: 13px;
+}
+
+/* 헤더 */
+.cert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  padding: 20px 28px;
+  color: #fff;
+}
+.cert-header-left .cert-logo-text {
+  font-size: 20px; font-weight: 900; letter-spacing: 0.1em;
+}
+.cert-header-left .cert-sub {
+  font-size: 10px; opacity: 0.8; margin-top: 2px;
+}
+.cert-header-center { text-align: center; }
+.cert-title { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 0.05em; }
+.cert-title-en { font-size: 11px; opacity: 0.8; margin-top: 3px; }
+.cert-header-right { text-align: right; }
+.cert-no-label { font-size: 10px; opacity: 0.8; }
+.cert-no { font-size: 16px; font-weight: 700; letter-spacing: 0.05em; margin: 2px 0; }
+.cert-date { font-size: 11px; opacity: 0.8; }
+
+/* 종합판정 배너 */
+.cert-verdict {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 14px 28px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.cert-verdict-pass { background: #f0fdf4; }
+.cert-verdict-fail { background: #fef2f2; }
+.cert-verdict-cond { background: #fffbeb; }
+.cert-verdict-label { font-size: 12px; color: #64748b; font-weight: 600; }
+.cert-verdict-value {
+  font-size: 28px; font-weight: 900;
+}
+.cert-verdict-pass .cert-verdict-value { color: #15803d; }
+.cert-verdict-fail .cert-verdict-value { color: #dc2626; }
+.cert-verdict-cond .cert-verdict-value { color: #d97706; }
+
+/* 섹션 */
+.cert-section { padding: 0 0 0 0; border-bottom: 1px solid #e2e8f0; }
+.cert-section:last-child { border-bottom: none; }
+.cert-section-title {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 7px 20px;
+  font-size: 12px; font-weight: 700; color: #475569;
+  letter-spacing: 0.03em;
+}
+
+/* 테이블 */
+.cert-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px;
+}
+.cert-table th {
+  background: #f1f5f9;
+  color: #475569; font-weight: 700; font-size: 11px;
+  padding: 7px 12px;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.cert-table td {
+  padding: 7px 12px;
+  border: 1px solid #e2e8f0;
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+/* 시험 항목 배지 */
+.item-badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+}
+.item-pass { background: #dcfce7; color: #15803d; }
+.item-fail { background: #fee2e2; color: #dc2626; }
+.item-na   { background: #f1f5f9; color: #64748b; }
+
+/* 종합 배지 */
+.overall-badge {
+  display: inline-block;
+  padding: 4px 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 900;
+}
+.overall-pass { background: #dcfce7; color: #15803d; }
+.overall-fail { background: #fee2e2; color: #dc2626; }
+.overall-cond { background: #fef9c3; color: #d97706; }
+
+/* 서명란 */
+.cert-sign th {
+  text-align: center; padding: 8px;
+}
+.sign-cell {
+  height: 80px; text-align: center; vertical-align: top;
+  padding: 10px 20px !important;
+}
+.sign-name { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.sign-line {
+  border-bottom: 1px solid #334155;
+  margin: 0 20px 4px;
+}
+.sign-date-label { font-size: 10px; color: #94a3b8; }
+
+/* 푸터 */
+.cert-footer {
+  padding: 10px 20px;
+  font-size: 10px; color: #94a3b8; text-align: center;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* 인쇄 */
+@media print {
+  .no-print, .sidebar, .topbar, .breadcrumb { display: none !important; }
+  .main-wrap { margin-left: 0 !important; }
+  .page-content { padding: 0 !important; }
+  .certificate-wrap {
+    max-width: 100%; border: none; border-radius: 0;
+  }
+  @page { size: A4 portrait; margin: 10mm 12mm; }
+}
+</style>
+{% endblock %}
