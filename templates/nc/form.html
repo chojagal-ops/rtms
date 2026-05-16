@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% set is_edit = nc is not none %}
-{% block title %}{{ '부적합 수정' if is_edit else '불량 등록' }} — RTMS{% endblock %}
-{% block topbar_title %}{{ '✏️ 부적합 수정' if is_edit else '⚠️ 불량 등록' }}{% endblock %}
+{% block title %}{{ '부적합 수정' if is_edit else '부적합 등록' }} — RTMS{% endblock %}
+{% block topbar_title %}{{ '✏️ 부적합 수정' if is_edit else '⚠️ 부적합 등록' }}{% endblock %}
 
 {% block content %}
 <div class="card" style="max-width:860px;margin:0 auto;">
@@ -65,8 +65,8 @@
                  value="{{ nc.product_name if nc else '' }}" required>
         </div>
         <div class="form-group">
-          <label class="form-label">불량 유형</label>
-          <input type="text" name="defect_type" class="form-control" placeholder="예: 외관불량, 기능불량, 치수불량"
+          <label class="form-label">부적합 유형</label>
+          <input type="text" name="defect_type" class="form-control" placeholder="예: 외관부적합, 기능부적합, 치수부적합"
                  value="{{ nc.defect_type if nc else '' }}">
         </div>
 
@@ -99,9 +99,9 @@
         </div>
 
         <div class="form-group form-full">
-          <label class="form-label">불량 내용 상세</label>
+          <label class="form-label">부적합 내용 상세</label>
           <textarea name="defect_desc" class="form-control" rows="5"
-                    placeholder="불량 내용을 자세히 설명하세요.">{{ nc.defect_desc if nc else '' }}</textarea>
+                    placeholder="부적합 내용을 자세히 설명하세요.">{{ nc.defect_desc if nc else '' }}</textarea>
         </div>
 
         {# ── 관련 의뢰서 연결 ── #}

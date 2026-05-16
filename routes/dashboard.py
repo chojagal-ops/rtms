@@ -45,7 +45,7 @@ def index():
                          .filter(TestRequest.deadline != None)
                          .filter(TestRequest.deadline <= today + timedelta(days=7))
                          .filter(TestRequest.deadline >= today)
-                         .filter(~TestRequest.status.in_(['완료', '보류']))
+                         .filter(~TestRequest.status.in_(['완료', '보류', '결과회신']))
                          .order_by(TestRequest.deadline.asc())
                          .all())
 
@@ -53,7 +53,7 @@ def index():
         overdue = (TestRequest.query
                    .filter(TestRequest.deadline != None)
                    .filter(TestRequest.deadline < today)
-                   .filter(~TestRequest.status.in_(['완료', '보류']))
+                   .filter(~TestRequest.status.in_(['완료', '보류', '결과회신']))
                    .count())
 
     except Exception as e:

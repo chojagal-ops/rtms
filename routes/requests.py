@@ -201,11 +201,14 @@ def api_test_standards():
 @login_required
 def list_view():
     status_filter = request.args.get('status', '')
+    dept_filter   = request.args.get('dept', '').strip()
     search        = request.args.get('q', '').strip()
     try:
         q = TestRequest.query
         if status_filter:
             q = q.filter_by(status=status_filter)
+        if dept_filter:
+            q = q.filter(TestRequest.request_dept == dept_filter)
         if search:
             q = q.filter(
                 db.or_(
@@ -216,12 +219,20 @@ def list_view():
                 )
             )
         items = q.order_by(TestRequest.created_at.desc()).all()
+
+        dept_rows = (db.session.query(TestRequest.request_dept)
+                     .distinct()
+                     .filter(TestRequest.request_dept.isnot(None))
+                     .all())
+        depts = sorted([d[0] for d in dept_rows if d[0]])
     except Exception as e:
         log_error('의뢰서 목록 조회 오류', e)
         flash('목록을 불러오는 중 오류가 발생했습니다.', 'danger')
         items = []
+        depts = []
     return render_template('requests/list.html', items=items,
-                           status_filter=status_filter, search=search)
+                           status_filter=status_filter, dept_filter=dept_filter,
+                           search=search, depts=depts)
 
 
 # ── 신규 등록 (수동 입력) ───────────────────────────────────

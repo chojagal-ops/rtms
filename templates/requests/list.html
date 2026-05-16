@@ -7,15 +7,21 @@
 <div class="filter-bar" style="margin-bottom:16px;">
   <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;">
     <input type="text" name="q" value="{{ search }}" class="form-control"
-           placeholder="의뢰번호 / 제품명 / 부서 검색…" style="width:240px;">
+           placeholder="의뢰번호 / 제품명 / 부서 검색…" style="width:220px;">
     <select name="status" class="form-control" style="width:130px;">
       <option value="">전체 상태</option>
       {% for s in REQUEST_STATUSES %}
       <option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s }}</option>
       {% endfor %}
     </select>
+    <select name="dept" class="form-control" style="width:120px;">
+      <option value="">전체 팀</option>
+      {% for d in depts %}
+      <option value="{{ d }}" {{ 'selected' if dept_filter == d }}>{{ d }}</option>
+      {% endfor %}
+    </select>
     <button type="submit" class="btn btn-primary btn-sm">검색</button>
-    {% if status_filter or search %}
+    {% if status_filter or search or dept_filter %}
     <a href="{{ url_for('requests.list_view') }}" class="btn btn-outline btn-sm">초기화</a>
     {% endif %}
   </form>
@@ -44,12 +50,13 @@
     <table>
       <thead>
         <tr>
-          <th style="width:140px;">의뢰번호</th>
+          <th style="width:130px;">의뢰번호</th>
+          <th style="width:80px;">등록일</th>
           <th>제품명 / 모델</th>
-          <th style="width:100px;">의뢰부서</th>
-          <th style="width:80px;">의뢰자</th>
-          <th style="width:100px;">완료희망일</th>
-          <th style="width:70px;">우선순위</th>
+          <th style="width:90px;">의뢰부서</th>
+          <th style="width:75px;">의뢰자</th>
+          <th style="width:95px;">완료희망일</th>
+          <th style="width:65px;">우선순위</th>
           <th style="width:90px;">상태</th>
           <th style="width:90px;">판정결과</th>
           <th style="width:180px;">작업</th>
@@ -64,9 +71,9 @@
                style="color:var(--primary);font-weight:700;font-size:12px;text-decoration:none;">
               {{ item.request_no or '-' }}
             </a>
-            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">
-              {{ item.created_at.strftime('%Y-%m-%d') if item.created_at else '' }}
-            </div>
+          </td>
+          <td style="font-size:12px;color:#64748b;">
+            {{ item.created_at.strftime('%Y-%m-%d') if item.created_at else '-' }}
           </td>
           <td>
             <div style="font-weight:600;font-size:13px;">{{ item.product_name or '-' }}</div>
@@ -76,7 +83,7 @@
           <td style="font-size:13px;">{{ item.requester_name or '-' }}</td>
           <td style="font-size:12px;">
             {% if item.deadline %}
-              {% if item.deadline < today and item.status not in ['완료','보류'] %}
+              {% if item.deadline < today and item.status not in ['완료','보류','결과회신'] %}
                 <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%m/%d') }} ⚠️</span>
               {% else %}
                 {{ item.deadline.strftime('%Y-%m-%d') }}

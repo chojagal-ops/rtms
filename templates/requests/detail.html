@@ -52,7 +52,7 @@
         <div class="info-value">
           {% if item.deadline %}
             {% set today_d = today %}
-            {% if item.deadline < today_d and item.status not in ['완료','보류'] %}
+            {% if item.deadline < today_d and item.status not in ['완료','보류','결과회신'] %}
               <span style="color:#dc2626;font-weight:700;">{{ item.deadline.strftime('%Y-%m-%d') }} ⚠️ 기한초과</span>
             {% else %}
               {{ item.deadline.strftime('%Y-%m-%d') }}

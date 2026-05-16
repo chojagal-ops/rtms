@@ -83,7 +83,7 @@
           <div style="font-weight:600;">{{ nc.product_name or '-' }}</div>
         </div>
         <div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">불량 유형</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">부적합 유형</div>
           <div>{{ nc.defect_type or '-' }}</div>
         </div>
         <div>
@@ -97,7 +97,7 @@
       </div>
       {% if nc.defect_desc %}
       <div style="margin-bottom:12px;">
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">불량 내용 상세</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">부적합 내용 상세</div>
         <div style="background:#f8fafc;padding:12px 16px;border-radius:8px;font-size:14px;white-space:pre-wrap;">{{ nc.defect_desc }}</div>
       </div>
       {% endif %}

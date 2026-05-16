@@ -12,18 +12,18 @@
     <option value="{{ s }}" {% if s == status_f %}selected{% endif %}>{{ s }}</option>
     {% endfor %}
   </select>
-  <select name="severity" class="form-control" style="width:100px;">
+  <select name="severity" class="form-control" style="width:120px;">
     <option value="">전체 심각도</option>
     {% for sv in NC_SEVERITIES %}
     <option value="{{ sv }}" {% if sv == severity_f %}selected{% endif %}>{{ sv }}</option>
     {% endfor %}
   </select>
-  <input type="text" name="q" value="{{ search }}" placeholder="번호·제품명·불량유형·발견자 검색"
+  <input type="text" name="q" value="{{ search }}" placeholder="번호·제품명·부적합유형·발견자 검색"
          class="form-control" style="flex:1;min-width:180px;">
   <button type="submit" class="btn btn-primary">🔍 검색</button>
   <a href="{{ url_for('nc.list_view') }}" class="btn btn-outline">초기화</a>
   <a href="{{ url_for('nc.new') }}" class="btn btn-primary" style="margin-left:auto;">
-    ➕ 불량 등록
+    ➕ 부적합 등록
   </a>
 </form>
 
@@ -36,7 +36,7 @@
           <th style="width:140px;">부적합 번호</th>
           <th style="width:80px;">발생일</th>
           <th>제품명/모델</th>
-          <th style="width:90px;">불량 유형</th>
+          <th style="width:90px;">부적합 유형</th>
           <th style="width:50px;text-align:center;">심각도</th>
           <th style="width:80px;">발생 부서</th>
           <th style="width:100px;text-align:center;">상태</th>

@@ -104,7 +104,7 @@
         {% for item in recent %}
         {% set meta = STATUS_META.get(item.status, {}) %}
         {% set res  = item.result %}
-        {% set is_overdue = item.deadline and item.deadline < today and item.status not in ['완료','보류'] %}
+        {% set is_overdue = item.deadline and item.deadline < today and item.status not in ['완료','보류','결과회신'] %}
         <tr class="{{ 'overdue-row' if is_overdue else '' }}">
           <td>
             <a href="{{ url_for('requests.detail', rid=item.id) }}"
