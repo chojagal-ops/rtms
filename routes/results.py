@@ -341,7 +341,7 @@ def download_file(filename):
 
 
 # ── 성적서 인쇄 뷰 ───────────────────────────────────────────
-@results_bp.route('/requests/<int:rid>/certificate')
+@results_bp.route('/requests/<int:rid>/result-certificate')
 @login_required
 def certificate(rid):
     """성적서 인쇄용 HTML 뷰"""
@@ -354,7 +354,7 @@ def certificate(rid):
 
 
 # ── 성적서 엑셀 다운로드 ─────────────────────────────────────
-@results_bp.route('/requests/<int:rid>/certificate/excel')
+@results_bp.route('/requests/<int:rid>/result-certificate/excel')
 @login_required
 def certificate_excel(rid):
     """성적서 엑셀 생성 (openpyxl 직접 생성)"""
