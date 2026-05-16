@@ -160,7 +160,7 @@
         <tr>
           <td style="text-align:center;color:#64748b;">{{ ti.item_no }}</td>
           <td><strong>{{ ti.test_name or '-' }}</strong></td>
-          <td style="font-size:11px;white-space:pre-wrap;line-height:1.4;">{{ ti.test_condition or '-' }}</td>
+          <td class="fmt-cond" style="font-size:11px;white-space:pre-wrap;line-height:1.6;">{{ ti.test_condition or '-' }}</td>
           <td style="font-size:11px;color:#475569;text-align:center;">{{ ti.standard or '-' }}</td>
           <td style="text-align:center;font-size:11px;">{{ item.req_start_date.strftime('%Y-%m-%d') if item.req_start_date else '-' }}</td>
           <td style="text-align:center;font-size:11px;">{{ item.req_end_date.strftime('%Y-%m-%d') if item.req_end_date else '-' }}</td>
@@ -191,7 +191,7 @@
           <td style="text-align:center;">
             <span class="item-badge item-na">{{ c.criterion_type or '-' }}</span>
           </td>
-          <td style="font-size:12px;line-height:1.5;">{{ c.criterion_content or '-' }}</td>
+          <td class="fmt-cond" style="font-size:12px;white-space:pre-wrap;line-height:1.6;">{{ c.criterion_content or '-' }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -363,4 +363,18 @@
   @page { size:A4 portrait; margin:10mm 12mm; }
 }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.fmt-cond').forEach(function(el) {
+    var text = el.textContent.trim();
+    if (!text || text === '-') return;
+    // ▶ 앞에서 줄바꿈 (첫 ▶ 제외)
+    text = text.replace(/\s*▶/g, '\n▶').replace(/^\n/, '');
+    // 숫자) 앞에서 줄바꿈 (예: 1), 2), 3) ...)
+    text = text.replace(/([^\n])\s+(\d{1,2}\))/g, '$1\n$2');
+    el.textContent = text.trim();
+    el.style.whiteSpace = 'pre-wrap';
+  });
+});
+</script>
 {% endblock %}
