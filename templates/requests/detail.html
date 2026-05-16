@@ -164,7 +164,7 @@
           <tr>
             <td style="text-align:center;color:#64748b;">{{ c.criterion_no }}</td>
             <td><span class="badge badge-진행중">{{ c.criterion_type or '-' }}</span></td>
-            <td>{{ c.criterion_content or '-' }}</td>
+            <td style="word-break:break-word;overflow-wrap:break-word;white-space:normal;">{{ c.criterion_content or '-' }}</td>
           </tr>
           {% endfor %}
         </tbody>
