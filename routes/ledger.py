@@ -113,7 +113,7 @@ def export_excel():
 
     # 헤더
     headers = ['No.','의뢰일자','의뢰부서','의뢰자','품명/모델명','LOT No./S/N',
-               '시험 의뢰 목적','시험 항목','시험 조건','시험 시작일','시험 완료일',
+               '시험 의뢰 목적','시험 항목','시험 시작일','시험 완료일',
                '시험자','시험 결과','판정','결과 통보일','특이사항/조치사항']
     ws.append(headers)
     for cell in ws[2]:
@@ -127,7 +127,6 @@ def export_excel():
     for idx, item in enumerate(items, 1):
         res = item.result
         names = '\n'.join(ti.test_name or '' for ti in item.test_items if ti.test_name)
-        conds = '\n'.join(ti.test_condition or '' for ti in item.test_items if ti.test_condition)
         prod  = item.product_name or ''
         if item.model_code:
             prod += f'\n{item.model_code}'
@@ -140,7 +139,6 @@ def export_excel():
             item.sample_id_method or '',
             item.test_purpose or '',
             names,
-            conds,
             item.req_start_date.strftime('%Y-%m-%d') if item.req_start_date else '',
             res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '',
             res.tester_name if res else '',

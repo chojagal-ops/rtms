@@ -89,8 +89,7 @@
           <th style="width:90px;">품명/모델명</th>
           <th style="width:65px;">LOT/S/N</th>
           <th style="width:60px;">목적</th>
-          <th style="width:80px;">시험 항목</th>
-          <th style="width:200px;">시험 조건</th>
+          <th style="width:120px;">시험 항목</th>
           <th style="width:68px;">시작일</th>
           <th style="width:68px;">완료일</th>
           <th style="width:48px;">시험자</th>
@@ -131,29 +130,6 @@
                   {{ ti.test_name or '' }}
                 </div>
               {% endfor %}
-            {% else %}-{% endif %}
-          </td>
-
-          {# ▶ 기준으로 줄바꿈 처리 + 확인 버튼 #}
-          <td class="cond-cell" style="padding:0;">
-            {% if item.test_items %}
-              {% set cond_id = 'cond_' ~ item.id %}
-              <div class="cond-wrap" id="{{ cond_id }}">
-                {% for ti in item.test_items %}
-                  {% if ti.test_condition %}
-                    {% if not loop.first %}<div class="cond-sep"></div>{% endif %}
-                    {% set parts = ti.test_condition.split('▶') %}
-                    {% for part in parts %}
-                      {% if part.strip() %}
-                      <div class="cond-line">▶ {{ part.strip() }}</div>
-                      {% endif %}
-                    {% endfor %}
-                  {% endif %}
-                {% endfor %}
-              </div>
-              <button type="button" class="cond-btn" onclick="toggleCond('{{ cond_id }}', this, event)">
-                ▼ 확인
-              </button>
             {% else %}-{% endif %}
           </td>
 
@@ -243,44 +219,6 @@
 .ledger-r:nth-child(even) td { background: #fafbfc; }
 .ledger-r:nth-child(even):hover td { background: #f0f7ff; }
 
-/* ▶ 시험 조건 접기/펼치기 */
-.cond-cell { max-width: 200px; overflow: hidden; padding: 0 !important; }
-.cond-wrap {
-  max-height: 44px;       /* 기본: 약 2줄만 보임 */
-  overflow: hidden;
-  transition: max-height 0.25s ease;
-  padding: 4px 6px 2px;
-  font-size: 10px;
-  color: #374151;
-}
-.cond-wrap.expanded { max-height: 600px; }
-.cond-line {
-  line-height: 1.4;
-  word-break: break-all;
-  overflow-wrap: break-word;
-  white-space: normal;
-  padding: 1px 0;
-}
-.cond-line + .cond-line {
-  border-top: 1px dashed #e9ecef;
-  margin-top: 2px;
-  padding-top: 2px;
-}
-.cond-sep { border-top: 1px solid #cbd5e1; margin: 2px 0; }
-.cond-btn {
-  display: block;
-  width: 100%;
-  padding: 2px 0;
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-  background: #2563eb;
-  border: none;
-  cursor: pointer;
-  text-align: center;
-  letter-spacing: 0.03em;
-}
-.cond-btn:hover { background: #1d4ed8; }
 
 @media print {
   .sidebar, .topbar, .card:first-child, .btn { display:none!important; }
@@ -290,21 +228,9 @@
   .ledger-tbl { font-size:7px!important; min-width:unset!important; }
   .ledger-tbl th { font-size:7px!important; padding:3px 2px!important; }
   .ledger-tbl td { padding:3px 2px!important; }
-  .cond-wrap { max-height:none!important; }   /* 인쇄 시 전체 표시 */
-  .cond-btn { display:none!important; }
-  .cond-line { font-size:7px!important; }
   .ledger-r:hover td { background:transparent!important; }
   @page { size:A4 landscape; margin:6mm; }
 }
 </style>
 
-<script>
-function toggleCond(id, btn, e) {
-  e.stopPropagation();   // 행 클릭(상세이동) 차단
-  const wrap = document.getElementById(id);
-  const expanded = wrap.classList.toggle('expanded');
-  btn.textContent = expanded ? '▲ 닫기' : '▼ 확인';
-  btn.style.background = expanded ? '#64748b' : '#2563eb';
-}
-</script>
 {% endblock %}
