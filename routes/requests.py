@@ -584,6 +584,285 @@ def download_file(filename):
     return send_from_directory(upload_dir, filename, as_attachment=True)
 
 
+# ── 의뢰서 인쇄 뷰 ───────────────────────────────────────────
+@requests_bp.route('/requests/<int:rid>/certificate')
+@login_required
+def certificate(rid):
+    """의뢰서 인쇄용 HTML 뷰"""
+    req_obj = db.get_or_404(TestRequest, rid)
+    return render_template('requests/certificate.html', item=req_obj)
+
+
+# ── 의뢰서 엑셀 다운로드 (programmatic) ──────────────────────
+@requests_bp.route('/requests/<int:rid>/certificate/excel')
+@login_required
+def certificate_excel(rid):
+    """의뢰서 성적서 엑셀 생성 (openpyxl 직접 생성)"""
+    from io import BytesIO
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from datetime import datetime as dt
+
+    req_obj = db.get_or_404(TestRequest, rid)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = '시험의뢰서'
+
+    col_widths = [6, 18, 28, 14, 14, 24]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    thin  = Side(style='thin',   color='000000')
+    thick = Side(style='medium', color='000000')
+    b_all = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def cell(row, col, value='', bold=False, size=10, align='left',
+             valign='center', fill=None, color='000000', wrap=False):
+        c = ws.cell(row=row, column=col, value=value)
+        c.font = Font(name='맑은 고딕', bold=bold, size=size, color=color)
+        c.alignment = Alignment(horizontal=align, vertical=valign, wrap_text=wrap)
+        if fill:
+            c.fill = PatternFill('solid', fgColor=fill)
+        c.border = b_all
+        return c
+
+    def merge(r1, c1, r2, c2):
+        ws.merge_cells(start_row=r1, start_column=c1, end_row=r2, end_column=c2)
+
+    fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
+    ORANGE = 'F97316'
+    LGRAY  = 'F1F5F9'
+    DARK   = '334155'
+    GRAY   = '475569'
+
+    # ── 제목 ───────────────────────────────────────────────────
+    ws.row_dimensions[1].height = 14
+    ws.row_dimensions[2].height = 36
+    merge(2, 1, 2, 6)
+    c = ws.cell(row=2, column=1, value='신뢰성 시험 의뢰서')
+    c.font = Font(name='맑은 고딕', bold=True, size=18, color='FFFFFF')
+    c.alignment = Alignment(horizontal='center', vertical='center')
+    c.fill = PatternFill('solid', fgColor=ORANGE)
+    c.border = b_all
+
+    ws.row_dimensions[3].height = 14
+    merge(4, 1, 4, 3)
+    c = ws.cell(row=4, column=1, value=f'의뢰번호: {req_obj.request_no or "-"}')
+    c.font = Font(name='맑은 고딕', bold=True, size=10)
+    c.alignment = Alignment(horizontal='left', vertical='center')
+    merge(4, 4, 4, 6)
+    c = ws.cell(row=4, column=4, value=f'작성일: {fd(req_obj.write_date)}')
+    c.font = Font(name='맑은 고딕', size=10)
+    c.alignment = Alignment(horizontal='right', vertical='center')
+    ws.row_dimensions[4].height = 18
+    ws.row_dimensions[5].height = 6
+
+    def section_title(row, title):
+        merge(row, 1, row, 6)
+        c = ws.cell(row=row, column=1, value=title)
+        c.font = Font(name='맑은 고딕', bold=True, size=10, color=GRAY)
+        c.alignment = Alignment(horizontal='left', vertical='center')
+        c.fill = PatternFill('solid', fgColor=LGRAY)
+        c.border = b_all
+        ws.row_dimensions[row].height = 16
+
+    def th(row, col, value):
+        c = ws.cell(row=row, column=col, value=value)
+        c.font = Font(name='맑은 고딕', bold=True, size=9, color='FFFFFF')
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.fill = PatternFill('solid', fgColor=DARK)
+        c.border = b_all
+        return c
+
+    def td(row, col, value, bold=False, color='000000', align='center', wrap=False):
+        c = ws.cell(row=row, column=col, value=value)
+        c.font = Font(name='맑은 고딕', size=10, bold=bold, color=color)
+        c.alignment = Alignment(horizontal=align, vertical='center', wrap_text=wrap)
+        c.border = b_all
+        return c
+
+    # ── 1. 의뢰 부서 및 담당자 ───────────────────────────────
+    section_title(6, '1. 의뢰 부서 및 담당자')
+    ws.row_dimensions[7].height = 16
+    ws.row_dimensions[8].height = 18
+    for col, h in enumerate(['의뢰부서', '의뢰자', '직책', '연락처', '프로젝트/고객사', '작성일'], 1):
+        th(7, col, h)
+    vals = [req_obj.request_dept or '-', req_obj.requester_name or '-',
+            req_obj.requester_position or '-', req_obj.contact or '-',
+            req_obj.project_customer or '-', fd(req_obj.write_date)]
+    for col, v in enumerate(vals, 1):
+        td(8, col, v)
+
+    ws.row_dimensions[9].height = 6
+
+    # ── 2. 제품 정보 ─────────────────────────────────────────
+    section_title(10, '2. 제품 정보')
+    ws.row_dimensions[11].height = 16
+    ws.row_dimensions[12].height = 18
+    for col, h in enumerate(['제품명', '모델명/코드', '제품 종류', '시험 단계', '변경 내용', '완료 희망일'], 1):
+        th(11, col, h)
+    for col, v in enumerate([req_obj.product_name or '-', req_obj.model_code or '-',
+                              req_obj.product_type or '-', req_obj.test_stage or '-',
+                              req_obj.change_content or '-', fd(req_obj.deadline)], 1):
+        td(12, col, v)
+
+    ws.row_dimensions[13].height = 6
+
+    # ── 3. 시험 목적 및 시편 ─────────────────────────────────
+    section_title(14, '3. 시험 목적 및 시편')
+    ws.row_dimensions[15].height = 16
+    ws.row_dimensions[16].height = 18
+    for col, h in enumerate(['시험 목적', '시편 수량', '시편 상태', '식별 방법', '우선순위', '특이사항'], 1):
+        th(15, col, h)
+    for col, v in enumerate([req_obj.test_purpose or '-',
+                              f"{req_obj.sample_qty}개" if req_obj.sample_qty else '-',
+                              req_obj.sample_state or '-', req_obj.sample_id_method or '-',
+                              req_obj.priority or '-', req_obj.sample_notes or '-'], 1):
+        td(16, col, v)
+
+    ws.row_dimensions[17].height = 6
+
+    # ── 4. 시험 항목 ─────────────────────────────────────────
+    section_title(18, '4. 시험 항목')
+    ws.row_dimensions[19].height = 16
+    for col, h in enumerate(['No', '시험 항목', '시험 조건', '규격', '일정 시작', '일정 완료'], 1):
+        th(19, col, h)
+
+    row = 20
+    items = req_obj.test_items
+    for ti in items:
+        ws.row_dimensions[row].height = 28
+        td(row, 1, ti.item_no, align='center')
+        td(row, 2, ti.test_name or '-', bold=True, align='left')
+        c = ws.cell(row=row, column=3, value=ti.test_condition or '-')
+        c.font = Font(name='맑은 고딕', size=9)
+        c.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
+        c.border = b_all
+        td(row, 4, ti.standard or '-', align='center')
+        td(row, 5, fd(req_obj.req_start_date))
+        td(row, 6, fd(req_obj.req_end_date))
+        row += 1
+
+    if not items:
+        merge(20, 1, 20, 6)
+        c = ws.cell(row=20, column=1, value='등록된 시험 항목이 없습니다.')
+        c.font = Font(name='맑은 고딕', size=9, color='94A3B8')
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.border = b_all
+        row = 21
+
+    ws.row_dimensions[row].height = 6
+    row += 1
+
+    # ── 5. 판정 기준 ─────────────────────────────────────────
+    section_title(row, '5. 판정 기준')
+    row += 1
+    ws.row_dimensions[row].height = 16
+    th(row, 1, 'No')
+    merge(row, 2, row, 3)
+    th(row, 2, '기준 유형')
+    merge(row, 4, row, 6)
+    th(row, 4, '기준 내용')
+    row += 1
+
+    criteria = req_obj.criteria
+    for cr in criteria:
+        ws.row_dimensions[row].height = 22
+        td(row, 1, cr.criterion_no, align='center')
+        merge(row, 2, row, 3)
+        td(row, 2, cr.criterion_type or '-', align='center')
+        merge(row, 4, row, 6)
+        c = ws.cell(row=row, column=4, value=cr.criterion_content or '-')
+        c.font = Font(name='맑은 고딕', size=10)
+        c.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
+        c.border = b_all
+        row += 1
+
+    if not criteria:
+        merge(row, 1, row, 6)
+        c = ws.cell(row=row, column=1, value='등록된 판정 기준이 없습니다.')
+        c.font = Font(name='맑은 고딕', size=9, color='94A3B8')
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.border = b_all
+        row += 1
+
+    ws.row_dimensions[row].height = 6
+    row += 1
+
+    # ── 6. 품질팀 접수 정보 ─────────────────────────────────
+    section_title(row, '6. 품질팀 접수 정보')
+    row += 1
+    ws.row_dimensions[row].height = 16
+    ws.row_dimensions[row+1].height = 18
+    for col, h in enumerate(['접수자', '시험 가능 여부', 'QA 승인자', '완료희망일', '작성자', '부서 승인'], 1):
+        th(row, col, h)
+    feas_color = ('15803d' if req_obj.feasibility == '가능' else
+                  'dc2626' if req_obj.feasibility == '불가' else '374151')
+    for col, (v, color) in enumerate([
+        (req_obj.receiver_name or '-', '000000'),
+        (req_obj.feasibility or '-',   feas_color),
+        (req_obj.qa_approver or '-',   '000000'),
+        (fd(req_obj.deadline),         '000000'),
+        (req_obj.writer_name or '-',   '000000'),
+        (req_obj.dept_approver or '-', '000000'),
+    ], 1):
+        c = ws.cell(row=row+1, column=col, value=v)
+        c.font = Font(name='맑은 고딕', size=10, bold=(col==2), color=color)
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.border = b_all
+    row += 2
+
+    ws.row_dimensions[row].height = 6
+    row += 1
+
+    # ── 7. 서명란 ────────────────────────────────────────────
+    section_title(row, '7. 확인 서명')
+    row += 1
+    ws.row_dimensions[row].height = 16
+    ws.row_dimensions[row+1].height = 50
+    merge(row, 1, row, 2);   th(row, 1, '의뢰자')
+    merge(row, 3, row, 4);   th(row, 3, '부서 승인자')
+    merge(row, 5, row, 6);   th(row, 5, 'QA 승인자')
+    merge(row+1, 1, row+1, 2)
+    merge(row+1, 3, row+1, 4)
+    merge(row+1, 5, row+1, 6)
+    for col in [1, 3, 5]:
+        c = ws.cell(row=row+1, column=col, value='')
+        c.border = b_all
+    row += 2
+
+    ws.row_dimensions[row].height = 6
+    row += 1
+
+    # ── 푸터 ─────────────────────────────────────────────────
+    merge(row, 1, row, 6)
+    c = ws.cell(row=row, column=1,
+                value=f'본 의뢰서는 RTMS(신뢰성 시험 관리 시스템)에서 자동 생성되었습니다. '
+                      f'발행: {dt.now().strftime("%Y-%m-%d %H:%M")}')
+    c.font = Font(name='맑은 고딕', size=8, color='94A3B8', italic=True)
+    c.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[row].height = 14
+
+    # 인쇄 설정
+    ws.page_setup.paperSize   = ws.PAPERSIZE_A4
+    ws.page_setup.orientation = 'portrait'
+    ws.page_setup.fitToPage   = True
+    ws.page_setup.fitToWidth  = 1
+    ws.page_setup.fitToHeight = 0
+    ws.page_margins.left   = 0.5
+    ws.page_margins.right  = 0.5
+    ws.page_margins.top    = 0.7
+    ws.page_margins.bottom = 0.7
+
+    out = BytesIO()
+    wb.save(out)
+    out.seek(0)
+    fname = f'신뢰성시험의뢰서_{req_obj.request_no or rid}_{dt.now().strftime("%Y%m%d")}.xlsx'
+    return send_file(out, as_attachment=True, download_name=fname,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
 # ── 내부 헬퍼 ───────────────────────────────────────────────
 def _save_test_items(request_id, form):
     """시험 항목 목록 저장 (form에서 배열 파라미터 읽기)"""

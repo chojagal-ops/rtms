@@ -109,11 +109,22 @@
             {% endif %}
           </td>
           <td>
-            <div style="display:flex;gap:4px;">
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
               <a href="{{ url_for('requests.detail', rid=item.id) }}"
                  class="btn btn-outline btn-sm">상세</a>
               <a href="{{ url_for('requests.edit', rid=item.id) }}"
                  class="btn btn-outline btn-sm">수정</a>
+              <a href="{{ url_for('requests.certificate', rid=item.id) }}"
+                 target="_blank"
+                 class="btn btn-sm"
+                 style="font-size:11px;padding:3px 7px;background:#f97316;color:#fff;border:none;border-radius:4px;text-decoration:none;">
+                🖨️
+              </a>
+              <a href="{{ url_for('requests.certificate_excel', rid=item.id) }}"
+                 class="btn btn-sm"
+                 style="font-size:11px;padding:3px 7px;background:#15803d;color:#fff;border:none;border-radius:4px;text-decoration:none;">
+                📥
+              </a>
             </div>
           </td>
         </tr>
