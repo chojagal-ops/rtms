@@ -359,6 +359,8 @@ document.addEventListener('DOMContentLoaded', function() {
     text = text.replace(/\s*▶/g, '\n▶').replace(/^\n/, '');
     // 숫자) 앞에서 줄바꿈 (예: 1), 2), 3) ...)
     text = text.replace(/([^\n])\s+(\d{1,2}\))/g, '$1\n$2');
+    // ※ 앞에서 줄바꿈
+    text = text.replace(/([^\n])\s*(※)/g, '$1\n$2');
     el.textContent = text.trim();
     el.style.whiteSpace = 'pre-wrap';
   });
