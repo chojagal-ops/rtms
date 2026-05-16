@@ -206,7 +206,7 @@
             </span>
             {% else %}-{% endif %}
           </td>
-          <th>QA 승인자</th><td>{{ item.qa_approver or '-' }}</td>
+          <th>품질팀 승인자</th><td>{{ item.qa_approver or '김현석' }}</td>
         </tr>
         {% if item.review_opinion %}
         <tr>
@@ -241,7 +241,7 @@
             <div class="sign-line"></div>
           </td>
           <td class="sign-cell">
-            <div class="sign-name">{{ item.qa_approver or '' }}</div>
+            <div class="sign-name">{{ item.qa_approver or '김현석' }}</div>
             <div class="sign-line"></div>
           </td>
         </tr>
