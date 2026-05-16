@@ -185,8 +185,8 @@
           <td>{{ res.tester_name or '-' }}</td>
           <th>통보자</th>
           <td>{{ res.notifier_name or '-' }}</td>
-          <th>QA 승인자</th>
-          <td>{{ req.qa_approver or '-' }}</td>
+          <th>품질팀 승인자</th>
+          <td>{{ res.qa_approver or req.qa_approver or '-' }}</td>
         </tr>
         {% if req.receiver_name or req.review_opinion %}
         <tr>
@@ -209,7 +209,7 @@
         <tr>
           <th>시험자 (Tester)</th>
           <th>QA 담당자</th>
-          <th>QA 승인자 (Approver)</th>
+          <th>품질팀 승인자 (Approver)</th>
         </tr>
       </thead>
       <tbody>
@@ -223,7 +223,7 @@
             <div class="sign-line"></div>
           </td>
           <td class="sign-cell">
-            <div class="sign-name">{{ req.qa_approver or '' }}</div>
+            <div class="sign-name">{{ res.qa_approver or req.qa_approver or '' }}</div>
             <div class="sign-line"></div>
           </td>
         </tr>

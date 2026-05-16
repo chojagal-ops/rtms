@@ -144,6 +144,7 @@ class TestResult(db.Model):
     sample_returned    = db.Column(db.Boolean, default=False)         # 시료 전달 여부
     tester_name        = db.Column(db.String(50))                     # 시험자
     notifier_name      = db.Column(db.String(50))                     # 통보자
+    qa_approver        = db.Column(db.String(50))                     # 품질팀 승인자
     report_attached    = db.Column(db.Boolean, default=False)         # 시험 성적서 첨부
     attach_doc_name    = db.Column(db.Text)                           # 첨부 문서명
     attachment         = db.Column(db.String(300))                    # 첨부파일

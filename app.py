@@ -129,6 +129,7 @@ def migrate_db():
     add_col('test_result',  'attach_doc_name',     'TEXT')
     add_col('test_result',  'test_complete_date',  'DATE')
     add_col('test_result',  'notify_date',         'DATE')
+    add_col('test_result',  'qa_approver',         'VARCHAR(50)')
     add_col('user',         'email',               'VARCHAR(120)')
 
     # ── NC 테이블 시험의뢰자 컬럼 ────────────────────────────

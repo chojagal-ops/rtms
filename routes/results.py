@@ -74,6 +74,7 @@ def _form_to_result(res_obj, form, files=None):
     res_obj.sample_returned    = form.get('sample_returned') == 'on'
     res_obj.tester_name        = form.get('tester_name', '').strip()
     res_obj.notifier_name      = form.get('notifier_name', '').strip()
+    res_obj.qa_approver        = form.get('qa_approver', '').strip()
     res_obj.report_attached    = form.get('report_attached') == 'on'
     res_obj.attach_doc_name    = form.get('attach_doc_name', '').strip()
     res_obj.notes              = form.get('notes', '').strip()
@@ -563,13 +564,13 @@ def certificate_excel(rid):
                                  color=DGRAY)
     row += 1
 
-    info_headers = ['시험 완료일', '통보일', '시험자', '통보자', 'QA 승인자', '시료 반환']
+    info_headers = ['시험 완료일', '통보일', '시험자', '통보자', '품질팀 승인자', '시료 반환']
     info_values  = [
         fd(res_obj.test_complete_date),
         fd(res_obj.notify_date),
         res_obj.tester_name or '-',
         res_obj.notifier_name or '-',
-        req_obj.qa_approver or '-',
+        res_obj.qa_approver or req_obj.qa_approver or '-',
         'YES' if res_obj.sample_returned else 'NO',
     ]
     ws.row_dimensions[row].height = 16
@@ -614,7 +615,7 @@ def certificate_excel(rid):
     merge(row+1, 3, row+1, 4)
     merge(row+1, 5, row+1, 6)
 
-    sign_labels = ['시험자', 'QA 담당자', 'QA 승인자']
+    sign_labels = ['시험자', 'QA 담당자', '품질팀 승인자']
     for i, label in enumerate(sign_labels):
         col = 1 + i * 2
         c = ws.cell(row=row, column=col, value=label)
