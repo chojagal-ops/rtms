@@ -27,15 +27,16 @@
     <table style="font-size:13px;">
       <thead>
         <tr>
-          <th style="width:140px;">의뢰번호</th>
+          <th style="width:130px;">의뢰번호</th>
           <th>제품명 / 모델</th>
-          <th style="width:90px;">의뢰부서</th>
+          <th style="width:85px;">의뢰부서</th>
           <th style="width:90px;">진행상태</th>
-          <th style="width:90px;">종합결과</th>
+          <th style="width:85px;">종합결과</th>
+          <th style="width:90px;">의뢰일자</th>
           <th style="width:100px;">시험완료일</th>
-          <th style="width:80px;">시험자</th>
-          <th style="width:60px;">성적서</th>
-          <th style="width:140px;">작업</th>
+          <th style="width:75px;">시험자</th>
+          <th style="width:140px;">성적서</th>
+          <th style="width:130px;">작업</th>
         </tr>
       </thead>
       <tbody>
@@ -72,21 +73,22 @@
             {% endif %}
           </td>
           <td style="font-size:12px;color:#475569;">
+            {{ item.write_date.strftime('%Y-%m-%d') if item.write_date else '-' }}
+          </td>
+          <td style="font-size:12px;color:#475569;">
             {{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '-' }}
           </td>
           <td style="font-size:12px;">{{ res.tester_name if res and res.tester_name else '-' }}</td>
-          <td style="text-align:center;">
+          <td>
             {% if res and res.overall_result %}
-              <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+              <div style="display:flex;gap:4px;align-items:center;">
                 <a href="{{ url_for('results.certificate', rid=item.id) }}"
                    target="_blank"
-                   class="btn btn-sm"
-                   style="font-size:10px;padding:2px 7px;background:#f97316;color:#fff;border:none;border-radius:4px;text-decoration:none;white-space:nowrap;">
+                   style="font-size:12px;padding:5px 10px;background:#f97316;color:#fff;border-radius:4px;text-decoration:none;white-space:nowrap;font-weight:600;">
                   🖨️ 인쇄
                 </a>
                 <a href="{{ url_for('results.certificate_excel', rid=item.id) }}"
-                   class="btn btn-sm"
-                   style="font-size:10px;padding:2px 7px;background:#15803d;color:#fff;border:none;border-radius:4px;text-decoration:none;white-space:nowrap;">
+                   style="font-size:12px;padding:5px 10px;background:#15803d;color:#fff;border-radius:4px;text-decoration:none;white-space:nowrap;font-weight:600;">
                   📥 엑셀
                 </a>
               </div>
