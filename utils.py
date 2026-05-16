@@ -187,6 +187,55 @@ def mail_new_request(req_obj, base_url: str = '') -> None:
     )
 
 
+def mail_accept_notify(req_obj, requester_email: str, base_url: str = '') -> None:
+    """접수 완료 처리 → 의뢰자 알림 메일"""
+    if not requester_email:
+        return
+    fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
+    detail_url = f'{base_url}/requests/{req_obj.id}' if base_url else ''
+    link_html  = f'<p><a href="{detail_url}" style="color:#f97316;">→ 시스템에서 확인하기</a></p>' if detail_url else ''
+    feasibility_color = '#16a34a' if req_obj.feasibility == '가능' else '#dc2626' if req_obj.feasibility == '불가' else '#374151'
+
+    html = f"""
+<div style="font-family:'Segoe UI','Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;">
+  <div style="background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:24px 28px;border-radius:12px 12px 0 0;">
+    <h2 style="color:#fff;margin:0;font-size:18px;">✅ 시험의뢰 접수 완료 안내</h2>
+    <p style="color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px;">RTMS — 신뢰성 시험 관리 시스템</p>
+  </div>
+  <div style="background:#fff;padding:24px 28px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+    <p style="font-size:14px;color:#374151;margin:0 0 20px;">
+      안녕하세요, <strong>{req_obj.requester_name or ''}</strong>님.<br>
+      귀하의 신뢰성 시험 의뢰서가 품질팀에 접수 완료되었습니다.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;width:110px;">의뢰번호</td>
+          <td style="padding:6px 0;font-weight:700;color:#111;">{req_obj.request_no or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">제품명</td>
+          <td style="padding:6px 0;font-weight:600;">{req_obj.product_name or '-'} ({req_obj.model_code or '-'})</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">의뢰부서</td>
+          <td style="padding:6px 0;">{req_obj.request_dept or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">완료희망일</td>
+          <td style="padding:6px 0;">{fd(req_obj.deadline)}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">접수자</td>
+          <td style="padding:6px 0;">{req_obj.receiver_name or '-'}</td></tr>
+      {'<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">시험 가능 여부</td><td style="padding:6px 0;font-weight:700;color:' + feasibility_color + ';">' + (req_obj.feasibility or '-') + '</td></tr>' if req_obj.feasibility else ''}
+      {'<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">검토 의견</td><td style="padding:6px 0;">' + req_obj.review_opinion + '</td></tr>' if req_obj.review_opinion else ''}
+    </table>
+    {link_html}
+    <p style="font-size:12px;color:#9ca3af;margin-top:20px;border-top:1px solid #f3f4f6;padding-top:12px;">
+      문의사항은 품질팀으로 연락 바랍니다.<br>
+      본 메일은 RTMS 시스템에서 자동 발송된 메일입니다.
+    </p>
+  </div>
+</div>"""
+
+    send_mail(
+        subject=f'[RTMS] 시험의뢰 접수 완료 — {req_obj.request_no} / {req_obj.product_name or ""}',
+        to_emails=requester_email,
+        html_body=html,
+    )
+
+
 def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '') -> None:
     """결과 등록 → 의뢰자 결과 통보 메일"""
     if not requester_email:

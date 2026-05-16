@@ -8,7 +8,7 @@ from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, current_app, send_from_directory, jsonify, send_file)
 from flask_login import login_required, current_user
 from models import db, TestRequest, TestItem, TestCriterion, TestStandard
-from utils import parse_date, log_error, mail_new_request
+from utils import parse_date, log_error, mail_new_request, mail_accept_notify
 from constants import (PRODUCT_TYPES, TEST_STAGES, TEST_PURPOSES,
                        SAMPLE_STATES, PRIORITIES, FEASIBILITY_OPTIONS,
                        CRITERION_TYPES, ATTACH_TYPES)
@@ -361,6 +361,15 @@ def accept(rid):
             req_obj.status = '접수완료'
         db.session.commit()
         flash('접수 처리가 완료되었습니다.', 'success')
+        # 의뢰자에게 접수 완료 알림 메일 발송 (비동기)
+        try:
+            from models import User
+            requester = User.query.get(req_obj.created_by)
+            if requester and requester.email:
+                base_url = request.url_root.rstrip('/')
+                mail_accept_notify(req_obj, requester.email, base_url)
+        except Exception as e:
+            log_error('접수완료 알림 메일 발송 오류', e)
     except Exception as e:
         db.session.rollback()
         log_error('접수 처리 오류', e)
@@ -550,6 +559,16 @@ def quick_status(rid):
                 req_obj.review_opinion = opinion
         db.session.commit()
         flash(f'[{req_obj.request_no}] 상태가 [{new_status}]로 변경되었습니다.', 'success')
+        # 접수완료 전환 시 의뢰자에게 알림 메일 발송 (비동기)
+        if new_status == '접수완료':
+            try:
+                from models import User
+                requester = User.query.get(req_obj.created_by)
+                if requester and requester.email:
+                    base_url = request.url_root.rstrip('/')
+                    mail_accept_notify(req_obj, requester.email, base_url)
+            except Exception as e:
+                log_error('접수완료 알림 메일 발송 오류', e)
     except Exception as e:
         db.session.rollback()
         log_error('빠른 상태 변경 오류', e)
