@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}시험 의뢰서 — {{ item.request_no }}{% endblock %}
-{% block topbar_title %}📋 신뢰성 시험 의뢰서{% endblock %}
+{% block title %}시험 성적서 — {{ item.request_no }}{% endblock %}
+{% block topbar_title %}📋 시험 성적서{% endblock %}
 
 {% block content %}
 <div class="breadcrumb no-print">
@@ -29,8 +29,8 @@
       <div class="cert-sub">Reliability Test Management System</div>
     </div>
     <div class="cert-header-center">
-      <h1 class="cert-title">신뢰성 시험 의뢰서</h1>
-      <div class="cert-title-en">Reliability Test Request</div>
+      <h1 class="cert-title">시험 성적서</h1>
+      <div class="cert-title-en">Reliability Test Certificate</div>
     </div>
     <div class="cert-header-right">
       <div class="cert-no-label">의뢰번호</div>
@@ -256,17 +256,14 @@
           <td class="sign-cell">
             <div class="sign-name">{{ item.requester_name or '' }}</div>
             <div class="sign-line"></div>
-            <div class="sign-date-label">서명 / 날인</div>
           </td>
           <td class="sign-cell">
             <div class="sign-name">{{ item.dept_approver or '' }}</div>
             <div class="sign-line"></div>
-            <div class="sign-date-label">서명 / 날인</div>
           </td>
           <td class="sign-cell">
             <div class="sign-name">{{ item.qa_approver or '' }}</div>
             <div class="sign-line"></div>
-            <div class="sign-date-label">서명 / 날인</div>
           </td>
         </tr>
       </tbody>
@@ -333,6 +330,7 @@
 .cert-table td {
   padding:7px 12px; border:1px solid #e2e8f0;
   vertical-align:middle; line-height:1.5;
+  word-break: break-word; overflow-wrap: break-word; white-space: normal;
 }
 .item-badge {
   display:inline-block; padding:2px 8px; border-radius:10px;
@@ -346,7 +344,6 @@
 .sign-cell { height:80px; text-align:center; vertical-align:top; padding:10px 20px !important; }
 .sign-name { font-weight:600; font-size:13px; margin-bottom:8px; }
 .sign-line { border-bottom:1px solid #334155; margin:0 20px 4px; }
-.sign-date-label { font-size:10px; color:#94a3b8; }
 
 .cert-footer {
   padding:10px 20px;
