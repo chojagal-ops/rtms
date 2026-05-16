@@ -360,17 +360,65 @@ function toggleCond(id, btn, e) {
 .cond-btn:hover { background:#1d4ed8; }
 
 @media print {
+  /* 브라우저 기본 날짜/URL 헤더·푸터 제거 */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* 레이아웃 초기화 */
+  html, body {
+    width: 210mm;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
   .sidebar, .topbar, .breadcrumb, .tabs, .tab-btn,
   .delete-form, .page-header > div:last-child,
-  a.btn, button { display:none!important; }
-  .main-wrap  { margin-left:0!important; }
-  .page-content { padding:4mm!important; }
-  .tab-pane   { display:block!important; }
-  .card { box-shadow:none!important; border:1px solid #bbb!important; margin-bottom:8px!important; page-break-inside:avoid; }
-  .page-header { margin-bottom:6px!important; }
-  .cond-wrap  { max-height:none!important; }
-  .cond-btn   { display:none!important; }
-  @page { size:A4 portrait; margin:12mm; }
+  a.btn, button { display: none !important; }
+
+  .main-wrap   { margin-left: 0 !important; width: 100% !important; }
+  .page-content {
+    padding: 8mm 10mm !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  /* 탭 — 모두 펼침 */
+  .tab-pane { display: block !important; }
+
+  /* 카드 */
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #bbb !important;
+    margin-bottom: 6px !important;
+    page-break-inside: avoid;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .card-body { padding: 8px 12px !important; }
+  .page-header { margin-bottom: 4px !important; }
+
+  /* 테이블 너비 고정 */
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    word-break: break-all !important;
+    font-size: 11px !important;
+  }
+  td, th { overflow: hidden !important; }
+
+  /* 그리드 */
+  .project-info-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    font-size: 11px !important;
+  }
+
+  /* 시험 조건 펼침 */
+  .cond-wrap { max-height: none !important; }
+  .cond-btn  { display: none !important; }
 }
 </style>
 {% endblock %}
