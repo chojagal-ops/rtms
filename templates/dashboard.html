@@ -330,4 +330,50 @@
   </div>
 </div>
 
+<!-- ── 기능 설명 ────────────────────────────────────────── -->
+<div style="margin-top:20px;">
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">
+    📌 시스템 주요 기능 안내
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+
+    {% set features = [
+      ('📋','시험 의뢰서','신뢰성 시험 의뢰서를 등록하고 의뢰번호를 자동 발번합니다. 시험 항목·판정 기준·첨부파일 관리가 가능합니다.','requests.list_view','의뢰서 목록','#f97316'),
+      ('🏭','품질팀 업무함','접수 대기 → 접수 확인 → 시험 시작 → 결과 회신 → 완료 순서로 업무 흐름을 한곳에서 처리합니다.','requests.qteam','업무함 열기','#2563eb'),
+      ('📊','결과서 관리','시험 완료 후 항목별 결과와 종합 판정을 등록하고 성적서(인쇄/엑셀)를 출력합니다.','results.list_view','결과서 목록','#16a34a'),
+      ('⚠️','부적합 관리','시험 중 발견된 부적합을 등록하고 원인 분석 → CAPA → 개선완료 단계로 추적 관리합니다.','nc.list_view','부적합 목록','#dc2626'),
+      ('📒','시험 관리대장','전체 시험 이력을 연도·월·부서 별로 필터하여 조회하고 엑셀로 내보낼 수 있습니다.','ledger.index','관리대장 열기','#7c3aed'),
+      ('📅','시험 일정 캘린더','월간 캘린더로 시험 시작일과 완료 희망일을 시각적으로 확인합니다.','calendar.index','캘린더 열기','#0891b2'),
+      ('📈','통계 / 모니터링','연·월별 의뢰·완료 추이, 적합률, 커버리지율, 부서별 건수 등 차트로 분석합니다.','stats.index','통계 열기','#d97706'),
+      ('❓','도움말','시스템 사용 방법, 상태별 안내, 업무 흐름을 언제든지 확인할 수 있습니다.',None,'도움말 열기','#64748b'),
+    ] %}
+
+    {% for icon, title, desc, endpoint, btn_label, color in features %}
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;
+                border-top:3px solid {{ color }};transition:box-shadow 0.15s;"
+         onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:20px;">{{ icon }}</span>
+        <span style="font-size:13px;font-weight:800;color:#1e293b;">{{ title }}</span>
+      </div>
+      <p style="font-size:11px;color:#64748b;line-height:1.6;margin:0;flex:1;">{{ desc }}</p>
+      {% if endpoint %}
+      <a href="{{ url_for(endpoint) }}"
+         style="font-size:11px;font-weight:700;color:{{ color }};text-decoration:none;padding:4px 10px;border:1.5px solid {{ color }};border-radius:6px;text-align:center;transition:all 0.15s;"
+         onmouseover="this.style.background='{{ color }}';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='{{ color }}'">
+        {{ btn_label }} →
+      </a>
+      {% else %}
+      <button onclick="openHelp()"
+         style="font-size:11px;font-weight:700;color:{{ color }};background:transparent;border:1.5px solid {{ color }};border-radius:6px;padding:4px 10px;cursor:pointer;transition:all 0.15s;"
+         onmouseover="this.style.background='{{ color }}';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='{{ color }}'">
+        {{ btn_label }} →
+      </button>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
 {% endblock %}
