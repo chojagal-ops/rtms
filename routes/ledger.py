@@ -105,7 +105,7 @@ def export_excel():
     middle   = Alignment(vertical='center', wrap_text=True)
 
     # 제목
-    ws.merge_cells('A1:P1')
+    ws.merge_cells('A1:N1')
     ws['A1'] = '신뢰성 시험 관리대장'
     ws['A1'].font = Font(size=14, bold=True)
     ws['A1'].alignment = center
@@ -113,8 +113,8 @@ def export_excel():
 
     # 헤더
     headers = ['No.','의뢰일자','의뢰부서','의뢰자','품명/모델명','LOT No./S/N',
-               '시험 의뢰 목적','시험 항목','시험 시작일','시험 완료일',
-               '시험자','시험 결과','판정','결과 통보일','특이사항/조치사항']
+               '시험 의뢰 목적','시험 항목 / 결과','시험 시작일','시험 완료일',
+               '시험자','판정','결과 통보일','특이사항/조치사항']
     ws.append(headers)
     for cell in ws[2]:
         cell.fill = hdr_fill
@@ -126,7 +126,12 @@ def export_excel():
     # 데이터
     for idx, item in enumerate(items, 1):
         res = item.result
-        names = '\n'.join(ti.test_name or '' for ti in item.test_items if ti.test_name)
+        item_lines = []
+        for ti in item.test_items:
+            name = ti.test_name or ''
+            ir   = ti.item_result or ''
+            item_lines.append(f'{name}  [{ir}]' if ir else name)
+        names = '\n'.join(item_lines) if item_lines else ''
         prod  = item.product_name or ''
         if item.model_code:
             prod += f'\n{item.model_code}'
@@ -142,7 +147,6 @@ def export_excel():
             item.req_start_date.strftime('%Y-%m-%d') if item.req_start_date else '',
             res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '',
             res.tester_name if res else '',
-            res.summary or (res.overall_result or '') if res else '',
             res.overall_result if res else '',
             res.notify_date.strftime('%Y-%m-%d') if res and res.notify_date else '',
             (res.notes or '') or (item.notes or '') if (res or item.notes) else '',
@@ -155,7 +159,7 @@ def export_excel():
         ws.row_dimensions[r].height = 18
 
     # 컬럼 폭
-    col_widths = [5,12,12,10,18,14,12,18,22,12,12,10,30,10,12,24]
+    col_widths = [5,12,12,10,18,14,12,32,14,12,12,10,12,24]
     for i, w in enumerate(col_widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
 

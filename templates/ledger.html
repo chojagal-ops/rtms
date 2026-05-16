@@ -89,11 +89,10 @@
           <th style="width:90px;">품명/모델명</th>
           <th style="width:65px;">LOT/S/N</th>
           <th style="width:60px;">목적</th>
-          <th style="width:120px;">시험 항목</th>
+          <th style="width:200px;">시험 항목 / 결과</th>
           <th style="width:68px;">시작일</th>
           <th style="width:68px;">완료일</th>
           <th style="width:48px;">시험자</th>
-          <th style="width:150px;">시험 결과</th>
           <th style="width:48px;">판정</th>
           <th style="width:68px;">통보일</th>
           <th style="width:90px;">특이사항</th>
@@ -126,8 +125,18 @@
           <td>
             {% if item.test_items %}
               {% for ti in item.test_items %}
-                <div style="font-size:11px;{% if not loop.last %}margin-bottom:2px;padding-bottom:2px;border-bottom:1px solid #f1f5f9;{% endif %}">
-                  {{ ti.test_name or '' }}
+                {% set ir = ti.item_result %}
+                {% set ir_bg = '#dcfce7' if ir == '합격' else ('#fee2e2' if ir == '불합격' else ('#fef3c7' if ir == '조건부합격' else '#f1f5f9')) %}
+                {% set ir_color = '#15803d' if ir == '합격' else ('#dc2626' if ir == '불합격' else ('#d97706' if ir == '조건부합격' else '#94a3b8')) %}
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;
+                            {% if not loop.last %}margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid #f1f5f9;{% endif %}">
+                  <span>{{ ti.test_name or '' }}</span>
+                  {% if ir %}
+                  <span style="margin-left:4px;padding:1px 5px;border-radius:10px;font-size:10px;font-weight:700;
+                               background:{{ ir_bg }};color:{{ ir_color }};white-space:nowrap;">
+                    {{ ir }}
+                  </span>
+                  {% endif %}
                 </div>
               {% endfor %}
             {% else %}-{% endif %}
@@ -138,16 +147,6 @@
           <td style="font-size:11px;">{{ res.test_complete_date.strftime('%Y-%m-%d') if res and res.test_complete_date else '-' }}</td>
 
           <td style="font-size:11px;">{{ res.tester_name if res and res.tester_name else '-' }}</td>
-
-          <td style="font-size:11px;color:#334155;">
-            {% if res and res.summary %}
-              {{ res.summary }}
-            {% elif res and res.overall_result %}
-              {{ res.overall_result }}
-            {% else %}
-              <span style="color:#cbd5e1;">-</span>
-            {% endif %}
-          </td>
 
           <td style="text-align:center;">
             {% if res and res.overall_result %}
