@@ -204,11 +204,10 @@
   <div class="cert-section">
     <div class="cert-section-title">5. 확인 서명</div>
     <table class="cert-table cert-sign">
-      <colgroup><col><col><col></colgroup>
+      <colgroup><col><col></colgroup>
       <thead>
         <tr>
           <th>시험자 (Tester)</th>
-          <th>QA 담당자</th>
           <th>품질팀 승인자 (Approver)</th>
         </tr>
       </thead>
@@ -219,11 +218,7 @@
             <div class="sign-line"></div>
           </td>
           <td class="sign-cell">
-            <div class="sign-name">{{ res.notifier_name or '' }}</div>
-            <div class="sign-line"></div>
-          </td>
-          <td class="sign-cell">
-            <div class="sign-name">{{ res.qa_approver or req.qa_approver or '' }}</div>
+            <div class="sign-name">{{ res.qa_approver or req.qa_approver or '김현석' }}</div>
             <div class="sign-line"></div>
           </td>
         </tr>
