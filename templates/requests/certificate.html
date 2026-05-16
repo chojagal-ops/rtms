@@ -42,10 +42,11 @@
   <!-- 상태 배너 -->
   {% set sc = {'완료':'pass','결과회신':'pass','시험중':'prog','접수완료':'info','접수대기':'cond','보류':'na'} %}
   {% set sc_key = sc.get(item.status, 'na') %}
-  <div class="cert-verdict cert-verdict-{{ sc_key }}">
-    <span class="cert-verdict-label">진행 상태</span>
-    <span class="cert-verdict-value">{{ item.status }}</span>
-    <span class="cert-verdict-label">우선순위:&nbsp;
+  <div style="display:flex;align-items:center;justify-content:space-between;
+              padding:8px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+    <span style="font-size:12px;color:#64748b;font-weight:600;">진행 상태</span>
+    <span class="status-badge status-badge-{{ sc_key }}">{{ item.status }}</span>
+    <span style="font-size:12px;color:#64748b;font-weight:600;">우선순위:&nbsp;
       <strong style="color:{{ '#dc2626' if item.priority=='상' else ('#d97706' if item.priority=='중' else '#374151') }};">
         {{ item.priority or '-' }}
       </strong>
@@ -301,25 +302,17 @@
 .cert-no  { font-size:16px; font-weight:700; letter-spacing:0.05em; margin:2px 0; }
 .cert-date{ font-size:11px; opacity:0.8; }
 
-/* 상태 배너 */
-.cert-verdict {
-  display:flex; align-items:center; justify-content:center; gap:24px;
-  padding:14px 28px; border-bottom:1px solid #e2e8f0;
+/* 상태 배지 */
+.status-badge {
+  display:inline-block; padding:4px 16px; border-radius:20px;
+  font-size:13px; font-weight:700;
 }
-.cert-verdict-pass { background:#f0fdf4; }
-.cert-verdict-fail { background:#fef2f2; }
-.cert-verdict-cond { background:#fffbeb; }
-.cert-verdict-info { background:#dbeafe; }
-.cert-verdict-prog { background:#ede9fe; }
-.cert-verdict-na   { background:#f1f5f9; }
-.cert-verdict-label { font-size:12px; color:#64748b; font-weight:600; }
-.cert-verdict-value { font-size:28px; font-weight:900; }
-.cert-verdict-pass .cert-verdict-value { color:#15803d; }
-.cert-verdict-fail .cert-verdict-value { color:#dc2626; }
-.cert-verdict-cond .cert-verdict-value { color:#d97706; }
-.cert-verdict-info .cert-verdict-value { color:#2563eb; }
-.cert-verdict-prog .cert-verdict-value { color:#7c3aed; }
-.cert-verdict-na   .cert-verdict-value { color:#475569; }
+.status-badge-pass { background:#dcfce7; color:#15803d; }
+.status-badge-fail { background:#fee2e2; color:#dc2626; }
+.status-badge-cond { background:#fef9c3; color:#d97706; }
+.status-badge-info { background:#dbeafe; color:#2563eb; }
+.status-badge-prog { background:#ede9fe; color:#7c3aed; }
+.status-badge-na   { background:#f1f5f9; color:#475569; }
 
 .cert-section { border-bottom:1px solid #e2e8f0; }
 .cert-section:last-child { border-bottom:none; }
