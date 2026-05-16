@@ -39,19 +39,6 @@
     </div>
   </div>
 
-  <!-- 상태 배너 -->
-  {% set sc = {'완료':'pass','결과회신':'pass','시험중':'prog','접수완료':'info','접수대기':'cond','보류':'na'} %}
-  {% set sc_key = sc.get(item.status, 'na') %}
-  <div style="display:flex;align-items:center;justify-content:space-between;
-              padding:8px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-    <span style="font-size:12px;color:#64748b;font-weight:600;">진행 상태</span>
-    <span class="status-badge status-badge-{{ sc_key }}">{{ item.status }}</span>
-    <span style="font-size:12px;color:#64748b;font-weight:600;">우선순위:&nbsp;
-      <strong style="color:{{ '#dc2626' if item.priority=='상' else ('#d97706' if item.priority=='중' else '#374151') }};">
-        {{ item.priority or '-' }}
-      </strong>
-    </span>
-  </div>
 
   <!-- 1. 의뢰 부서 및 담당자 -->
   <div class="cert-section">
