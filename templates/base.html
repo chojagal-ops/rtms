@@ -158,10 +158,15 @@
 <div class="main-wrap">
   <header class="topbar">
     <span class="topbar-title">{% block topbar_title %}{% endblock %}</span>
-    <div class="topbar-right">
+    <div class="topbar-right" style="display:flex;align-items:center;gap:12px;">
       <span style="font-size:12px;color:#64748b;">
         {{ current_user.name }} ({{ current_user.department }})
       </span>
+      <button onclick="openHelp()" title="도움말"
+        style="display:flex;align-items:center;gap:5px;padding:5px 12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;cursor:pointer;font-size:12px;font-weight:700;color:#475569;transition:all 0.15s;"
+        onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+        ❓ 도움말
+      </button>
     </div>
   </header>
 
@@ -182,7 +187,257 @@
   </div>
 </div>
 
+<!-- ── 도움말 오버레이 ── -->
+<div id="helpOverlay" onclick="closeHelp()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1000;"></div>
+
+<div id="helpPanel"
+  style="display:none;position:fixed;top:0;right:0;width:420px;height:100vh;background:#fff;
+         box-shadow:-4px 0 24px rgba(0,0,0,0.13);z-index:1001;overflow-y:auto;
+         transform:translateX(100%);transition:transform 0.25s ease;">
+
+  <!-- 헤더 -->
+  <div style="background:linear-gradient(135deg,#f97316,#ea580c);padding:20px 24px;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#fff;">❓ RTMS 도움말</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:2px;">신뢰성 시험 관리 시스템 사용 안내</div>
+      </div>
+      <button onclick="closeHelp()"
+        style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:16px;cursor:pointer;font-weight:700;">✕</button>
+    </div>
+    <!-- 탭 -->
+    <div style="display:flex;gap:4px;margin-top:14px;flex-wrap:wrap;">
+      {% for tid, tlabel in [('h-start','빠른시작'),('h-req','의뢰서'),('h-res','결과서'),('h-nc','부적합'),('h-status','상태안내'),('h-etc','기타기능')] %}
+      <button class="htab" data-tab="{{ tid }}" onclick="switchHTab(this)"
+        style="padding:4px 10px;border-radius:14px;border:none;font-size:11px;font-weight:700;cursor:pointer;
+               background:rgba(255,255,255,0.2);color:#fff;transition:background 0.15s;">
+        {{ tlabel }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 콘텐츠 영역 -->
+  <div style="padding:20px 24px;">
+
+    <!-- 빠른 시작 -->
+    <div id="h-start" class="hpane">
+      <div class="help-section">
+        <div class="help-title">🚀 RTMS 기본 흐름</div>
+        <div class="help-flow">
+          <div class="hflow-step"><span class="hstep-num">1</span><div><b>의뢰서 등록</b><br><span>시험 의뢰서 → ＋ 신규 의뢰서 등록</span></div></div>
+          <div class="hflow-arrow">↓</div>
+          <div class="hflow-step"><span class="hstep-num">2</span><div><b>품질팀 접수 확인</b><br><span>품질팀 업무함 → 접수확인 버튼</span></div></div>
+          <div class="hflow-arrow">↓</div>
+          <div class="hflow-step"><span class="hstep-num">3</span><div><b>시험 시작</b><br><span>시험 시작 버튼 → 상태: 시험중</span></div></div>
+          <div class="hflow-arrow">↓</div>
+          <div class="hflow-step"><span class="hstep-num">4</span><div><b>결과 등록</b><br><span>결과서 관리 → 결과 입력</span></div></div>
+          <div class="hflow-arrow">↓</div>
+          <div class="hflow-step"><span class="hstep-num">5</span><div><b>결과 회신</b><br><span>상태: 결과회신 → 성적서 출력</span></div></div>
+          <div class="hflow-arrow">↓</div>
+          <div class="hflow-step"><span class="hstep-num">6</span><div><b>완료 처리</b><br><span>품질팀 업무함 → 완료 처리 버튼</span></div></div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📌 자주 쓰는 기능</div>
+        <div class="help-list">
+          <div class="help-item">🖨️ <b>인쇄</b> — 의뢰서/성적서를 PDF로 출력</div>
+          <div class="help-item">📥 <b>엑셀</b> — 의뢰서/성적서/관리대장을 엑셀 다운로드</div>
+          <div class="help-item">📒 <b>관리대장</b> — 전체 시험 이력 한눈에 조회·필터</div>
+          <div class="help-item">📈 <b>통계</b> — 연/월별 적합률·커버리지율 차트</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 의뢰서 -->
+    <div id="h-req" class="hpane" style="display:none;">
+      <div class="help-section">
+        <div class="help-title">📋 시험 의뢰서 등록</div>
+        <div class="help-list">
+          <div class="help-item">① 왼쪽 메뉴 <b>시험 의뢰서 → ＋</b> 클릭</div>
+          <div class="help-item">② 의뢰 부서·담당자·제품 정보 입력</div>
+          <div class="help-item">③ <b>4. 시험 항목</b>에 항목 추가 (+ 행 추가)</div>
+          <div class="help-item">④ <b>5. 판정 기준</b>에 기준 내용 입력</div>
+          <div class="help-item">⑤ 등록 후 자동으로 의뢰번호 발번 (RTN-YYYYMM-NNN)</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🔍 목록 필터</div>
+        <div class="help-list">
+          <div class="help-item"><b>상태 탭</b> — 접수대기/접수완료/시험중/결과회신/완료 클릭 필터</div>
+          <div class="help-item"><b>팀 필터</b> — 의뢰부서별 조회</div>
+          <div class="help-item"><b>검색</b> — 의뢰번호·제품명·부서명 검색</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">⚠️ 기한 초과 표시</div>
+        <div class="help-list">
+          <div class="help-item">완료희망일이 지난 경우 <span style="color:#dc2626;font-weight:700;">날짜 ⚠️</span> 표시</div>
+          <div class="help-item">결과회신·완료·보류 상태는 기한 초과 제외</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과서 -->
+    <div id="h-res" class="hpane" style="display:none;">
+      <div class="help-section">
+        <div class="help-title">📊 결과서 등록</div>
+        <div class="help-list">
+          <div class="help-item">① 결과서 관리 목록 → <b>결과 입력</b> 버튼</div>
+          <div class="help-item">② 시험 항목별 결과(합격/불합격) 선택</div>
+          <div class="help-item">③ 종합 판정: 적합 / 부적합 / 조건부적합</div>
+          <div class="help-item">④ 저장 시 상태가 자동으로 <b>결과회신</b>으로 변경</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🖨️ 성적서 출력</div>
+        <div class="help-list">
+          <div class="help-item">결과서 목록 → <b>인쇄</b> 버튼 → 브라우저 인쇄 기능 사용</div>
+          <div class="help-item">결과서 목록 → <b>엑셀</b> 버튼 → .xlsx 다운로드</div>
+          <div class="help-item">의뢰서 인쇄(🖨️)와 성적서 인쇄는 <b>별도 버튼</b> 사용</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📌 판정 결과 의미</div>
+        <div class="help-list">
+          <div class="help-item"><span style="background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">적합</span> — 모든 시험 항목 기준 충족</div>
+          <div class="help-item"><span style="background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">부적합</span> — 하나 이상의 항목 기준 미달</div>
+          <div class="help-item"><span style="background:#fef9c3;color:#d97706;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">조건부적합</span> — 조건부로 기준 충족</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 부적합 -->
+    <div id="h-nc" class="hpane" style="display:none;">
+      <div class="help-section">
+        <div class="help-title">⚠️ 부적합 등록</div>
+        <div class="help-list">
+          <div class="help-item">① 왼쪽 메뉴 <b>부적합 등록 → ＋</b> 클릭</div>
+          <div class="help-item">② 발생일·제품명·부적합 유형·심각도 입력</div>
+          <div class="help-item">③ 관련 시험 의뢰서가 있으면 연결 선택</div>
+          <div class="help-item">④ 자동으로 번호 발번 (NC-YYYYMM-NNN)</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🔄 처리 단계</div>
+        <div class="help-list">
+          <div class="help-item"><b>등록</b> → 원인분석중 → CAPA진행 → 개선완료 → 종료</div>
+          <div class="help-item">개선조치 관리에서 단계별 조치 내용 기록</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📊 심각도 기준</div>
+        <div class="help-list">
+          <div class="help-item"><span style="background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">상</span> — 즉각 대응 필요, 출하 영향</div>
+          <div class="help-item"><span style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">중</span> — 일정 내 처리 필요</div>
+          <div class="help-item"><span style="background:#f0fdf4;color:#16a34a;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">하</span> — 일반적 개선 사항</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상태 안내 -->
+    <div id="h-status" class="hpane" style="display:none;">
+      <div class="help-section">
+        <div class="help-title">🏷️ 의뢰서 상태 설명</div>
+        <div class="help-list">
+          <div class="help-item"><span style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">접수대기</span> — 의뢰서 등록 후 품질팀 확인 전</div>
+          <div class="help-item"><span style="background:#dbeafe;color:#2563eb;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">접수완료</span> — 품질팀이 의뢰서 접수 확인 완료</div>
+          <div class="help-item"><span style="background:#ede9fe;color:#7c3aed;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">시험중</span> — 시험 진행중</div>
+          <div class="help-item"><span style="background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">결과회신</span> — 시험 결과 등록 완료, 의뢰자에게 통보</div>
+          <div class="help-item"><span style="background:#f0fdf4;color:#16a34a;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">완료</span> — 모든 처리 완료</div>
+          <div class="help-item"><span style="background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">보류</span> — 시험 일시 중단</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🔔 알림 기준</div>
+        <div class="help-list">
+          <div class="help-item"><b>기한 초과</b> — 완료희망일 경과, 결과회신·완료·보류 제외</div>
+          <div class="help-item"><b>마감 임박</b> — 완료희망일 7일 이내, 대시보드에 표시</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 기타 기능 -->
+    <div id="h-etc" class="hpane" style="display:none;">
+      <div class="help-section">
+        <div class="help-title">📒 시험 관리대장</div>
+        <div class="help-list">
+          <div class="help-item">전체 시험 이력을 표 형태로 조회</div>
+          <div class="help-item">연도·월·부서·상태·키워드 필터 지원</div>
+          <div class="help-item">시험 항목별 결과(합격/불합격) 함께 표시</div>
+          <div class="help-item">엑셀 저장·인쇄 기능 지원</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📅 시험 일정 캘린더</div>
+        <div class="help-list">
+          <div class="help-item">월간 캘린더로 시험 시작일·완료희망일 시각화</div>
+          <div class="help-item">날짜 클릭 시 해당 의뢰서 목록 표시</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📈 통계 / 모니터링</div>
+        <div class="help-list">
+          <div class="help-item">연도별·월별·주별 의뢰·완료 추이 차트</div>
+          <div class="help-item">적합률·커버리지율 게이지 및 라인 차트</div>
+          <div class="help-item">부서별·제품별 의뢰 건수 막대 차트</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">👥 회원 관리 (관리자 전용)</div>
+        <div class="help-list">
+          <div class="help-item">사용자 등록·수정·권한 관리</div>
+          <div class="help-item">부서별 접근 권한: 품질팀만 접수·완료 처리 가능</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /padding -->
+</div><!-- /helpPanel -->
+
+<style>
+.help-section { margin-bottom:20px; }
+.help-title { font-size:13px;font-weight:800;color:#1a3a5c;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #f97316; }
+.help-list { display:flex;flex-direction:column;gap:6px; }
+.help-item { font-size:12px;color:#374151;line-height:1.5;padding:5px 8px;background:#f8fafc;border-radius:6px; }
+.help-flow { display:flex;flex-direction:column;gap:0; }
+.hflow-step { display:flex;align-items:flex-start;gap:10px;padding:8px;background:#f8fafc;border-radius:8px;font-size:12px; }
+.hflow-step b { font-size:12px;color:#1a3a5c; }
+.hflow-step span { font-size:11px;color:#64748b; }
+.hflow-arrow { text-align:center;color:#f97316;font-size:16px;line-height:1.2;margin:1px 0; }
+.hstep-num { min-width:22px;height:22px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px; }
+</style>
+
 <script>
+function openHelp() {
+  document.getElementById('helpOverlay').style.display = 'block';
+  const p = document.getElementById('helpPanel');
+  p.style.display = 'block';
+  setTimeout(() => p.style.transform = 'translateX(0)', 10);
+  // 첫 탭 활성화
+  const first = document.querySelector('.htab');
+  if (first) switchHTab(first);
+}
+function closeHelp() {
+  const p = document.getElementById('helpPanel');
+  p.style.transform = 'translateX(100%)';
+  setTimeout(() => {
+    p.style.display = 'none';
+    document.getElementById('helpOverlay').style.display = 'none';
+  }, 250);
+}
+function switchHTab(btn) {
+  document.querySelectorAll('.htab').forEach(b => {
+    b.style.background = 'rgba(255,255,255,0.2)';
+    b.style.color = '#fff';
+  });
+  btn.style.background = '#fff';
+  btn.style.color = '#ea580c';
+  document.querySelectorAll('.hpane').forEach(p => p.style.display = 'none');
+  const target = document.getElementById(btn.dataset.tab);
+  if (target) target.style.display = 'block';
+}
 // 삭제 확인
 document.querySelectorAll('.delete-form').forEach(f => {
   f.addEventListener('submit', e => {
