@@ -70,11 +70,11 @@
     <table style="width:100%;table-layout:fixed;font-size:13px;border-collapse:collapse;">
       <colgroup>
         <col style="width:3%;">
-        <col style="width:13%;">
-        <col style="width:{% if current_user.role == 'admin' %}49{% else %}54{% endif %}%;">
-        <col style="width:{% if current_user.role == 'admin' %}28{% else %}27{% endif %}%;">
-        <col style="width:4%;">
-        {% if current_user.role == 'admin' %}<col style="width:9%;">{% endif %}
+        <col style="width:12%;">
+        <col style="width:{% if current_user.role == 'admin' %}44{% else %}52{% endif %}%;">
+        <col style="width:{% if current_user.role == 'admin' %}27{% else %}33{% endif %}%;">
+        <col style="width:{% if current_user.role == 'admin' %}4{% else %}5{% endif %}%;">
+        {% if current_user.role == 'admin' %}<col style="width:10%;">{% endif %}
       </colgroup>
       <thead>
         <tr>
