@@ -224,7 +224,7 @@
     </div>
     <!-- 탭 -->
     <div style="display:flex;gap:4px;margin-top:14px;flex-wrap:wrap;">
-      {% for tid, tlabel in [('h-start','빠른시작'),('h-req','의뢰서'),('h-res','결과서'),('h-nc','부적합'),('h-status','상태안내'),('h-etc','기타기능')] %}
+      {% for tid, tlabel in [('h-start','빠른시작'),('h-req','의뢰서'),('h-res','결과서'),('h-nc','부적합'),('h-std','기준서'),('h-etc','기타기능')] %}
       <button class="htab" data-tab="{{ tid }}" onclick="switchHTab(this)"
         style="padding:4px 10px;border-radius:14px;border:none;font-size:11px;font-weight:700;cursor:pointer;
                background:rgba(255,255,255,0.2);color:#fff;transition:background 0.15s;">
@@ -244,24 +244,27 @@
         <div class="help-flow">
           <div class="hflow-step"><span class="hstep-num">1</span><div><b>의뢰서 등록</b><br><span>시험 의뢰서 → ＋ 신규 의뢰서 등록</span></div></div>
           <div class="hflow-arrow">↓</div>
-          <div class="hflow-step"><span class="hstep-num">2</span><div><b>품질팀 접수 확인</b><br><span>품질팀 업무함 → 접수확인 버튼</span></div></div>
+          <div class="hflow-step"><span class="hstep-num">2</span><div><b>품질팀 접수 확인</b><br><span>접수대기 목록 → 접수확인 버튼</span></div></div>
           <div class="hflow-arrow">↓</div>
-          <div class="hflow-step"><span class="hstep-num">3</span><div><b>시험 시작</b><br><span>시험 시작 버튼 → 상태: 시험중</span></div></div>
+          <div class="hflow-step"><span class="hstep-num">3</span><div><b>시험 진행</b><br><span>시험 시작 버튼 → 상태: 시험중</span></div></div>
           <div class="hflow-arrow">↓</div>
-          <div class="hflow-step"><span class="hstep-num">4</span><div><b>결과 등록</b><br><span>결과서 관리 → 결과 입력</span></div></div>
+          <div class="hflow-step"><span class="hstep-num">4</span><div><b>결과 등록</b><br><span>결과서 관리 → 결과 입력 (사진 첨부 가능)</span></div></div>
           <div class="hflow-arrow">↓</div>
-          <div class="hflow-step"><span class="hstep-num">5</span><div><b>결과 회신</b><br><span>상태: 결과회신 → 성적서 출력</span></div></div>
+          <div class="hflow-step"><span class="hstep-num">5</span><div><b>결과 회신</b><br><span>상태: 결과회신 → 의뢰자 이메일 자동 발송</span></div></div>
           <div class="hflow-arrow">↓</div>
-          <div class="hflow-step"><span class="hstep-num">6</span><div><b>완료 처리</b><br><span>품질팀 업무함 → 완료 처리 버튼</span></div></div>
+          <div class="hflow-step"><span class="hstep-num">6</span><div><b>완료 처리</b><br><span>품질팀 → 완료 처리 버튼</span></div></div>
         </div>
       </div>
       <div class="help-section">
-        <div class="help-title">📌 자주 쓰는 기능</div>
+        <div class="help-title">📌 주요 메뉴 안내</div>
         <div class="help-list">
-          <div class="help-item">🖨️ <b>인쇄</b> — 의뢰서/성적서를 PDF로 출력</div>
-          <div class="help-item">📥 <b>엑셀</b> — 의뢰서/성적서/관리대장을 엑셀 다운로드</div>
-          <div class="help-item">📒 <b>관리대장</b> — 전체 시험 이력 한눈에 조회·필터</div>
-          <div class="help-item">📈 <b>통계</b> — 연/월별 적합률·커버리지율 차트</div>
+          <div class="help-item">📋 <b>시험 의뢰서</b> — 의뢰 등록·관리, 기준서에서 항목 자동 불러오기</div>
+          <div class="help-item">📊 <b>결과서 관리</b> — 시험 결과 입력, 사진·파일 첨부, 성적서 출력</div>
+          <div class="help-item">⚠️ <b>부적합 등록</b> — NC 등록·처리내용 이력 관리</div>
+          <div class="help-item">📋 <b>부적합 관리이력</b> — 전체 NC 이력 조회·필터·인쇄·엑셀</div>
+          <div class="help-item">📚 <b>시험 기준서</b> — 기준서별 시험항목·조건·판정기준 관리</div>
+          <div class="help-item">📒 <b>시험 관리대장</b> — 전체 시험 이력 조회·엑셀 추출</div>
+          <div class="help-item">📈 <b>통계/모니터링</b> — 적합률·부서별·월별 현황 차트</div>
         </div>
       </div>
     </div>
@@ -273,24 +276,32 @@
         <div class="help-list">
           <div class="help-item">① 왼쪽 메뉴 <b>시험 의뢰서 → ＋</b> 클릭</div>
           <div class="help-item">② 의뢰 부서·담당자·제품 정보 입력</div>
-          <div class="help-item">③ <b>4. 시험 항목</b>에 항목 추가 (+ 행 추가)</div>
-          <div class="help-item">④ <b>5. 판정 기준</b>에 기준 내용 입력</div>
-          <div class="help-item">⑤ 등록 후 자동으로 의뢰번호 발번 (RTN-YYYYMM-NNN)</div>
+          <div class="help-item">③ <b>시험 항목</b> — 기준서에서 검색 후 자동 불러오기 또는 직접 입력</div>
+          <div class="help-item">④ 등록 후 자동 의뢰번호 발번 (RTN-YYYYMM-NNN)</div>
+          <div class="help-item">⑤ 등록 시 품질팀으로 <b>이메일 자동 발송</b></div>
         </div>
       </div>
       <div class="help-section">
-        <div class="help-title">🔍 목록 필터</div>
+        <div class="help-title">🔍 목록 필터 및 검색</div>
         <div class="help-list">
-          <div class="help-item"><b>상태 탭</b> — 접수대기/접수완료/시험중/결과회신/완료 클릭 필터</div>
-          <div class="help-item"><b>팀 필터</b> — 의뢰부서별 조회</div>
-          <div class="help-item"><b>검색</b> — 의뢰번호·제품명·부서명 검색</div>
+          <div class="help-item"><b>상태 탭</b> — 접수대기 / 접수완료 / 시험중 / 결과회신 / 완료</div>
+          <div class="help-item"><b>의뢰부서 필터</b> — 부서별 의뢰서 조회</div>
+          <div class="help-item"><b>검색</b> — 의뢰번호·제품명·부서명으로 검색</div>
         </div>
       </div>
       <div class="help-section">
-        <div class="help-title">⚠️ 기한 초과 표시</div>
+        <div class="help-title">⚠️ 기한 초과 / 마감 임박</div>
         <div class="help-list">
-          <div class="help-item">완료희망일이 지난 경우 <span style="color:#dc2626;font-weight:700;">날짜 ⚠️</span> 표시</div>
-          <div class="help-item">결과회신·완료·보류 상태는 기한 초과 제외</div>
+          <div class="help-item">완료희망일 경과 시 <span style="color:#dc2626;font-weight:700;">날짜 ⚠️</span> 표시</div>
+          <div class="help-item">7일 이내 마감 건은 대시보드에 별도 표시</div>
+          <div class="help-item">결과회신·완료·보류 상태는 초과 표시 제외</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🖨️ 인쇄 / 엑셀</div>
+        <div class="help-list">
+          <div class="help-item">의뢰서 상세 → <b>🖨️ 의뢰서 인쇄</b> 버튼</div>
+          <div class="help-item">목록 → <b>📥 엑셀</b> 버튼으로 전체/필터 결과 다운로드</div>
         </div>
       </div>
     </div>
@@ -301,17 +312,10 @@
         <div class="help-title">📊 결과서 등록</div>
         <div class="help-list">
           <div class="help-item">① 결과서 관리 목록 → <b>결과 입력</b> 버튼</div>
-          <div class="help-item">② 시험 항목별 결과(합격/불합격) 선택</div>
-          <div class="help-item">③ 종합 판정: 적합 / 부적합 / 조건부적합</div>
-          <div class="help-item">④ 저장 시 상태가 자동으로 <b>결과회신</b>으로 변경</div>
-        </div>
-      </div>
-      <div class="help-section">
-        <div class="help-title">🖨️ 성적서 출력</div>
-        <div class="help-list">
-          <div class="help-item">결과서 목록 → <b>인쇄</b> 버튼 → 브라우저 인쇄 기능 사용</div>
-          <div class="help-item">결과서 목록 → <b>엑셀</b> 버튼 → .xlsx 다운로드</div>
-          <div class="help-item">의뢰서 인쇄(🖨️)와 성적서 인쇄는 <b>별도 버튼</b> 사용</div>
+          <div class="help-item">② 시험 항목별 결과(합격 / 불합격 / 해당없음) 선택</div>
+          <div class="help-item">③ 종합 판정: 적합 / 부적합 / 조건부적합 선택</div>
+          <div class="help-item">④ <b>결과 사진</b> 다중 업로드 가능 (드래그앤드롭 지원)</div>
+          <div class="help-item">⑤ 저장 시 상태 자동 변경 → <b>결과회신</b>, 의뢰자 이메일 발송</div>
         </div>
       </div>
       <div class="help-section">
@@ -322,6 +326,14 @@
           <div class="help-item"><span style="background:#fef9c3;color:#d97706;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">조건부적합</span> — 조건부로 기준 충족</div>
         </div>
       </div>
+      <div class="help-section">
+        <div class="help-title">🖨️ 성적서 출력</div>
+        <div class="help-list">
+          <div class="help-item">결과서 목록 → <b>🖨️ 인쇄</b> 버튼 → 브라우저 인쇄</div>
+          <div class="help-item">결과서 목록 → <b>📥 엑셀</b> 버튼 → .xlsx 다운로드</div>
+          <div class="help-item">의뢰서 상세의 <b>시험 결과서 탭</b>에서 사진 갤러리 확인 가능</div>
+        </div>
+      </div>
     </div>
 
     <!-- 부적합 -->
@@ -330,16 +342,37 @@
         <div class="help-title">⚠️ 부적합 등록</div>
         <div class="help-list">
           <div class="help-item">① 왼쪽 메뉴 <b>부적합 등록 → ＋</b> 클릭</div>
-          <div class="help-item">② 발생일·제품명·부적합 유형·심각도 입력</div>
-          <div class="help-item">③ 관련 시험 의뢰서가 있으면 연결 선택</div>
-          <div class="help-item">④ 자동으로 번호 발번 (NC-YYYYMM-NNN)</div>
+          <div class="help-item">② 발생일·제품명·부적합 유형·심각도·내용 입력</div>
+          <div class="help-item">③ <b>신뢰성 시험번호</b> 검색하여 관련 의뢰서 연결 (선택)</div>
+          <div class="help-item">④ <b>부적합 사진</b> 다중 업로드 가능 (드래그앤드롭)</div>
+          <div class="help-item">⑤ 등록 시 자동 번호 발번 (NC-YYYYMM-NNN)</div>
+          <div class="help-item">⑥ 의뢰자 이메일로 <b>발생 알림 자동 발송</b></div>
         </div>
       </div>
       <div class="help-section">
-        <div class="help-title">🔄 처리 단계</div>
+        <div class="help-title">🔧 처리내용 등록</div>
         <div class="help-list">
-          <div class="help-item"><b>등록</b> → 원인분석중 → CAPA진행 → 개선완료 → 종료</div>
-          <div class="help-item">개선조치 관리에서 단계별 조치 내용 기록</div>
+          <div class="help-item">부적합 상세 하단 <b>처리내용 이력</b> 섹션에서 등록</div>
+          <div class="help-item">처리자·처리 상태(처리중/처리완료)·완료일 입력</div>
+          <div class="help-item">처리내용 저장 시 <b>부적합 상태</b>도 동시에 변경 가능</div>
+          <div class="help-item">처리 이력이 시간순으로 누적 기록됨</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🔄 부적합 상태 단계</div>
+        <div class="help-list">
+          <div class="help-item"><span style="background:#f3f4f6;color:#6b7280;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;">등록</span> — 부적합 최초 등록</div>
+          <div class="help-item"><span style="background:#dbeafe;color:#2563eb;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;">진행중</span> — 처리/조치 진행 중</div>
+          <div class="help-item"><span style="background:#dcfce7;color:#059669;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;">개선완료</span> — 조치 완료</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📋 부적합 관리이력</div>
+        <div class="help-list">
+          <div class="help-item">왼쪽 메뉴 <b>부적합 관리이력</b> 클릭</div>
+          <div class="help-item">기간·상태·심각도·발생부서·키워드 필터</div>
+          <div class="help-item"><b>🖨️ 인쇄</b> — 가로(Landscape) A4 형식 출력</div>
+          <div class="help-item"><b>📥 엑셀 추출</b> — 필터 조건 그대로 .xlsx 다운로드</div>
         </div>
       </div>
       <div class="help-section">
@@ -352,24 +385,30 @@
       </div>
     </div>
 
-    <!-- 상태 안내 -->
-    <div id="h-status" class="hpane" style="display:none;">
+    <!-- 기준서 -->
+    <div id="h-std" class="hpane" style="display:none;">
       <div class="help-section">
-        <div class="help-title">🏷️ 의뢰서 상태 설명</div>
+        <div class="help-title">📚 시험 기준서 관리</div>
         <div class="help-list">
-          <div class="help-item"><span style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">접수대기</span> — 의뢰서 등록 후 품질팀 확인 전</div>
-          <div class="help-item"><span style="background:#dbeafe;color:#2563eb;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">접수완료</span> — 품질팀이 의뢰서 접수 확인 완료</div>
-          <div class="help-item"><span style="background:#ede9fe;color:#7c3aed;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">시험중</span> — 시험 진행중</div>
-          <div class="help-item"><span style="background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">결과회신</span> — 시험 결과 등록 완료, 의뢰자에게 통보</div>
-          <div class="help-item"><span style="background:#f0fdf4;color:#16a34a;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">완료</span> — 모든 처리 완료</div>
-          <div class="help-item"><span style="background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">보류</span> — 시험 일시 중단</div>
+          <div class="help-item">왼쪽 메뉴 <b>시험 기준서 관리</b> 클릭</div>
+          <div class="help-item">기준서명 탭으로 구분 — 탭 클릭 시 해당 기준서 항목 표시</div>
+          <div class="help-item"><b>새 기준서 만들기</b> — 기준서명 입력 후 항목 등록 시작</div>
+          <div class="help-item">각 항목: No·시험항목명·시험조건·판정기준·시료수</div>
         </div>
       </div>
       <div class="help-section">
-        <div class="help-title">🔔 알림 기준</div>
+        <div class="help-title">📥 엑셀 일괄 등록 (관리자)</div>
         <div class="help-list">
-          <div class="help-item"><b>기한 초과</b> — 완료희망일 경과, 결과회신·완료·보류 제외</div>
-          <div class="help-item"><b>마감 임박</b> — 완료희망일 7일 이내, 대시보드에 표시</div>
+          <div class="help-item"><b>엑셀 일괄 등록</b> 버튼 → .xlsx / .xls / .csv 파일 업로드</div>
+          <div class="help-item">헤더 자동 인식: 시험항목명·조건·기준·시료수 컬럼 매핑</div>
+          <div class="help-item">미리보기 확인 후 기준서명 지정하여 일괄 등록</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">🔗 의뢰서와 연동</div>
+        <div class="help-list">
+          <div class="help-item">의뢰서 작성 시 기준서 탭·검색으로 시험 항목 불러오기</div>
+          <div class="help-item">선택한 항목의 조건·판정기준이 의뢰서에 자동 입력</div>
         </div>
       </div>
     </div>
@@ -401,10 +440,30 @@
         </div>
       </div>
       <div class="help-section">
+        <div class="help-title">🏷️ 의뢰서 상태 설명</div>
+        <div class="help-list">
+          <div class="help-item"><span style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">접수대기</span> — 의뢰서 등록 후 품질팀 확인 전</div>
+          <div class="help-item"><span style="background:#dbeafe;color:#2563eb;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">접수완료</span> — 품질팀 접수 확인 완료</div>
+          <div class="help-item"><span style="background:#ede9fe;color:#7c3aed;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">시험중</span> — 시험 진행중</div>
+          <div class="help-item"><span style="background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">결과회신</span> — 결과 등록 완료, 의뢰자 통보</div>
+          <div class="help-item"><span style="background:#f0fdf4;color:#16a34a;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">완료</span> — 모든 처리 완료</div>
+          <div class="help-item"><span style="background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;">보류</span> — 시험 일시 중단</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">✉️ 메일 자동 발송</div>
+        <div class="help-list">
+          <div class="help-item"><b>의뢰 접수 알림</b> — 의뢰서 등록 시 품질팀으로 발송</div>
+          <div class="help-item"><b>결과 통보</b> — 결과 등록 시 의뢰자 이메일로 발송</div>
+          <div class="help-item"><b>부적합 알림</b> — NC 등록 시 의뢰자에게 발송, CC 설정 가능</div>
+          <div class="help-item">관리자 메뉴 → <b>메일 발송 관리</b>에서 ON/OFF 및 설정</div>
+        </div>
+      </div>
+      <div class="help-section">
         <div class="help-title">👥 회원 관리 (관리자 전용)</div>
         <div class="help-list">
-          <div class="help-item">사용자 등록·수정·권한 관리</div>
-          <div class="help-item">부서별 접근 권한: 품질팀만 접수·완료 처리 가능</div>
+          <div class="help-item">사용자 승인·수정·권한(admin/user) 관리</div>
+          <div class="help-item">품질팀(admin)만 접수확인·완료 처리 가능</div>
         </div>
       </div>
     </div>

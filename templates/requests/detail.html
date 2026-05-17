@@ -373,29 +373,42 @@ document.addEventListener('DOMContentLoaded', function () {
 .cond-line + .cond-line { border-top:1px dashed #e9ecef; margin-top:4px; padding-top:4px; }
 
 @media print {
-  /* 브라우저 기본 날짜/URL 헤더·푸터 제거 */
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 8mm 10mm;
   }
 
-  /* 레이아웃 초기화 */
   html, body {
     width: 210mm;
     margin: 0 !important;
     padding: 0 !important;
+    font-size: 10px !important;
   }
+
+  /* 불필요한 UI 요소 숨김 */
   .sidebar, .topbar, .breadcrumb, .tabs, .tab-btn,
   .delete-form, .page-header > div:last-child,
   a.btn, button { display: none !important; }
 
+  /* 레이아웃 */
   .main-wrap   { margin-left: 0 !important; width: 100% !important; }
   .page-content {
-    padding: 8mm 10mm !important;
+    padding: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
   }
+
+  /* 페이지 헤더 (제목+상태) 간소화 */
+  .page-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 4px !important;
+    border-bottom: 2px solid #374151 !important;
+  }
+  .page-header h2 { font-size: 14px !important; margin: 0 !important; }
+  .page-header .badge { font-size: 10px !important; padding: 2px 8px !important; }
 
   /* 탭 — 모두 펼침 */
   .tab-pane { display: block !important; }
@@ -403,35 +416,74 @@ document.addEventListener('DOMContentLoaded', function () {
   /* 카드 */
   .card {
     box-shadow: none !important;
-    border: 1px solid #bbb !important;
-    margin-bottom: 6px !important;
+    border: 1px solid #ccc !important;
+    margin-bottom: 5px !important;
     page-break-inside: avoid;
     width: 100% !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
   }
-  .card-body { padding: 8px 12px !important; }
-  .page-header { margin-bottom: 4px !important; }
+  .card-header {
+    padding: 5px 10px !important;
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .card-header h5 { font-size: 11px !important; margin: 0 !important; }
+  .card-body { padding: 6px 10px !important; }
 
-  /* 테이블 너비 고정 */
+  /* 기본 정보 그리드 — 4열, 촘촘하게 */
+  .project-info-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px 8px !important;
+    font-size: 10px !important;
+  }
+  .info-label {
+    font-size: 9px !important;
+    color: #6b7280 !important;
+    margin-bottom: 1px !important;
+  }
+  .info-value {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+  }
+  .info-item { padding: 3px 0 !important; }
+
+  /* 목적 상세 박스 */
+  .card-body > div[style*="background:#f8fafc"] {
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+    margin-top: 5px !important;
+  }
+
+  /* 테이블 */
   table {
     width: 100% !important;
     table-layout: fixed !important;
-    word-break: break-all !important;
-    font-size: 11px !important;
+    word-break: break-word !important;
+    font-size: 10px !important;
+    border-collapse: collapse !important;
   }
-  td, th { overflow: hidden !important; }
+  th {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  td { padding: 4px 6px !important; font-size: 10px !important; }
+  .item-tbl { font-size: 10px !important; }
+  .cond-line { font-size: 10px !important; line-height: 1.4 !important; }
 
-  /* 그리드 */
-  .project-info-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 6px !important;
-    font-size: 11px !important;
-  }
+  /* 배지 크기 */
+  .badge { font-size: 9px !important; padding: 1px 5px !important; }
 
   /* 시험 조건 펼침 */
   .cond-wrap { max-height: none !important; }
   .cond-btn  { display: none !important; }
+
+  /* 불필요한 여백 제거 */
+  .empty-state { display: none !important; }
 }
 </style>
 {% endblock %}
