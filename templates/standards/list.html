@@ -4,28 +4,54 @@
 
 {% block content %}
 
-{# ── 검색 + 등록 버튼 ── #}
-<form method="get" style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
-  <select name="book" class="form-control" style="max-width:220px;" onchange="this.form.submit()">
-    <option value="">전체 기준서</option>
-    {% for b in books %}
-    <option value="{{ b }}" {% if b == book %}selected{% endif %}>{{ b }}</option>
-    {% endfor %}
-  </select>
-  <input type="text" name="q" value="{{ q }}" placeholder="시험항목명 · 조건 · 판정기준 검색"
-         class="form-control" style="max-width:280px;">
-  <button type="submit" class="btn btn-primary">🔍 검색</button>
-  <a href="{{ url_for('standards.list_view') }}" class="btn btn-outline">초기화</a>
+{# ── 기준서 탭 ── #}
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+
+  {# 기준서명 탭 버튼들 #}
+  <a href="{{ url_for('standards.list_view') }}"
+     style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;border:1.5px solid;
+            {% if not book %}background:#f97316;color:#fff;border-color:#f97316;
+            {% else %}background:#fff;color:#64748b;border-color:#e2e8f0;{% endif %}">
+    전체
+  </a>
+  {% for b in books %}
+  <a href="{{ url_for('standards.list_view', book=b) }}"
+     style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;border:1.5px solid;
+            {% if b == book %}background:#f97316;color:#fff;border-color:#f97316;
+            {% else %}background:#fff;color:#64748b;border-color:#e2e8f0;{% endif %}">
+    {{ b }}
+    <span style="font-size:11px;opacity:.75;">({{ book_counts[b] }})</span>
+  </a>
+  {% endfor %}
+
+  {# 새 기준서 만들기 #}
   {% if current_user.role == 'admin' %}
-  <a href="{{ url_for('standards.new') }}" class="btn btn-primary" style="margin-left:auto;">
-    ＋ 기준서 등록
+  <button type="button" onclick="openNewBookModal()"
+     style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;
+            background:#fff;color:#0ea5e9;border:1.5px dashed #0ea5e9;margin-left:4px;">
+    ＋ 새 기준서 만들기
+  </button>
+  {% endif %}
+</div>
+
+{# ── 검색 + 항목 등록 ── #}
+<form method="get" style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
+  {% if book %}<input type="hidden" name="book" value="{{ book }}">{% endif %}
+  <input type="text" name="q" value="{{ q }}" placeholder="시험항목명 · 조건 · 판정기준 검색"
+         class="form-control" style="max-width:320px;">
+  <button type="submit" class="btn btn-primary">🔍 검색</button>
+  <a href="{{ url_for('standards.list_view', book=book) }}" class="btn btn-outline">초기화</a>
+  {% if current_user.role == 'admin' %}
+  <a href="{{ url_for('standards.new', book=book) }}" class="btn btn-primary" style="margin-left:auto;">
+    ＋ 항목 등록{% if book %} ({{ book }}){% endif %}
   </a>
   {% endif %}
 </form>
 
 {# ── 헤더 ── #}
-<div style="padding:10px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+<div style="padding:6px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
   <div style="font-size:13px;font-weight:700;color:#1e293b;">
+    {% if book %}<span style="color:#0ea5e9;">{{ book }}</span> — {% endif %}
     전체 <span style="color:#f97316;">{{ total }}</span>개 항목
   </div>
   {% if pages > 1 %}
@@ -39,15 +65,17 @@
     <table style="width:100%;table-layout:fixed;font-size:13px;">
       <colgroup>
         <col style="width:44px;">
+        {% if not book %}<col style="width:130px;">{% endif %}
         <col style="width:110px;">
-        <col style="width:41%;">
-        <col style="width:33%;">
+        <col>
+        <col style="width:30%;">
         <col style="width:56px;">
         {% if current_user.role == 'admin' %}<col style="width:90px;">{% endif %}
       </colgroup>
       <thead>
         <tr>
           <th style="text-align:center;">No</th>
+          {% if not book %}<th>기준서명</th>{% endif %}
           <th>시험항목명</th>
           <th>시험 조건</th>
           <th>판정 기준</th>
@@ -62,17 +90,21 @@
           <td style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 6px;">
             {{ s.std_no or '-' }}
           </td>
+          {% if not book %}
+          <td style="padding:10px 8px;">
+            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;
+                         background:#e0f2fe;color:#0369a1;">{{ s.book_name or 'MX기구부품기준서' }}</span>
+          </td>
+          {% endif %}
           <td style="font-weight:700;color:#1e293b;padding:10px 8px;word-break:keep-all;">
             {{ s.test_name }}
           </td>
           <td style="padding:10px 8px;">
-            {# 요약 #}
             {% if s.condition_summary %}
             <div style="font-size:11px;color:#f97316;font-weight:600;margin-bottom:4px;">
               {{ s.condition_summary }}
             </div>
             {% endif %}
-            {# 전문 #}
             {% if row.condition %}
             <div style="font-size:12px;color:#374151;white-space:pre-wrap;line-height:1.6;">{{ row.condition }}</div>
             {% endif %}
@@ -101,8 +133,15 @@
         </tr>
         {% else %}
         <tr>
-          <td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">
+          <td colspan="7" style="text-align:center;padding:40px;color:#94a3b8;">
+            {% if book %}
+            <div style="margin-bottom:12px;">📂 <strong>{{ book }}</strong> 기준서에 등록된 항목이 없습니다.</div>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('standards.new', book=book) }}" class="btn btn-primary btn-sm">＋ 첫 항목 등록</a>
+            {% endif %}
+            {% else %}
             등록된 기준서가 없습니다.
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -131,4 +170,51 @@
   {% endif %}
 </div>
 
+{# ── 새 기준서 만들기 모달 ── #}
+{% if current_user.role == 'admin' %}
+<div id="newBookModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;width:420px;max-width:95vw;padding:28px 28px 24px;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+    <h5 style="margin:0 0 6px;font-size:16px;color:#1e293b;">📂 새 기준서 만들기</h5>
+    <p style="margin:0 0 18px;font-size:13px;color:#64748b;">새로운 기준서명을 입력하면 해당 기준서로 항목을 등록할 수 있습니다.</p>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">기준서명 <span style="color:#ef4444;">*</span></label>
+      <input type="text" id="newBookName" class="form-control"
+             placeholder="예: MX인쇄회로기판기준서, 전장부품기준서 …"
+             oninput="document.getElementById('newBookBtn').disabled = !this.value.trim();">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" class="btn btn-outline" onclick="closeNewBookModal()">취소</button>
+      <button type="button" id="newBookBtn" class="btn btn-primary" disabled onclick="goNewBook()">
+        항목 등록 시작 →
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openNewBookModal() {
+  document.getElementById('newBookModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('newBookName').focus(), 80);
+}
+function closeNewBookModal() {
+  document.getElementById('newBookModal').style.display = 'none';
+  document.getElementById('newBookName').value = '';
+  document.getElementById('newBookBtn').disabled = true;
+}
+function goNewBook() {
+  const name = document.getElementById('newBookName').value.trim();
+  if (!name) return;
+  window.location.href = '/standards/new?book=' + encodeURIComponent(name);
+}
+document.getElementById('newBookModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeNewBookModal();
+});
+document.getElementById('newBookName')?.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && this.value.trim()) goNewBook();
+});
+</script>
 {% endblock %}

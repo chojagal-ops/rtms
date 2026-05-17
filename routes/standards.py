@@ -41,9 +41,12 @@ def list_view():
     total = query.count()
     rows  = query.order_by(TestStandard.std_no).offset((page-1)*per).limit(per).all()
     pages = (total + per - 1) // per
-    # 기준서 목록 (필터 드롭다운용)
+    # 기준서 목록 + 항목 수
     book_rows = db.session.query(TestStandard.book_name).distinct().order_by(TestStandard.book_name).all()
     books = [b[0] for b in book_rows if b[0]]
+    book_counts = {}
+    for b in books:
+        book_counts[b] = TestStandard.query.filter_by(book_name=b).count()
     # 시험조건/판정기준 분리
     items = []
     for s in rows:
@@ -51,6 +54,7 @@ def list_view():
         items.append({'s': s, 'condition': cond, 'criterion': crit})
     return render_template('standards/list.html',
                            items=items, q=q, book=book, books=books,
+                           book_counts=book_counts,
                            page=page, pages=pages, total=total)
 
 
@@ -82,7 +86,8 @@ def new():
             flash('등록 중 오류가 발생했습니다.', 'danger')
     book_rows = db.session.query(TestStandard.book_name).distinct().order_by(TestStandard.book_name).all()
     books = [b[0] for b in book_rows if b[0]]
-    return render_template('standards/form.html', item=None, books=books)
+    preset_book = request.args.get('book', '').strip()
+    return render_template('standards/form.html', item=None, books=books, preset_book=preset_book)
 
 
 @standards_bp.route('/standards/<int:sid>/edit', methods=['GET', 'POST'])

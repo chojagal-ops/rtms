@@ -20,7 +20,7 @@
         <div class="form-group" style="grid-column:span 2;">
           <label class="form-label">기준서명 <span class="req">*</span></label>
           <input type="text" name="book_name" class="form-control" required list="bookList"
-                 value="{{ item.book_name or 'MX기구부품기준서' if item else 'MX기구부품기준서' }}"
+                 value="{{ item.book_name if item else (preset_book or 'MX기구부품기준서') }}"
                  placeholder="예: MX기구부품기준서">
           <div style="font-size:11px;color:#94a3b8;margin-top:4px;">기존 기준서명을 선택하거나 새 이름을 입력하면 새 기준서로 분류됩니다.</div>
         </div>
