@@ -16,7 +16,7 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+      {% set sc = {'등록':'#6b7280','개선완료':'#059669','종료':'#374151'} %}
       <span class="badge" style="font-size:14px;padding:6px 14px;background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};border:1.5px solid {{ sc.get(nc.status,'#6b7280') }}44;">
         {{ nc.status }}
       </span>
@@ -46,14 +46,6 @@
 {# ── 탭 ── #}
 <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
   <button class="tab-btn active" data-tab="tab_basic">📋 기본 정보</button>
-  <button class="tab-btn" data-tab="tab_analysis">🔍 원인 분석</button>
-  <button class="tab-btn" data-tab="tab_capa">🔧 CAPA
-    {% if capa_list %}<span class="nav-badge" style="position:static;margin-left:4px;">{{ capa_list|length }}</span>{% endif %}
-  </button>
-  <button class="tab-btn" data-tab="tab_improve">📈 개선조치
-    {% if improve_list %}<span class="nav-badge" style="position:static;margin-left:4px;">{{ improve_list|length }}</span>{% endif %}
-  </button>
-  <button class="tab-btn" data-tab="tab_prevention">🛡️ 재발방지</button>
 </div>
 
 {# ── 탭1: 기본 정보 ── #}
@@ -120,7 +112,7 @@
   </div>
 </div>
 
-{# ── 탭2: 원인 분석 ── #}
+{% if false %}{# 원인분석/CAPA/개선조치/재발방지 탭 제거 #}
 <div id="tab_analysis" class="tab-pane">
   <div class="card" style="margin-bottom:16px;">
     <div class="card-header"><h5>🔍 원인 분석 현황</h5></div>
@@ -451,6 +443,7 @@
   </div>
   {% endif %}
 </div>
+{% endif %}{# /원인분석·CAPA·개선조치·재발방지 제거 #}
 
 {% endblock %}
 

@@ -72,7 +72,7 @@
           </td>
           <td style="font-size:12px;">{{ nc.dept or '-' }}</td>
           <td style="text-align:center;">
-            {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+            {% set sc = {'등록':'#6b7280','개선완료':'#059669','종료':'#374151'} %}
             <span class="badge" style="background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};font-size:11px;">
               {{ nc.status }}
             </span>
