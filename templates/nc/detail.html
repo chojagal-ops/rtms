@@ -179,9 +179,10 @@
     <form method="POST" action="{{ url_for('nc.add_response', nid=nc.id) }}"
           style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 18px;">
       <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">➕ 처리내용 등록</div>
-      <div style="margin-bottom:10px;">
-        <label class="form-label">처리 내용 <span style="color:#ef4444;">*</span></label>
+      <div style="margin-bottom:10px;width:100%;">
+        <label class="form-label" style="display:block;">처리 내용 <span style="color:#ef4444;">*</span></label>
         <textarea name="action_desc" class="form-control" rows="5"
+                  style="width:100%;box-sizing:border-box;resize:vertical;"
                   placeholder="처리 내용을 상세히 기술하세요." required></textarea>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
