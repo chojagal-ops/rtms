@@ -1,11 +1,31 @@
 # routes/nc.py — 부적합 관리
 
-from datetime import date
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import os
+from datetime import date, datetime
+from werkzeug.utils import secure_filename
+from flask import (Blueprint, render_template, request, redirect,
+                   url_for, flash, current_app, send_from_directory)
 from flask_login import login_required, current_user
-from models import db, NCReport, TestRequest
+from models import db, NCReport, NCPhoto, TestRequest
 from utils import parse_date, log_error, mail_nc_notify
 from constants import NC_STATUSES, NC_SEVERITIES
+
+NC_PHOTO_FOLDER   = 'static/uploads/nc_photos'
+ALLOWED_PHOTO_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
+
+
+def _save_nc_photo(file):
+    if not file or file.filename == '':
+        return None
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_PHOTO_EXT:
+        return None
+    upload_dir = os.path.join(current_app.root_path, NC_PHOTO_FOLDER)
+    os.makedirs(upload_dir, exist_ok=True)
+    import uuid
+    fname = datetime.now().strftime('%Y%m%d%H%M%S_') + uuid.uuid4().hex[:8] + '.' + ext
+    file.save(os.path.join(upload_dir, fname))
+    return fname
 
 nc_bp = Blueprint('nc', __name__)
 
@@ -97,6 +117,16 @@ def new():
                           nc_no=_next_nc_no(), status='등록')
             _form_to_nc(nc, request.form)
             db.session.add(nc)
+            db.session.flush()
+            # 사진 저장
+            photos   = request.files.getlist('nc_photos')
+            captions = request.form.getlist('photo_captions')
+            for i, photo_file in enumerate(photos):
+                fname = _save_nc_photo(photo_file)
+                if fname:
+                    db.session.add(NCPhoto(
+                        nc_id=nc.id, filename=fname,
+                        caption=captions[i] if i < len(captions) else ''))
             db.session.commit()
             try:
                 base_url = request.host_url.rstrip('/')
@@ -134,6 +164,15 @@ def edit(nid):
     if request.method == 'POST':
         try:
             _form_to_nc(nc, request.form)
+            # 추가 사진 저장
+            photos   = request.files.getlist('nc_photos')
+            captions = request.form.getlist('photo_captions')
+            for i, photo_file in enumerate(photos):
+                fname = _save_nc_photo(photo_file)
+                if fname:
+                    db.session.add(NCPhoto(
+                        nc_id=nc.id, filename=fname,
+                        caption=captions[i] if i < len(captions) else ''))
             db.session.commit()
             flash('수정되었습니다.', 'success')
             return redirect(url_for('nc.detail', nid=nid))
@@ -179,5 +218,33 @@ def delete(nid):
         log_error('NC 삭제 오류', e)
         flash('삭제 중 오류가 발생했습니다.', 'danger')
     return redirect(url_for('nc.list_view'))
+
+
+# ── NC 사진 서빙 ──────────────────────────────────────────
+@nc_bp.route('/nc/photos/<path:filename>')
+@login_required
+def serve_photo(filename):
+    photo_dir = os.path.join(current_app.root_path, NC_PHOTO_FOLDER)
+    return send_from_directory(photo_dir, filename)
+
+
+# ── NC 사진 삭제 ──────────────────────────────────────────
+@nc_bp.route('/nc/photos/<int:pid>/delete', methods=['POST'])
+@login_required
+def delete_photo(pid):
+    photo = db.get_or_404(NCPhoto, pid)
+    nid   = photo.nc_id
+    try:
+        fpath = os.path.join(current_app.root_path, NC_PHOTO_FOLDER, photo.filename)
+        if os.path.exists(fpath):
+            os.remove(fpath)
+        db.session.delete(photo)
+        db.session.commit()
+        flash('사진이 삭제되었습니다.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        log_error('NC 사진 삭제 오류', e)
+        flash('삭제 중 오류가 발생했습니다.', 'danger')
+    return redirect(url_for('nc.detail', nid=nid))
 
 

@@ -212,6 +212,9 @@ class NCReport(db.Model):
     actions        = db.relationship('NCAction', backref='nc', lazy=True,
                                      cascade='all, delete-orphan',
                                      order_by='NCAction.created_at')
+    photos         = db.relationship('NCPhoto', backref='nc', lazy=True,
+                                     cascade='all, delete-orphan',
+                                     order_by='NCPhoto.uploaded_at')
     request        = db.relationship('TestRequest', backref='nc_reports', lazy=True)
 
 
@@ -253,6 +256,16 @@ class ResultPhoto(db.Model):
     result_id   = db.Column(db.Integer, db.ForeignKey('test_result.id'), nullable=False)
     filename    = db.Column(db.String(300), nullable=False)   # 저장 파일명
     caption     = db.Column(db.String(200), default='')       # 사진 설명
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ── 부적합 사진 ──────────────────────────────────────────
+class NCPhoto(db.Model):
+    __tablename__ = 'nc_photo'
+    id          = db.Column(db.Integer, primary_key=True)
+    nc_id       = db.Column(db.Integer, db.ForeignKey('nc_report.id'), nullable=False)
+    filename    = db.Column(db.String(300), nullable=False)
+    caption     = db.Column(db.String(200), default='')
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
