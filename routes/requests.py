@@ -167,6 +167,19 @@ def _form_to_request(req_obj, form, files=None):
 
 
 # ── 시험 기준서 API (자동입력용) ────────────────────────────
+def _split_condition_criterion(full_text):
+    """condition_full 텍스트에서 시험조건과 판정기준을 분리"""
+    if not full_text:
+        return '', ''
+    for marker in ['▶ 판정기준', '◆ 판정기준', '■ 판정기준', '● 판정기준', '※ 판정기준',
+                   '►판정기준', '▶판정기준', '▶ 합격기준', '◆ 합격기준', '합격기준\n']:
+        idx = full_text.find(marker)
+        if idx != -1:
+            return full_text[:idx].rstrip(), full_text[idx:]
+    # 구분자 없으면 전체를 시험조건으로 반환
+    return full_text, ''
+
+
 @requests_bp.route('/api/test-standards')
 @login_required
 def api_test_standards():
@@ -184,18 +197,20 @@ def api_test_standards():
         )
     total = query.count()
     items = query.order_by(TestStandard.std_no).offset((page-1)*per).limit(per).all()
-    return jsonify({
-        'total': total,
-        'page':  page,
-        'items': [{
-            'id':      s.id,
-            'no':      s.std_no,
-            'name':    s.test_name,
-            'summary': s.condition_summary,
-            'full':    s.condition_full,
-            'qty':     s.sample_qty,
-        } for s in items]
-    })
+    result = []
+    for s in items:
+        cond, crit = _split_condition_criterion(s.condition_full)
+        result.append({
+            'id':        s.id,
+            'no':        s.std_no,
+            'name':      s.test_name,
+            'summary':   s.condition_summary,
+            'full':      s.condition_full,
+            'condition': cond,   # 시험조건만
+            'criterion': crit,   # 판정기준만
+            'qty':       s.sample_qty,
+        })
+    return jsonify({'total': total, 'page': page, 'items': result})
 
 
 # ── 목록 ────────────────────────────────────────────────────

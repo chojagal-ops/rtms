@@ -190,14 +190,14 @@
     </div>
   </div>
   <div class="card-body" style="padding:0;overflow-x:auto;">
-    <table id="item_table" style="font-size:13px;min-width:980px;">
+    <table id="item_table" style="font-size:13px;min-width:1240px;">
       <colgroup>
         <col style="width:40px;">
-        <col style="width:120px;">
-        <col style="width:340px;">
+        <col style="width:130px;">
+        <col style="width:420px;">
         <col style="width:100px;">
-        <col style="width:220px;">
-        <col style="width:110px;">
+        <col style="width:380px;">
+        <col style="width:120px;">
         <col style="width:40px;">
       </colgroup>
       <thead>
@@ -713,15 +713,17 @@ function addSelectedStandards() {
   stdSelected.forEach(s => {
     itemCount++;
     const tr = document.createElement('tr');
-    const nm  = escHtml(s.name  || '');
-    const cnd = escHtml(s.full  || s.summary || '');
+    const nm   = escHtml(s.name      || '');
+    // 시험조건과 판정기준을 API에서 분리된 필드로 각각 사용
+    const cond = escHtml(s.condition || s.full || s.summary || '');
+    const crit = escHtml(s.criterion || '');
     tr.innerHTML = `
       <td style="text-align:center;color:#64748b;">${itemCount}</td>
       <td><input type="text" name="item_test_name" class="form-control" value="${nm}" placeholder="시험 항목명"></td>
-      <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;">${cnd}</textarea></td>
+      <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;">${cond}</textarea></td>
       <td><select name="crit_type" class="form-control" style="font-size:12px;">
             <option value="">- 선택 -</option>${critOpts('')}</select></td>
-      <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;">${cnd}</textarea></td>
+      <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;">${crit}</textarea></td>
       <td><input type="text" name="item_standard" class="form-control" value="MX기구부품기준서" placeholder="IEC, KS 등"></td>
       <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
     tbody.appendChild(tr);
