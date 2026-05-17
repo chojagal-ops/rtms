@@ -16,7 +16,7 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      {% set sc = {'등록':'#6b7280','개선완료':'#059669','종료':'#374151'} %}
+      {% set sc = {'등록':'#6b7280','진행중':'#2563eb','개선완료':'#059669'} %}
       <span class="badge" style="font-size:14px;padding:6px 14px;background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};border:1.5px solid {{ sc.get(nc.status,'#6b7280') }}44;">
         {{ nc.status }}
       </span>
@@ -181,31 +181,31 @@
       <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">➕ 처리내용 등록</div>
       <div style="margin-bottom:10px;">
         <label class="form-label">처리 내용 <span style="color:#ef4444;">*</span></label>
-        <textarea name="action_desc" class="form-control" rows="3"
+        <textarea name="action_desc" class="form-control" rows="5"
                   placeholder="처리 내용을 상세히 기술하세요." required></textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
-        <div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="flex:1;min-width:160px;">
           <label class="form-label">처리자</label>
           <input type="text" name="responsible" class="form-control"
                  value="{{ current_user.name }}" placeholder="처리 담당자">
         </div>
-        <div>
+        <div style="width:130px;">
           <label class="form-label">처리 상태</label>
           <select name="action_status" class="form-control">
             <option value="처리중">처리중</option>
             <option value="처리완료">처리완료</option>
           </select>
         </div>
-        <div>
+        <div style="width:150px;">
           <label class="form-label">처리 완료일</label>
           <input type="date" name="completion_date" class="form-control">
         </div>
-        <div>
+        <div style="width:150px;">
           <label class="form-label">부적합 상태 변경</label>
           <select name="nc_status" class="form-control">
             <option value="">-- 유지 --</option>
-            {% for s in ['등록','원인분석중','CAPA진행','개선완료','종료'] %}
+            {% for s in ['등록','진행중','개선완료'] %}
             <option value="{{ s }}" {{ 'selected' if nc.status == s }}>{{ s }}</option>
             {% endfor %}
           </select>

@@ -92,7 +92,7 @@
         {% for nc in items %}
         {% set responses = nc.actions|selectattr('action_type','eq','처리내용')|list %}
         {% set latest = responses[-1] if responses else none %}
-        {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+        {% set sc = {'등록':'#6b7280','진행중':'#2563eb','개선완료':'#059669'} %}
         <tr style="vertical-align:top;">
           <td style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 6px;border-top:1px solid #f1f5f9;">
             {{ loop.index }}
