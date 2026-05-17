@@ -130,6 +130,95 @@
   </div>
 </div>
 
+{# ── 처리내용 섹션 ── #}
+<div class="card" style="margin-top:16px;">
+  <div class="card-header" style="background:#f0fdf4;border-bottom:2px solid #16a34a;">
+    <h5 style="color:#15803d;">🔧 처리내용 이력</h5>
+    <span style="font-size:12px;color:#6b7280;">{{ nc.actions|selectattr('action_type','eq','처리내용')|list|length }}건</span>
+  </div>
+  <div style="padding:16px 20px;">
+    {% set responses = nc.actions|selectattr('action_type','eq','처리내용')|list %}
+    {% if responses %}
+    <div style="margin-bottom:16px;">
+      {% for a in responses %}
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin-bottom:10px;background:{% if a.status == '처리완료' %}#f0fdf4{% else %}#fff7ed{% endif %};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+          <div style="flex:1;">
+            <div style="font-size:13px;color:#1e293b;white-space:pre-wrap;line-height:1.6;">{{ a.action_desc }}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="badge" style="font-size:11px;padding:2px 8px;
+              {% if a.status == '처리완료' %}background:#dcfce7;color:#16a34a;
+              {% else %}background:#fff7ed;color:#d97706;{% endif %}">
+              {{ a.status }}
+            </span>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#64748b;">처리자: <strong>{{ a.responsible or '-' }}</strong></span>
+          {% if a.completion_date %}
+          <span style="font-size:11px;color:#64748b;">처리일: {{ a.completion_date.strftime('%Y-%m-%d') }}</span>
+          {% endif %}
+          <span style="font-size:11px;color:#94a3b8;">등록: {{ a.created_at.strftime('%Y-%m-%d %H:%M') if a.created_at else '' }}</span>
+          {% if current_user.role == 'admin' %}
+          <form method="POST" action="{{ url_for('nc.delete_response', aid=a.id) }}"
+                style="margin-left:auto;" onsubmit="return confirm('이 처리내용을 삭제하시겠습니까?')">
+            <button type="submit" style="font-size:11px;padding:2px 8px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;">삭제</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="color:#94a3b8;font-size:13px;margin-bottom:16px;">등록된 처리내용이 없습니다.</div>
+    {% endif %}
+
+    {# 처리내용 입력 폼 #}
+    {% if nc.status != '종료' %}
+    <form method="POST" action="{{ url_for('nc.add_response', nid=nc.id) }}"
+          style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 18px;">
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">➕ 처리내용 등록</div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">처리 내용 <span style="color:#ef4444;">*</span></label>
+        <textarea name="action_desc" class="form-control" rows="3"
+                  placeholder="처리 내용을 상세히 기술하세요." required></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div>
+          <label class="form-label">처리자</label>
+          <input type="text" name="responsible" class="form-control"
+                 value="{{ current_user.name }}" placeholder="처리 담당자">
+        </div>
+        <div>
+          <label class="form-label">처리 상태</label>
+          <select name="action_status" class="form-control">
+            <option value="처리중">처리중</option>
+            <option value="처리완료">처리완료</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">처리 완료일</label>
+          <input type="date" name="completion_date" class="form-control">
+        </div>
+        <div>
+          <label class="form-label">부적합 상태 변경</label>
+          <select name="nc_status" class="form-control">
+            <option value="">-- 유지 --</option>
+            {% for s in ['등록','원인분석중','CAPA진행','개선완료','종료'] %}
+            <option value="{{ s }}" {{ 'selected' if nc.status == s }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <button type="submit" class="btn btn-primary">💾 처리내용 저장</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
 {% if false %}{# 원인분석/CAPA/개선조치/재발방지 탭 제거 #}
 <div id="tab_analysis" class="tab-pane">
   <div class="card" style="margin-bottom:16px;">

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}부적합 관리이력 — RTMS{% endblock %}
+{% block topbar_title %}📋 부적합 관리이력{% endblock %}
+
+{% block content %}
+
+{# ── 필터 바 ── #}
+<form method="get" class="card" style="padding:16px 20px;margin-bottom:14px;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">발생일 (시작)</div>
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-control" style="width:140px;">
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">발생일 (종료)</div>
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-control" style="width:140px;">
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">상태</div>
+      <select name="status" class="form-control" style="width:120px;">
+        <option value="">전체</option>
+        {% for s in NC_STATUSES %}
+        <option value="{{ s }}" {{ 'selected' if status_f == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">심각도</div>
+      <select name="severity" class="form-control" style="width:90px;">
+        <option value="">전체</option>
+        {% for sv in NC_SEVERITIES %}
+        <option value="{{ sv }}" {{ 'selected' if severity_f == sv }}>{{ sv }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">발생 부서</div>
+      <select name="dept" class="form-control" style="width:130px;">
+        <option value="">전체</option>
+        {% for d in depts %}
+        <option value="{{ d }}" {{ 'selected' if dept_f == d }}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:180px;">
+      <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">검색</div>
+      <input type="text" name="q" value="{{ search }}" class="form-control" placeholder="NC번호 · 제품명 · 유형">
+    </div>
+    <button type="submit" class="btn btn-primary">🔍 조회</button>
+    <a href="{{ url_for('nc.history') }}" class="btn btn-outline">초기화</a>
+  </div>
+</form>
+
+{# ── 액션 버튼 ── #}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+  <div style="font-size:13px;font-weight:700;color:#1e293b;">
+    전체 <span style="color:#f97316;">{{ items|length }}</span>건
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button type="button" onclick="window.print()"
+            class="btn btn-outline" style="border-color:#6b7280;color:#6b7280;">
+      🖨️ 인쇄
+    </button>
+    <a href="{{ url_for('nc.history_export', date_from=date_from, date_to=date_to,
+                         status=status_f, severity=severity_f, dept=dept_f, q=search) }}"
+       class="btn btn-outline" style="border-color:#16a34a;color:#16a34a;">
+      📥 엑셀 추출
+    </a>
+  </div>
+</div>
+
+{# ── 관리이력 테이블 ── #}
+<div class="card">
+  <div class="table-wrap">
+    <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="width:4%;text-align:center;">No</th>
+          <th style="width:11%;">NC번호</th>
+          <th style="width:8%;text-align:center;">발생일</th>
+          <th style="width:14%;">제품명/모델</th>
+          <th style="width:10%;">부적합유형</th>
+          <th style="width:5%;text-align:center;">심각도</th>
+          <th style="width:9%;">발생부서</th>
+          <th style="width:8%;text-align:center;">상태</th>
+          <th style="width:15%;">처리내용</th>
+          <th style="width:8%;">처리자/일</th>
+          <th style="width:5%;text-align:center;print:hidden;">상세</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nc in items %}
+        {% set responses = nc.actions|selectattr('action_type','eq','처리내용')|list %}
+        {% set latest = responses[-1] if responses else none %}
+        {% set sc = {'등록':'#6b7280','원인분석중':'#2563eb','CAPA진행':'#d97706','개선완료':'#059669','종료':'#374151'} %}
+        <tr style="vertical-align:top;">
+          <td style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 6px;border-top:1px solid #f1f5f9;">
+            {{ loop.index }}
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-weight:700;color:#f97316;font-size:12px;">
+            {{ nc.nc_no or '-' }}
+          </td>
+          <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b;">
+            {{ nc.detection_date.strftime('%Y-%m-%d') if nc.detection_date else '-' }}
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#1e293b;">{{ nc.product_name or '-' }}</div>
+            {% if nc.requester_name %}
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">의뢰: {{ nc.requester_name }}{% if nc.requester_dept %} ({{ nc.requester_dept }}){% endif %}</div>
+            {% endif %}
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;">
+            {{ nc.defect_type or '-' }}
+          </td>
+          <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;">
+            {% if nc.severity %}
+            <span class="badge" style="font-size:11px;
+              {% if nc.severity == '상' %}background:#fee2e2;color:#dc2626;
+              {% elif nc.severity == '중' %}background:#fef3c7;color:#d97706;
+              {% else %}background:#f0fdf4;color:#16a34a;{% endif %}">
+              {{ nc.severity }}
+            </span>
+            {% else %}-{% endif %}
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;">
+            {{ nc.dept or '-' }}
+          </td>
+          <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;">
+            <span class="badge" style="font-size:11px;padding:3px 8px;
+              background:{{ sc.get(nc.status,'#6b7280') }}22;color:{{ sc.get(nc.status,'#6b7280') }};
+              border:1px solid {{ sc.get(nc.status,'#6b7280') }}44;">
+              {{ nc.status or '-' }}
+            </span>
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;">
+            {% if latest %}
+            <div style="color:#1e293b;line-height:1.5;white-space:pre-wrap;">{{ latest.action_desc[:80] }}{% if latest.action_desc|length > 80 %}…{% endif %}</div>
+            <span class="badge" style="font-size:10px;margin-top:3px;
+              {% if latest.status == '처리완료' %}background:#dcfce7;color:#16a34a;
+              {% else %}background:#fff7ed;color:#d97706;{% endif %}">
+              {{ latest.status }}
+            </span>
+            {% else %}
+            <span style="color:#cbd5e1;font-size:12px;">미등록</span>
+            {% endif %}
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:11px;color:#64748b;">
+            {% if latest %}
+            <div>{{ latest.responsible or '-' }}</div>
+            {% if latest.completion_date %}
+            <div style="color:#94a3b8;">{{ latest.completion_date.strftime('%Y-%m-%d') }}</div>
+            {% endif %}
+            {% else %}-{% endif %}
+          </td>
+          <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;no-print:true;">
+            <a href="{{ url_for('nc.detail', nid=nc.id) }}"
+               class="btn btn-outline btn-sm">보기</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="11" style="text-align:center;padding:60px;color:#94a3b8;">
+            조건에 맞는 부적합 이력이 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+@media print {
+  .sidebar, .topbar, .btn, form, a.btn { display: none !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+  body { font-size: 11px; }
+  th, td { padding: 6px 4px !important; font-size: 11px !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+}
+</style>
+{% endblock %}

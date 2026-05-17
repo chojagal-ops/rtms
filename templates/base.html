@@ -94,6 +94,12 @@
       </a>
       <a href="{{ url_for('nc.new') }}" class="nav-add-btn" title="부적합 신규 등록">＋</a>
     </div>
+    <div class="nav-item">
+      <a href="{{ url_for('nc.history') }}"
+         class="{{ 'active' if request.endpoint in ('nc.history','nc.history_export') }}">
+        <span class="nav-icon">📋</span><span>부적합 관리이력</span>
+      </a>
+    </div>
     <div class="nav-section" style="margin-top:8px;">기준서</div>
     <div class="nav-item nav-item-with-add">
       <a href="{{ url_for('standards.list_view') }}"
