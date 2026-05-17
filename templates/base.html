@@ -131,6 +131,12 @@
         <span class="nav-icon">👥</span><span>회원 관리</span>
       </a>
     </div>
+    <div class="nav-item">
+      <a href="{{ url_for('auth.admin_mail_settings') }}"
+         class="{{ 'active' if request.endpoint == 'auth.admin_mail_settings' }}">
+        <span class="nav-icon">✉️</span><span>메일 발송 설정</span>
+      </a>
+    </div>
     {% endif %}
   </nav>
 

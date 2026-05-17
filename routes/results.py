@@ -90,6 +90,7 @@ def _form_to_result(res_obj, form, files=None):
 def list_view():
     status_filter = request.args.get('status', '')
     result_filter = request.args.get('result', '')
+    dept_filter   = request.args.get('dept', '')
     try:
         q = TestRequest.query
         if status_filter:
@@ -99,12 +100,21 @@ def list_view():
         if result_filter:
             q = q.join(TestResult, TestRequest.id == TestResult.request_id)
             q = q.filter(TestResult.overall_result == result_filter)
+        if dept_filter:
+            q = q.filter(TestRequest.request_dept == dept_filter)
         items = q.order_by(TestRequest.created_at.desc()).all()
+        depts = [r[0] for r in db.session.query(TestRequest.request_dept)
+                 .filter(TestRequest.request_dept.isnot(None),
+                         TestRequest.request_dept != '',
+                         TestRequest.status.in_(['접수완료', '시험중', '결과회신', '완료']))
+                 .distinct().order_by(TestRequest.request_dept).all()]
     except Exception as e:
         log_error('결과서 목록 조회 오류', e)
         items = []
+        depts = []
     return render_template('results/list.html', items=items,
-                           status_filter=status_filter, result_filter=result_filter)
+                           status_filter=status_filter, result_filter=result_filter,
+                           dept_filter=dept_filter, depts=depts)
 
 
 # ── 결과서 등록/수정 ────────────────────────────────────────

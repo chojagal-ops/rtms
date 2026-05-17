@@ -4,15 +4,15 @@
 
 {% block content %}
 
-<!-- 상태 필터 탭 -->
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-  <a href="{{ url_for('results.list_view') }}"
+<!-- 상태 필터 탭 + 팀 필터 -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+  <a href="{{ url_for('results.list_view') }}{% if dept_filter %}?dept={{ dept_filter }}{% endif %}"
      class="btn btn-sm {{ 'btn-primary' if not status_filter else 'btn-outline' }}">
     전체 (진행중)
   </a>
   {% for s in ['접수완료','시험중','결과회신','완료'] %}
   {% set meta = STATUS_META.get(s, {}) %}
-  <a href="{{ url_for('results.list_view') }}?status={{ s }}"
+  <a href="{{ url_for('results.list_view') }}?status={{ s }}{% if dept_filter %}&dept={{ dept_filter }}{% endif %}"
      style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;
             background:{{ meta.get('bg','#f1f5f9') }};color:{{ meta.get('color','#475569') }};
             border:1.5px solid {{ 'currentColor' if status_filter == s else 'transparent' }};">
@@ -20,6 +20,21 @@
   </a>
   {% endfor %}
 </div>
+<form method="get" style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  {% if result_filter %}<input type="hidden" name="result" value="{{ result_filter }}">{% endif %}
+  <select name="dept" class="form-control" style="width:130px;"
+          onchange="this.form.submit()">
+    <option value="">전체 팀</option>
+    {% for d in depts %}
+    <option value="{{ d }}" {{ 'selected' if dept_filter == d }}>{{ d }}</option>
+    {% endfor %}
+  </select>
+  {% if dept_filter %}
+  <a href="{{ url_for('results.list_view') }}{% if status_filter %}?status={{ status_filter }}{% endif %}"
+     class="btn btn-outline" style="font-size:12px;padding:5px 10px;">✕ 팀 초기화</a>
+  {% endif %}
+</form>
 
 <div class="card">
   {% if items %}

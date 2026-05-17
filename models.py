@@ -235,3 +235,24 @@ class NCAction(db.Model):
     status          = db.Column(db.String(20), default='계획')      # 계획/진행중/완료
 
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ── 시스템 설정 (key-value) ────────────────────────────────
+class SysConfig(db.Model):
+    __tablename__ = 'sys_config'
+    key   = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.Text, default='')
+
+    @staticmethod
+    def get(key, default=''):
+        row = SysConfig.query.get(key)
+        return row.value if row else default
+
+    @staticmethod
+    def set(key, value):
+        row = SysConfig.query.get(key)
+        if row:
+            row.value = value
+        else:
+            db.session.add(SysConfig(key=key, value=value))
+        db.session.commit()

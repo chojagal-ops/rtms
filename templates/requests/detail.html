@@ -164,7 +164,7 @@
           <tr>
             <td style="text-align:center;color:#64748b;">{{ c.criterion_no }}</td>
             <td><span class="badge badge-진행중">{{ c.criterion_type or '-' }}</span></td>
-            <td style="word-break:break-word;overflow-wrap:break-word;white-space:normal;">{{ c.criterion_content or '-' }}</td>
+            <td class="crit-content" style="word-break:break-word;overflow-wrap:break-word;white-space:normal;">{{ c.criterion_content or '-' }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -330,6 +330,17 @@
 {% block scripts %}
 <script>
 const today = new Date('{{ today.strftime("%Y-%m-%d") }}');
+
+document.addEventListener('DOMContentLoaded', function () {
+  function formatCondText(el) {
+    var t = el.innerHTML;
+    t = t.replace(/([^\n])\s*(※)/g, '$1<br>$2');
+    t = t.replace(/([^\n])\s*(\d+\))/g, '$1<br>$2');
+    el.innerHTML = t;
+  }
+  document.querySelectorAll('.cond-line').forEach(formatCondText);
+  document.querySelectorAll('.crit-content').forEach(formatCondText);
+});
 </script>
 <style>
 .item-tbl { width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }

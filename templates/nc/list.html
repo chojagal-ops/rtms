@@ -18,6 +18,12 @@
     <option value="{{ sv }}" {% if sv == severity_f %}selected{% endif %}>{{ sv }}</option>
     {% endfor %}
   </select>
+  <select name="dept" class="form-control" style="width:120px;">
+    <option value="">전체 팀</option>
+    {% for d in depts %}
+    <option value="{{ d }}" {% if d == dept_f %}selected{% endif %}>{{ d }}</option>
+    {% endfor %}
+  </select>
   <input type="text" name="q" value="{{ search }}" placeholder="번호·제품명·부적합유형·발견자 검색"
          class="form-control" style="flex:1;min-width:180px;">
   <button type="submit" class="btn btn-primary">🔍 검색</button>

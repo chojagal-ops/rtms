@@ -4,7 +4,7 @@ import random
 import string
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User
+from models import db, User, SysConfig
 from utils import log_error, mail_temp_password
 from constants import DEPARTMENTS
 
@@ -200,6 +200,32 @@ def admin_edit_user(uid):
             log_error('관리자 회원 수정 오류', e)
             flash('수정 중 오류가 발생했습니다.', 'danger')
     return render_template('admin_edit_user.html', u=user)
+
+
+@auth_bp.route('/admin/mail-settings', methods=['GET', 'POST'])
+@login_required
+def admin_mail_settings():
+    """관리자 전용: 메일 발송 설정"""
+    if current_user.role != 'admin':
+        flash('관리자만 접근 가능합니다.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    if request.method == 'POST':
+        try:
+            enabled = '1' if request.form.get('mail_result_enabled') == 'on' else '0'
+            cc_addr = request.form.get('mail_result_cc', '').strip()
+            SysConfig.set('mail_result_enabled', enabled)
+            SysConfig.set('mail_result_cc', cc_addr)
+            flash('메일 설정이 저장되었습니다.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            log_error('메일 설정 저장 오류', e)
+            flash('저장 중 오류가 발생했습니다.', 'danger')
+        return redirect(url_for('auth.admin_mail_settings'))
+    cfg = {
+        'mail_result_enabled': SysConfig.get('mail_result_enabled', '1'),
+        'mail_result_cc':      SysConfig.get('mail_result_cc', 'igm550@intops.co.kr'),
+    }
+    return render_template('admin_mail.html', cfg=cfg)
 
 
 @auth_bp.route('/profile/edit', methods=['GET', 'POST'])

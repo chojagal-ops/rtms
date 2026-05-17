@@ -66,15 +66,18 @@ def _form_to_prevention(nc, form):
 @nc_bp.route('/nc')
 @login_required
 def list_view():
-    status_f  = request.args.get('status', '')
+    status_f   = request.args.get('status', '')
     severity_f = request.args.get('severity', '')
-    search    = request.args.get('q', '').strip()
+    dept_f     = request.args.get('dept', '')
+    search     = request.args.get('q', '').strip()
     try:
         q = NCReport.query
         if status_f:
             q = q.filter(NCReport.status == status_f)
         if severity_f:
             q = q.filter(NCReport.severity == severity_f)
+        if dept_f:
+            q = q.filter(NCReport.dept == dept_f)
         if search:
             q = q.filter(db.or_(
                 NCReport.nc_no.ilike(f'%{search}%'),
@@ -83,11 +86,17 @@ def list_view():
                 NCReport.detected_by.ilike(f'%{search}%'),
             ))
         items = q.order_by(NCReport.created_at.desc()).all()
+        depts = [r[0] for r in db.session.query(NCReport.dept)
+                 .filter(NCReport.dept.isnot(None), NCReport.dept != '')
+                 .distinct().order_by(NCReport.dept).all()]
     except Exception as e:
         log_error('부적합 목록 조회 오류', e)
         items = []
+        depts = []
     return render_template('nc/list.html', items=items,
-                           status_f=status_f, severity_f=severity_f, search=search,
+                           status_f=status_f, severity_f=severity_f,
+                           dept_f=dept_f, depts=depts,
+                           search=search,
                            NC_STATUSES=NC_STATUSES, NC_SEVERITIES=NC_SEVERITIES)
 
 

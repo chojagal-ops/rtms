@@ -36,7 +36,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024   # 업로드 최대 50MB
 # 서버 재시작마다 새 버전 → CSS/JS 변경이 브라우저에 즉시 반영
 APP_VERSION = str(int(time.time()))
 
-from models import db, User, TestStandard
+from models import db, User, TestStandard, SysConfig
 db.init_app(app)
 
 login_manager = LoginManager(app)
@@ -196,6 +196,16 @@ def init_db():
         db.session.add(admin)
         db.session.commit()
         print('[RTMS] 기본 관리자 계정 생성: admin / admin1234')
+    # SysConfig 기본값 설정 (없는 키만)
+    import os as _os
+    _defaults = {
+        'mail_result_enabled': '1',
+        'mail_result_cc': _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'),
+    }
+    for k, v in _defaults.items():
+        if not SysConfig.query.get(k):
+            db.session.add(SysConfig(key=k, value=v))
+    db.session.commit()
 
 
 # ── 앱 시작 시 DB 초기화 (Gunicorn 워커 포함) ───────────

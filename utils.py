@@ -48,7 +48,8 @@ def make_request_no(seq: int, dept_code: str, requester_initials: str, date_str:
 _MAIL_CFG_WARNED = False   # 설정 없음 경고 중복 방지
 
 
-def send_mail(subject: str, to_emails, html_body: str, text_body: str = '') -> None:
+def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
+              cc_emails=None) -> None:
     """비동기 이메일 발송 (daemon thread). 실패 시 로그만 기록, 앱 동작에 영향 없음.
 
     필수 환경변수:
@@ -77,24 +78,35 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '') -> N
     if isinstance(to_emails, str):
         to_emails = [e.strip() for e in to_emails.split(',') if e.strip()]
 
+    if cc_emails:
+        if isinstance(cc_emails, str):
+            cc_list = [e.strip() for e in cc_emails.split(',') if e.strip()]
+        else:
+            cc_list = [e.strip() for e in cc_emails if e.strip()]
+    else:
+        cc_list = []
+
     def _send():
         try:
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
             msg['From']    = username
             msg['To']      = ', '.join(to_emails)
+            if cc_list:
+                msg['Cc'] = ', '.join(cc_list)
             if text_body:
                 msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
+            all_recipients = to_emails + cc_list
             with smtplib.SMTP(server, port, timeout=15) as smtp:
                 smtp.ehlo()
                 if use_tls:
                     smtp.starttls()
                     smtp.ehlo()
                 smtp.login(username, password)
-                smtp.sendmail(username, to_emails, msg.as_bytes())
-            logging.info(f'이메일 발송 성공 → {to_emails} / {subject}')
+                smtp.sendmail(username, all_recipients, msg.as_bytes())
+            logging.info(f'이메일 발송 성공 → {all_recipients} / {subject}')
         except Exception as exc:
             log_error(f'이메일 발송 실패 → {to_emails}', exc)
 
@@ -237,9 +249,17 @@ def mail_accept_notify(req_obj, requester_email: str, base_url: str = '') -> Non
 
 
 def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '') -> None:
-    """결과 등록 → 의뢰자 결과 통보 메일"""
+    """결과 등록 → 의뢰자 결과 통보 메일 (품질팀 CC 포함)"""
     if not requester_email:
         return
+    # 관리자 설정에서 메일 발송 ON/OFF 확인
+    try:
+        from models import SysConfig
+        if SysConfig.get('mail_result_enabled', '1') == '0':
+            return
+        cc_addr = SysConfig.get('mail_result_cc', os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'))
+    except Exception:
+        cc_addr = os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
     fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
     result_color = {'적합': '#16a34a', '부적합': '#dc2626', '조건부적합': '#d97706'}.get(
         res_obj.overall_result or '', '#374151')
@@ -285,4 +305,5 @@ def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '
         subject=f'[RTMS] 신뢰성 시험 결과 통보 — {req_obj.request_no} / {req_obj.product_name or ""} [{res_obj.overall_result or ""}]',
         to_emails=requester_email,
         html_body=html,
+        cc_emails=cc_addr if cc_addr else None,
     )
