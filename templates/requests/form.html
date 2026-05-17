@@ -442,6 +442,24 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+#item_table td {
+  padding: 6px 8px;
+  vertical-align: top;
+}
+#item_table th {
+  padding: 8px 8px;
+}
+#item_table td:first-child {
+  vertical-align: middle;
+  text-align: center;
+}
+#item_table input.form-control,
+#item_table select.form-control {
+  width: 100%;
+  box-sizing: border-box;
+}
+</style>
 <script>
 // ── 시험 종류 토글 ────────────────────────────────────────
 function onTestTypeChange(val) {
