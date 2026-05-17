@@ -334,8 +334,10 @@ const today = new Date('{{ today.strftime("%Y-%m-%d") }}');
 document.addEventListener('DOMContentLoaded', function () {
   function formatCondText(el) {
     var t = el.innerHTML;
-    t = t.replace(/([^\n])\s*(※)/g, '$1<br>$2');
-    t = t.replace(/([^\n])\s*(\d+\))/g, '$1<br>$2');
+    // ※ (U+203B) 앞에 줄바꿈 — split/join으로 인코딩 문제 없이 처리
+    t = t.split('※').join('<br>※');
+    // 숫자N) 앞에 줄바꿈 — 공백+숫자+괄호 패턴
+    t = t.replace(/(\S)\s+(\d+\))/g, '$1<br>$2');
     el.innerHTML = t;
   }
   document.querySelectorAll('.cond-line').forEach(formatCondText);
