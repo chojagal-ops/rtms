@@ -215,7 +215,7 @@ def admin_mail_settings():
                 SysConfig.set(key, '1' if request.form.get(key) == 'on' else '0')
             for key in ('mail_request_to', 'mail_request_cc',
                         'mail_result_cc',
-                        'mail_nc_to', 'mail_nc_cc'):
+                        'mail_nc_cc'):
                 SysConfig.set(key, request.form.get(key, '').strip())
             flash('메일 설정이 저장되었습니다.', 'success')
         except Exception as e:
@@ -232,8 +232,7 @@ def admin_mail_settings():
         'mail_result_enabled':  SysConfig.get('mail_result_enabled', '1'),
         'mail_result_cc':       SysConfig.get('mail_result_cc', _qa),
         'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
-        'mail_nc_to':           SysConfig.get('mail_nc_to', _qa),
-        'mail_nc_cc':           SysConfig.get('mail_nc_cc', ''),
+        'mail_nc_cc':           SysConfig.get('mail_nc_cc', 'igm550@intops.co.kr'),
     }
     return render_template('admin_mail.html', cfg=cfg)
 
@@ -293,8 +292,7 @@ def admin_mail_log():
         'mail_result_enabled':  SysConfig.get('mail_result_enabled', '1'),
         'mail_result_cc':       SysConfig.get('mail_result_cc', _qa),
         'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
-        'mail_nc_to':           SysConfig.get('mail_nc_to', _qa),
-        'mail_nc_cc':           SysConfig.get('mail_nc_cc', ''),
+        'mail_nc_cc':           SysConfig.get('mail_nc_cc', 'igm550@intops.co.kr'),
     }
     logs = MailLog.query.order_by(MailLog.sent_at.desc()).limit(200).all()
     return render_template('admin_mail_log.html', cfg=cfg, logs=logs)
@@ -312,7 +310,7 @@ def admin_mail_log_settings():
             SysConfig.set(key, '1' if request.form.get(key) == 'on' else '0')
         for key in ('mail_request_to', 'mail_request_cc',
                     'mail_result_cc',
-                    'mail_nc_to', 'mail_nc_cc'):
+                    'mail_nc_cc'):
             SysConfig.set(key, request.form.get(key, '').strip())
         flash('메일 설정이 저장되었습니다.', 'success')
     except Exception as e:

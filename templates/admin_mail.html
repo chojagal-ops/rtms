@@ -100,7 +100,13 @@
         <div style="font-size:12px;color:#6b7280;margin-bottom:14px;">부적합이 등록되면 <strong>개선조치 요구자</strong>에게 자동 발송</div>
 
         {{ toggle('mail_nc_enabled', cfg.mail_nc_enabled, '', '부적합 등록 시 수신자에게 자동 발송') }}
-        {{ email_row('mail_nc_to', cfg.mail_nc_to, '수신자(TO) 이메일', '개선조치 요구 담당자 주소') }}
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">수신자(TO) 이메일</label>
+          <div style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;">
+            의뢰자 이메일 (자동)
+          </div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:3px;">부적합 등록 시 입력된 의뢰자 이메일로 자동 발송</div>
+        </div>
         {{ email_row('mail_nc_cc', cfg.mail_nc_cc, '참조(CC) 이메일', '비워두면 CC 없이 발송') }}
       </div>
 

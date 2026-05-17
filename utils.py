@@ -342,20 +342,17 @@ def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '
 
 
 def mail_nc_notify(nc_obj, base_url: str = '') -> None:
-    """부적합 등록 → 개선조치 담당자 알림 메일"""
+    """부적합 등록 → 의뢰자 알림 메일 (TO: 의뢰자, CC: 설정값)"""
     try:
         from models import SysConfig
         if SysConfig.get('mail_nc_enabled', '1') == '0':
             return
-        to_addr = SysConfig.get('mail_nc_to', os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'))
-        cc_addr = SysConfig.get('mail_nc_cc', '')
+        cc_addr = SysConfig.get('mail_nc_cc', 'igm550@intops.co.kr')
     except Exception:
-        to_addr = os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
-        cc_addr = ''
-    # 시험의뢰자 이메일이 있으면 TO 수신자에 추가
+        cc_addr = 'igm550@intops.co.kr'
+    # TO: 의뢰자 이메일
     requester_email = (nc_obj.requester_email or '').strip()
-    to_list = [e for e in [to_addr, requester_email] if e]
-    if not to_list:
+    if not requester_email:
         return
     fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
     sev_color = {'상': '#dc2626', '중': '#d97706', '하': '#16a34a'}.get(nc_obj.severity or '', '#374151')
@@ -397,7 +394,7 @@ def mail_nc_notify(nc_obj, base_url: str = '') -> None:
 
     send_mail(
         subject=f'[RTMS] 부적합 발생 — {nc_obj.nc_no} / {nc_obj.product_name or ""} [심각도:{nc_obj.severity or "-"}]',
-        to_emails=to_list,
+        to_emails=requester_email,
         html_body=html,
         cc_emails=cc_addr if cc_addr else None,
         feature='nc',
