@@ -183,13 +183,16 @@
 {% block scripts %}
 <style>
 @media print {
+  @page { size: A4 landscape; margin: 10mm; }
   .sidebar, .topbar, .btn, form, a.btn { display: none !important; }
   .main-content { margin: 0 !important; padding: 0 !important; }
   .card { box-shadow: none !important; border: 1px solid #ccc !important; }
-  body { font-size: 11px; }
-  th, td { padding: 6px 4px !important; font-size: 11px !important; }
-  table { page-break-inside: auto; }
+  body { font-size: 10px; }
+  th { font-size: 10px !important; padding: 5px 4px !important; background: #f97316 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  td { padding: 5px 4px !important; font-size: 10px !important; }
+  table { width: 100% !important; table-layout: fixed; page-break-inside: auto; }
   tr { page-break-inside: avoid; }
+  .table-wrap { overflow: visible !important; }
 }
 </style>
 {% endblock %}
