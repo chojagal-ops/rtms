@@ -6,13 +6,15 @@ from werkzeug.utils import secure_filename
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, current_app, send_from_directory, jsonify, send_file)
 from flask_login import login_required, current_user
-from models import db, TestRequest, TestItem, TestResult
+from models import db, TestRequest, TestItem, TestResult, ResultPhoto
 from utils import parse_date, log_error, mail_result_notify
 
 results_bp = Blueprint('results', __name__)
 
-UPLOAD_FOLDER = 'static/uploads/results'
-ALLOWED_EXT   = {'pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'xls', 'docx', 'doc', 'zip', 'hwp'}
+UPLOAD_FOLDER       = 'static/uploads/results'
+PHOTO_FOLDER        = 'static/uploads/result_photos'
+ALLOWED_EXT         = {'pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'xls', 'docx', 'doc', 'zip', 'hwp'}
+ALLOWED_PHOTO_EXT   = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
 
 
 def _allowed(filename):
@@ -31,6 +33,22 @@ def _save_file(file):
     prefix = datetime.now().strftime('%Y%m%d%H%M%S_')
     fname  = prefix + secure_filename(file.filename)
     file.save(os.path.join(upload_dir, fname))
+    return fname
+
+
+def _save_photo(file):
+    """결과 사진 저장 → 파일명 반환"""
+    if not file or file.filename == '':
+        return None
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_PHOTO_EXT:
+        return None
+    from datetime import datetime
+    photo_dir = os.path.join(current_app.root_path, PHOTO_FOLDER)
+    os.makedirs(photo_dir, exist_ok=True)
+    import uuid
+    fname = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}.{ext}"
+    file.save(os.path.join(photo_dir, fname))
     return fname
 
 
@@ -132,6 +150,20 @@ def edit(rid):
                 db.session.add(res_obj)
 
             _form_to_result(res_obj, request.form, request.files)
+
+            # 결과 사진 저장 (다중)
+            db.session.flush()  # res_obj.id 확보
+            photos      = request.files.getlist('result_photos')
+            captions    = request.form.getlist('photo_captions')
+            for i, photo_file in enumerate(photos):
+                fname = _save_photo(photo_file)
+                if fname:
+                    caption = captions[i] if i < len(captions) else ''
+                    db.session.add(ResultPhoto(
+                        result_id=res_obj.id,
+                        filename=fname,
+                        caption=caption,
+                    ))
 
             # 시험 항목별 결과 업데이트
             item_results = request.form.getlist('item_result')
@@ -348,6 +380,34 @@ def export_excel(rid):
 def download_file(filename):
     upload_dir = os.path.join(current_app.root_path, UPLOAD_FOLDER)
     return send_from_directory(upload_dir, filename, as_attachment=True)
+
+
+# ── 결과 사진 서빙 ──────────────────────────────────────────
+@results_bp.route('/results/photos/<filename>')
+@login_required
+def serve_photo(filename):
+    photo_dir = os.path.join(current_app.root_path, PHOTO_FOLDER)
+    return send_from_directory(photo_dir, filename)
+
+
+# ── 결과 사진 삭제 ──────────────────────────────────────────
+@results_bp.route('/results/photos/<int:pid>/delete', methods=['POST'])
+@login_required
+def delete_photo(pid):
+    photo = db.get_or_404(ResultPhoto, pid)
+    rid   = photo.result.request_id
+    try:
+        path = os.path.join(current_app.root_path, PHOTO_FOLDER, photo.filename)
+        if os.path.exists(path):
+            os.remove(path)
+        db.session.delete(photo)
+        db.session.commit()
+        flash('사진이 삭제되었습니다.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        log_error('결과 사진 삭제 오류', e)
+        flash('삭제 중 오류가 발생했습니다.', 'danger')
+    return redirect(url_for('requests.detail', rid=rid))
 
 
 # ── 성적서 인쇄 뷰 ───────────────────────────────────────────

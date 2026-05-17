@@ -325,6 +325,74 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════
+     ⑩ 결과 사진
+     ══════════════════════════════════════════════════════ -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h5>📷 결과 사진</h5></div>
+  <div class="card-body">
+
+    {# 기존 등록 사진 #}
+    {% if res and res.photos %}
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:10px;">
+        등록된 사진 {{ res.photos|length }}장
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        {% for photo in res.photos %}
+        <div style="position:relative;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;width:160px;background:#f8fafc;">
+          <a href="{{ url_for('results.serve_photo', filename=photo.filename) }}" target="_blank">
+            <img src="{{ url_for('results.serve_photo', filename=photo.filename) }}"
+                 style="width:160px;height:120px;object-fit:cover;display:block;"
+                 onerror="this.style.display='none'">
+          </a>
+          <div style="padding:6px 8px;">
+            <div style="font-size:11px;color:#64748b;word-break:break-all;">
+              {{ photo.caption or '설명 없음' }}
+            </div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">
+              {{ photo.uploaded_at.strftime('%Y-%m-%d') if photo.uploaded_at else '' }}
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('results.delete_photo', pid=photo.id) }}"
+                style="position:absolute;top:4px;right:4px;"
+                onsubmit="return confirm('이 사진을 삭제하시겠습니까?')">
+            <button type="submit"
+                    style="background:rgba(0,0,0,.55);border:none;color:#fff;border-radius:50%;
+                           width:22px;height:22px;cursor:pointer;font-size:11px;line-height:1;
+                           display:flex;align-items:center;justify-content:center;">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# 새 사진 추가 #}
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;">새 사진 추가</div>
+      <div id="photoDropZone"
+           style="border:2px dashed #cbd5e1;border-radius:10px;padding:24px;text-align:center;
+                  cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s;"
+           onclick="document.getElementById('photoInput').click()"
+           ondragover="event.preventDefault();this.style.borderColor='#f97316';this.style.background='#fff7ed';"
+           ondragleave="this.style.borderColor='#cbd5e1';this.style.background='#fafafa';"
+           ondrop="handlePhotoDrop(event)">
+        <div style="font-size:28px;margin-bottom:6px;">🖼️</div>
+        <div style="font-size:13px;color:#64748b;">클릭하거나 사진을 끌어다 놓으세요</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">JPG, PNG, GIF, WEBP — 여러 장 동시 선택 가능</div>
+        <input type="file" id="photoInput" name="result_photos" multiple
+               accept=".jpg,.jpeg,.png,.gif,.webp,.bmp"
+               style="display:none;" onchange="previewPhotos(this.files)">
+      </div>
+
+      {# 미리보기 + 캡션 입력 영역 #}
+      <div id="photoPreviewArea" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;"></div>
+    </div>
+
+  </div>
+</div>
+
 <div class="flex gap-8 mt-16" style="justify-content:flex-end;">
   <a href="{{ url_for('requests.detail', rid=req.id) }}" class="btn btn-outline">취소</a>
   <button type="submit" class="btn btn-primary" style="min-width:140px;">
@@ -380,6 +448,71 @@ function toggleCond(id, btn, e) {
   btn.textContent = expanded ? '▲ 닫기' : '▼ 확인';
   btn.style.background = expanded ? '#64748b' : '#2563eb';
 }
+
+// ── 결과 사진 미리보기 ────────────────────────────────
+let selectedFiles = [];
+
+function previewPhotos(files) {
+  const area = document.getElementById('photoPreviewArea');
+  area.innerHTML = '';
+  selectedFiles = Array.from(files);
+  selectedFiles.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const card = document.createElement('div');
+      card.style.cssText = 'width:160px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#f8fafc;position:relative;';
+      card.innerHTML = `
+        <img src="${e.target.result}" style="width:160px;height:120px;object-fit:cover;display:block;">
+        <div style="padding:6px 8px;">
+          <input type="text" name="photo_captions" placeholder="사진 설명 (선택)"
+                 style="width:100%;font-size:11px;border:1px solid #e2e8f0;border-radius:4px;
+                        padding:3px 6px;box-sizing:border-box;color:#374151;">
+          <div style="font-size:10px;color:#94a3b8;margin-top:3px;overflow:hidden;
+                      white-space:nowrap;text-overflow:ellipsis;" title="${file.name}">${file.name}</div>
+        </div>
+        <button type="button" onclick="removePhoto(${idx}, this.closest('div[style]'))"
+                style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);
+                       border:none;color:#fff;border-radius:50%;width:22px;height:22px;
+                       cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">✕</button>`;
+      area.appendChild(card);
+    };
+    reader.readAsDataURL(file);
+  });
+  if (selectedFiles.length) {
+    document.getElementById('photoDropZone').style.borderColor = '#f97316';
+  }
+}
+
+function removePhoto(idx, card) {
+  card.remove();
+  selectedFiles.splice(idx, 1);
+  if (!selectedFiles.length) document.getElementById('photoDropZone').style.borderColor = '#cbd5e1';
+}
+
+function handlePhotoDrop(e) {
+  e.preventDefault();
+  document.getElementById('photoDropZone').style.borderColor = '#cbd5e1';
+  document.getElementById('photoDropZone').style.background = '#fafafa';
+  const input = document.getElementById('photoInput');
+  const dt = e.dataTransfer;
+  // DataTransfer → input files 직접 할당은 불가하므로 미리보기만 표시
+  previewPhotos(dt.files);
+  // form 제출 시 드래그한 파일도 전송되도록 별도 처리
+  input._extraFiles = dt.files;
+}
+
+// form 제출 전 드래그&드롭 파일 동기화
+document.getElementById('result_form').addEventListener('submit', function() {
+  const input = document.getElementById('photoInput');
+  if (input._extraFiles && input._extraFiles.length && !input.files.length) {
+    // DataTransfer 활용하여 파일 주입
+    try {
+      const dtr = new DataTransfer();
+      Array.from(input._extraFiles).forEach(f => dtr.items.add(f));
+      input.files = dtr.files;
+    } catch(e) {}
+  }
+});
 
 // ── 인쇄 스타일 ───────────────────────────────────────
 const printStyle = `

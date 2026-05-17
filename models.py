@@ -157,6 +157,10 @@ class TestResult(db.Model):
     created_at         = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at         = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    photos             = db.relationship('ResultPhoto', backref='result', lazy=True,
+                                         cascade='all, delete-orphan',
+                                         order_by='ResultPhoto.uploaded_at')
+
 
 # ── 부적합 보고서 (NC Report) ──────────────────────────────
 class NCReport(db.Model):
@@ -240,6 +244,16 @@ class NCAction(db.Model):
     status          = db.Column(db.String(20), default='계획')      # 계획/진행중/완료
 
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ── 시험 결과 사진 ───────────────────────────────────────
+class ResultPhoto(db.Model):
+    __tablename__ = 'result_photo'
+    id          = db.Column(db.Integer, primary_key=True)
+    result_id   = db.Column(db.Integer, db.ForeignKey('test_result.id'), nullable=False)
+    filename    = db.Column(db.String(300), nullable=False)   # 저장 파일명
+    caption     = db.Column(db.String(200), default='')       # 사진 설명
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # ── 메일 발송 이력 ────────────────────────────────────────

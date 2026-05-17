@@ -223,6 +223,24 @@
         </a>
       </div>
       {% endif %}
+      {% if res.photos %}
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:10px;">📷 결과 사진 ({{ res.photos|length }}장)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          {% for photo in res.photos %}
+          <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;width:160px;background:#f8fafc;">
+            <a href="{{ url_for('results.serve_photo', filename=photo.filename) }}" target="_blank">
+              <img src="{{ url_for('results.serve_photo', filename=photo.filename) }}"
+                   style="width:160px;height:120px;object-fit:cover;display:block;">
+            </a>
+            {% if photo.caption %}
+            <div style="padding:6px 8px;font-size:11px;color:#64748b;word-break:break-all;">{{ photo.caption }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
   {% else %}
