@@ -139,11 +139,9 @@ def new():
             db.session.rollback()
             log_error('부적합 등록 오류', e)
             flash('등록 중 오류가 발생했습니다.', 'danger')
-    # 관련 의뢰서 목록 (부적합 결과인 것)
-    recent_reqs = (TestRequest.query
-                   .filter(TestRequest.result != None)
-                   .order_by(TestRequest.created_at.desc()).limit(30).all())
-    return render_template('nc/form.html', nc=None, recent_reqs=recent_reqs,
+    all_reqs = (TestRequest.query
+                .order_by(TestRequest.created_at.desc()).limit(300).all())
+    return render_template('nc/form.html', nc=None, all_reqs=all_reqs,
                            NC_STATUSES=NC_STATUSES,
                            NC_SEVERITIES=NC_SEVERITIES)
 
@@ -180,9 +178,9 @@ def edit(nid):
             db.session.rollback()
             log_error('부적합 수정 오류', e)
             flash('수정 중 오류가 발생했습니다.', 'danger')
-    recent_reqs = (TestRequest.query
-                   .order_by(TestRequest.created_at.desc()).limit(30).all())
-    return render_template('nc/form.html', nc=nc, recent_reqs=recent_reqs,
+    all_reqs = (TestRequest.query
+                .order_by(TestRequest.created_at.desc()).limit(300).all())
+    return render_template('nc/form.html', nc=nc, all_reqs=all_reqs,
                            NC_STATUSES=NC_STATUSES,
                            NC_SEVERITIES=NC_SEVERITIES)
 
