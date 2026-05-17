@@ -51,13 +51,17 @@
         </div>
 
         <div class="form-group form-full">
-          <label class="form-label">시험조건 전문</label>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">
-            ※ 판정기준은 <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;">▶ 판정기준</code> 으로 구분하면 의뢰서 등록 시 자동 분리됩니다.
-          </div>
-          <textarea name="condition_full" class="form-control" rows="14"
-                    placeholder="▶ 시험방법&#10;1) ...&#10;&#10;▶ 판정기준&#10;1) ..."
-                    style="font-family:'Courier New',monospace;font-size:12px;line-height:1.7;">{{ item.condition_full or '' if item else '' }}</textarea>
+          <label class="form-label">시험 조건</label>
+          <textarea name="condition" class="form-control" rows="8"
+                    placeholder="▶ 시험방법&#10;1) ...&#10;&#10;▶ 시험기기 및 비품&#10;..."
+                    style="font-family:'Courier New',monospace;font-size:12px;line-height:1.7;resize:vertical;">{{ condition }}</textarea>
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">판정 기준</label>
+          <textarea name="criterion" class="form-control" rows="6"
+                    placeholder="1) ...&#10;2) ..."
+                    style="font-family:'Courier New',monospace;font-size:12px;line-height:1.7;resize:vertical;border-left:3px solid #f97316;">{{ criterion }}</textarea>
         </div>
 
       </div>

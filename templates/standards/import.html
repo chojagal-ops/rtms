@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}기준서 일괄 등록 — RTMS{% endblock %}
+{% block topbar_title %}📥 기준서 일괄 등록{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('standards.list_view') }}">기준서 관리</a>
+  <span>›</span><span>일괄 등록</span>
+</div>
+
+<div class="card" style="max-width:700px;">
+  <div class="card-header"><h5>📥 엑셀 / CSV 파일로 일괄 등록</h5></div>
+  <div class="card-body">
+
+    <form method="POST" enctype="multipart/form-data" id="importForm">
+
+      {# 파일 업로드 영역 #}
+      <div id="dropZone"
+           style="border:2px dashed #cbd5e1;border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;
+                  transition:border-color .2s,background .2s;margin-bottom:20px;background:#fafafa;"
+           onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.style.borderColor='#f97316';this.style.background='#fff7ed';"
+           ondragleave="this.style.borderColor='#cbd5e1';this.style.background='#fafafa';"
+           ondrop="handleDrop(event)">
+        <div style="font-size:36px;margin-bottom:10px;">📂</div>
+        <div style="font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;">
+          파일을 여기에 끌어다 놓거나 클릭하여 선택
+        </div>
+        <div style="font-size:12px;color:#94a3b8;">.xlsx &nbsp;·&nbsp; .xls &nbsp;·&nbsp; .csv 지원</div>
+        <div id="fileName" style="margin-top:12px;font-size:13px;color:#f97316;font-weight:600;display:none;"></div>
+        <input type="file" id="fileInput" name="file" accept=".xlsx,.xls,.csv"
+               style="display:none;" onchange="showFileName(this)">
+      </div>
+
+      {# 안내 #}
+      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:#475569;line-height:1.8;">
+        <strong style="color:#1e293b;">📋 파일 형식 안내</strong><br>
+        파일의 헤더(컬럼명)에 아래 키워드가 포함되면 자동으로 인식합니다:<br>
+        <span style="display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+          <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;">시험항목</code>
+          <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;">시험조건 / 조건</code>
+          <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;">판정기준 / 기준</code>
+          <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;">시료수</code>
+          <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;">번호 / No</code>
+          <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;">기준서명</code>
+        </span><br>
+        헤더가 없어도 열 순서(번호 / 시험항목 / 조건 / 판정기준 / 시료수)로 자동 파싱됩니다.
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <a href="{{ url_for('standards.list_view') }}" class="btn btn-outline">취소</a>
+        <button type="submit" id="submitBtn" class="btn btn-primary" disabled>
+          📊 파일 분석 및 미리보기
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showFileName(input) {
+  const nameEl = document.getElementById('fileName');
+  const btn = document.getElementById('submitBtn');
+  if (input.files && input.files[0]) {
+    nameEl.textContent = '선택된 파일: ' + input.files[0].name;
+    nameEl.style.display = 'block';
+    btn.disabled = false;
+    document.getElementById('dropZone').style.borderColor = '#f97316';
+  }
+}
+function handleDrop(e) {
+  e.preventDefault();
+  const zone = document.getElementById('dropZone');
+  zone.style.borderColor = '#f97316';
+  zone.style.background = '#fff7ed';
+  const files = e.dataTransfer.files;
+  if (files.length) {
+    document.getElementById('fileInput').files = files;
+    showFileName(document.getElementById('fileInput'));
+  }
+}
+</script>
+{% endblock %}

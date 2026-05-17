@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}기준서 일괄 등록 미리보기 — RTMS{% endblock %}
+{% block topbar_title %}📥 기준서 일괄 등록 — 미리보기{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('standards.list_view') }}">기준서 관리</a>
+  <span>›</span>
+  <a href="{{ url_for('standards.import_file') }}">일괄 등록</a>
+  <span>›</span><span>미리보기</span>
+</div>
+
+{# ── 상단 요약 + 기준서명 일괄 지정 ── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="font-size:15px;font-weight:700;color:#1e293b;">
+      총 <span style="color:#f97316;">{{ items|length }}</span>개 항목 인식됨
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+      <label style="font-size:13px;font-weight:600;color:#475569;white-space:nowrap;">기준서명 일괄 적용:</label>
+      <input type="text" id="bookOverride" list="bookList" class="form-control" style="max-width:240px;"
+             placeholder="비워두면 파일 내 값 사용">
+      <datalist id="bookList">
+        {% for b in books %}<option value="{{ b }}">{% endfor %}
+      </datalist>
+      <span style="font-size:11px;color:#94a3b8;">모든 항목에 동일 기준서명 적용</span>
+    </div>
+  </div>
+</div>
+
+{# ── 미리보기 테이블 ── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+    <h5 style="margin:0;">파싱 결과 미리보기</h5>
+    <span style="font-size:12px;color:#94a3b8;">내용을 확인 후 아래 등록 버튼을 누르세요</span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead style="background:#f8fafc;position:sticky;top:0;">
+        <tr>
+          <th style="padding:8px 10px;text-align:center;border-bottom:1px solid #e2e8f0;width:36px;">#</th>
+          <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;width:120px;">기준서명</th>
+          <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;width:40px;">No</th>
+          <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;width:140px;">시험항목명</th>
+          <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">시험 조건</th>
+          <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;width:25%;">판정 기준</th>
+          <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;width:50px;">시료수</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr style="border-bottom:1px solid #f1f5f9;vertical-align:top;" class="preview-row" data-idx="{{ loop.index0 }}">
+          <td style="padding:8px 10px;text-align:center;color:#94a3b8;">{{ loop.index }}</td>
+          <td style="padding:8px 10px;">
+            <span class="book-badge" style="display:inline-block;padding:2px 7px;border-radius:9px;font-size:11px;
+                         font-weight:600;background:#e0f2fe;color:#0369a1;">
+              {{ item.book_name or 'MX기구부품기준서' }}
+            </span>
+          </td>
+          <td style="padding:8px 10px;color:#94a3b8;text-align:center;">{{ item.std_no or '-' }}</td>
+          <td style="padding:8px 10px;font-weight:700;color:#1e293b;">{{ item.test_name }}</td>
+          <td style="padding:8px 10px;white-space:pre-wrap;color:#374151;max-width:300px;overflow:hidden;">{{ item.condition[:300] }}{% if item.condition|length > 300 %}…{% endif %}</td>
+          <td style="padding:8px 10px;white-space:pre-wrap;color:#374151;border-left:1px solid #f1f5f9;">{{ item.criterion[:200] }}{% if item.criterion|length > 200 %}…{% endif %}</td>
+          <td style="padding:8px 10px;text-align:center;color:#64748b;">{{ item.sample_qty or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── 확인 / 취소 ── #}
+<form method="POST" action="{{ url_for('standards.import_confirm') }}" id="confirmForm">
+  <input type="hidden" name="items_json" id="itemsJson" value="{{ items_json | e }}">
+  <input type="hidden" name="book_name_override" id="bookNameOverride" value="">
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+    <a href="{{ url_for('standards.import_file') }}" class="btn btn-outline">← 다시 업로드</a>
+    <a href="{{ url_for('standards.list_view') }}" class="btn btn-outline">취소</a>
+    <button type="submit" class="btn btn-primary" style="min-width:160px;"
+            onclick="document.getElementById('bookNameOverride').value=document.getElementById('bookOverride').value;">
+      ✅ {{ items|length }}개 항목 등록
+    </button>
+  </div>
+</form>
+
+{% endblock %}
