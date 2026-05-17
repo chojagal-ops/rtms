@@ -94,6 +94,17 @@
       </a>
       <a href="{{ url_for('nc.new') }}" class="nav-add-btn" title="부적합 신규 등록">＋</a>
     </div>
+    <div class="nav-section" style="margin-top:8px;">기준서</div>
+    <div class="nav-item nav-item-with-add">
+      <a href="{{ url_for('standards.list_view') }}"
+         class="{{ 'active' if request.blueprint == 'standards' }}">
+        <span class="nav-icon">📚</span><span>시험 기준서 관리</span>
+      </a>
+      {% if current_user.role == 'admin' %}
+      <a href="{{ url_for('standards.new') }}" class="nav-add-btn" title="기준서 신규 등록">＋</a>
+      {% endif %}
+    </div>
+
     <div class="nav-section" style="margin-top:8px;">보고서</div>
     <div class="nav-item">
       <a href="{{ url_for('ledger.index') }}"

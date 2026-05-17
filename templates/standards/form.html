@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}{{ '기준서 수정' if item else '기준서 등록' }} — RTMS{% endblock %}
+{% block topbar_title %}📚 시험 기준서 {{ '수정' if item else '신규 등록' }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('standards.list_view') }}">기준서 관리</a>
+  <span>›</span><span>{{ '수정' if item else '신규 등록' }}</span>
+</div>
+
+<div class="card" style="max-width:860px;">
+  <div class="card-header"><h5>{{ '기준서 수정' if item else '신규 기준서 등록' }}</h5></div>
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-grid cols-3">
+
+        <div class="form-group">
+          <label class="form-label">기준서 번호</label>
+          <input type="number" name="std_no" class="form-control" min="1"
+                 value="{{ item.std_no or '' if item else '' }}" placeholder="예: 1">
+        </div>
+
+        <div class="form-group" style="grid-column:span 2;">
+          <label class="form-label">시험항목명 <span class="req">*</span></label>
+          <input type="text" name="test_name" class="form-control" required
+                 value="{{ item.test_name or '' if item else '' }}" placeholder="예: 열충격시험">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">시료수</label>
+          <input type="text" name="sample_qty" class="form-control"
+                 value="{{ item.sample_qty or '' if item else '' }}" placeholder="예: Cavity별 5">
+        </div>
+
+        <div class="form-group" style="grid-column:span 2;">
+          <label class="form-label">조건 요약</label>
+          <input type="text" name="condition_summary" class="form-control"
+                 value="{{ item.condition_summary or '' if item else '' }}"
+                 placeholder="목록에서 표시될 짧은 요약 (예: -40~85°C 200사이클)">
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">시험조건 전문</label>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">
+            ※ 판정기준은 <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;">▶ 판정기준</code> 으로 구분하면 의뢰서 등록 시 자동 분리됩니다.
+          </div>
+          <textarea name="condition_full" class="form-control" rows="14"
+                    placeholder="▶ 시험방법&#10;1) ...&#10;&#10;▶ 판정기준&#10;1) ..."
+                    style="font-family:'Courier New',monospace;font-size:12px;line-height:1.7;">{{ item.condition_full or '' if item else '' }}</textarea>
+        </div>
+
+      </div>
+
+      <div class="flex gap-8 mt-16" style="justify-content:flex-end;">
+        <a href="{{ url_for('standards.list_view') }}" class="btn btn-outline">취소</a>
+        <button type="submit" class="btn btn-primary">
+          {{ '수정 완료' if item else '등록' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
