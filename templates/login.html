@@ -5,51 +5,368 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>로그인 — RTMS</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: #eef0f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+}
+
+/* ── 회로기판 격자 배경 ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(180,190,210,0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(180,190,210,0.25) 1px, transparent 1px);
+  background-size: 48px 48px;
+  z-index: 0;
+}
+
+/* ── 배경 장식 SVG 컨테이너 ── */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── 로그인 카드 ── */
+.login-wrap {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 400px;
+  padding: 16px;
+}
+
+.login-box {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 36px 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.login-logo { text-align: center; margin-bottom: 28px; }
+.logo-icon {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border-radius: 20px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  margin: 0 auto 18px;
+  box-shadow: 0 6px 22px rgba(249,115,22,0.38);
+}
+.logo-title { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+.logo-sub   { font-size: 11px; color: #94a3b8; letter-spacing: 0.03em; }
+
+.form-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; }
+.form-control {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 14px; color: #1e293b; outline: none;
+  transition: border-color .2s;
+}
+.form-control:focus { border-color: #f97316; }
+.form-group { margin-bottom: 14px; }
+
+.btn-login {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.4);
+  transition: opacity .2s;
+}
+.btn-login:hover { opacity: .9; }
+
+.alert {
+  padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; margin-bottom: 16px;
+  background: #fee2e2; color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* ── 배경 이진수 텍스트 ── */
+.bin-text {
+  position: absolute;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: rgba(100,116,139,0.35);
+  line-height: 1.7;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+</style>
 </head>
-<body class="login-body">
-<div class="login-box">
-  <div class="login-logo">
-    <!-- 아이콘: 흰색 플라스크 + INTOPS -->
-    <div style="width:80px;height:80px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:0 auto 18px;box-shadow:0 6px 22px rgba(249,115,22,0.38);">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 3h6v6l4.5 9A2 2 0 0 1 17.8 21H6.2a2 2 0 0 1-1.7-3L9 9V3z"/>
-        <line x1="9" y1="3" x2="15" y2="3"/>
-        <line x1="7.5" y1="11" x2="16.5" y2="11"/>
-      </svg>
-      <span style="font-size:9px;font-weight:900;color:white;letter-spacing:0.15em;line-height:1;">INTOPS</span>
-    </div>
-    <div class="logo-title">신뢰성 시험 관리 시스템</div>
-    <div class="logo-sub">Reliability Test Management System (RTMS)</div>
-  </div>
+<body>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endwith %}
+<!-- ── 배경 장식 레이어 ── -->
+<div class="bg-layer">
+  <svg width="100%" height="100%" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"
+       xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <style>
+        .eq { fill: none; stroke: #b0bcd4; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+        .eq-fill { fill: #d8dfe9; stroke: #b0bcd4; stroke-width: 1; }
+        .eq-fill2 { fill: #e8ecf3; stroke: #b0bcd4; stroke-width: 1; }
+        .eq-acc { fill: #f97316; opacity: 0.55; }
+        .circuit { fill: none; stroke: #b8c4d6; stroke-width: 1.5; }
+        .circuit-dot { fill: #c8d3e3; }
+        .chart-line { fill: none; stroke: #b0bcd4; stroke-width: 1.5; }
+        .chart-bar { fill: #d4dae7; }
+        .bin { font-family: 'Courier New', monospace; font-size: 10px; fill: rgba(100,116,139,0.3); }
+      </style>
+    </defs>
 
-  <form method="POST">
-    <div class="form-group" style="margin-bottom:14px;">
-      <label class="form-label">아이디</label>
-      <input type="text" name="username" class="form-control" placeholder="아이디 입력" required autofocus>
-    </div>
-    <div class="form-group" style="margin-bottom:18px;">
-      <label class="form-label">비밀번호</label>
-      <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required>
-    </div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-sub);margin-bottom:18px;cursor:pointer;">
-      <input type="checkbox" name="remember"> 로그인 유지
-    </label>
-    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">로그인</button>
-  </form>
-  <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-muted);">
-    <a href="{{ url_for('auth.forgot_password') }}"
-       style="color:#6b7280;text-decoration:none;font-weight:600;">🔑 비밀번호 찾기</a>
+    <!-- ═══════════════════ 왼쪽 상단: 인장시험기 ═══════════════════ -->
+    <g transform="translate(60, 40)">
+      <!-- 프레임 세로 기둥 좌우 -->
+      <rect x="10" y="0" width="14" height="260" rx="3" class="eq-fill"/>
+      <rect x="156" y="0" width="14" height="260" rx="3" class="eq-fill"/>
+      <!-- 상단 크로스빔 -->
+      <rect x="0" y="0" width="180" height="22" rx="4" class="eq-fill"/>
+      <!-- 하단 베이스 -->
+      <rect x="0" y="242" width="180" height="22" rx="4" class="eq-fill"/>
+      <!-- 상단 그립 -->
+      <rect x="70" y="22" width="40" height="55" rx="2" class="eq-fill2"/>
+      <rect x="80" y="30" width="20" height="40" rx="1" class="eq-fill"/>
+      <!-- 하단 그립 -->
+      <rect x="70" y="163" width="40" height="55" rx="2" class="eq-fill2"/>
+      <rect x="80" y="170" width="20" height="40" rx="1" class="eq-fill"/>
+      <!-- 시편 -->
+      <rect x="85" y="77" width="10" height="85" rx="1" class="eq-fill2"/>
+      <!-- 로드셀 상단 -->
+      <rect x="76" y="62" width="28" height="16" rx="3" class="eq-fill2"/>
+      <circle cx="90" cy="70" r="4" class="eq-acc"/>
+      <!-- 컨트롤 박스 -->
+      <rect x="20" y="80" width="40" height="60" rx="4" class="eq-fill2"/>
+      <rect x="26" y="88" width="28" height="16" rx="2" style="fill:#c8d4e4;stroke:#b0bcd4;stroke-width:1;"/>
+      <circle cx="32" cy="116" r="4" class="eq-acc"/>
+      <circle cx="46" cy="116" r="4" class="circuit-dot"/>
+      <!-- 스크류 크로스헤드 -->
+      <rect x="24" y="140" width="132" height="8" rx="4" class="eq-fill"/>
+      <!-- 눈금자 -->
+      <line x1="165" y1="22" x2="165" y2="242" class="eq" stroke-dasharray="3,4"/>
+      <!-- 수직선 하이라이트 -->
+      <line x1="90" y1="22" x2="90" y2="77" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+      <line x1="90" y1="163" x2="90" y2="217" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+    </g>
+
+    <!-- 왼쪽 중단: 그래프 -->
+    <g transform="translate(30, 320)">
+      <rect x="0" y="0" width="170" height="110" rx="6" class="eq-fill2"/>
+      <!-- 축 -->
+      <line x1="20" y1="90" x2="155" y2="90" class="chart-line"/>
+      <line x1="20" y1="10" x2="20" y2="90" class="chart-line"/>
+      <!-- 데이터 선 -->
+      <polyline points="20,80 45,65 70,55 95,35 115,40 135,25 155,28" class="chart-line" stroke="#f97316" stroke-width="1.5" opacity="0.7"/>
+      <!-- 바 차트 -->
+      <rect x="30" y="68" width="12" height="22" class="chart-bar" opacity="0.7"/>
+      <rect x="52" y="55" width="12" height="35" class="chart-bar" opacity="0.7"/>
+      <rect x="74" y="42" width="12" height="48" class="chart-bar" opacity="0.7"/>
+      <rect x="96" y="50" width="12" height="40" class="chart-bar" opacity="0.7"/>
+      <rect x="118" y="35" width="12" height="55" class="chart-bar" opacity="0.7"/>
+      <rect x="140" y="28" width="12" height="62" class="chart-bar" opacity="0.7"/>
+      <!-- 라벨 -->
+      <text x="85" y="7" text-anchor="middle" class="bin" font-size="9">LOAD vs DISPLACEMENT</text>
+    </g>
+
+    <!-- 왼쪽 하단: 시료 적재대 (실린더 스택) -->
+    <g transform="translate(55, 460)">
+      {% for i in range(5) %}
+      <ellipse cx="60" cy="{{ 20 + i*22 }}" rx="52" ry="10" class="eq-fill2"/>
+      <rect x="8" y="{{ 20 + i*22 }}" width="104" height="18" class="eq-fill"/>
+      <ellipse cx="60" cy="{{ 38 + i*22 }}" rx="52" ry="10" class="eq-fill2"/>
+      {% endfor %}
+      <ellipse cx="60" cy="130" rx="52" ry="10" class="eq-fill2"/>
+    </g>
+
+    <!-- ═══════════════════ 오른쪽 상단: 항온항습 챔버 ═══════════════════ -->
+    <g transform="translate(1160, 30)">
+      <!-- 본체 -->
+      <rect x="0" y="30" width="200" height="200" rx="8" class="eq-fill"/>
+      <!-- 도어 -->
+      <rect x="12" y="42" width="136" height="176" rx="6" class="eq-fill2"/>
+      <!-- 도어 유리창 -->
+      <rect x="24" y="60" width="112" height="110" rx="4" style="fill:#dce5f0;stroke:#b0bcd4;stroke-width:1;"/>
+      <!-- 유리창 격자 -->
+      <line x1="80" y1="60" x2="80" y2="170" class="eq" opacity="0.5"/>
+      <line x1="24" y1="115" x2="136" y2="115" class="eq" opacity="0.5"/>
+      <!-- 핸들 -->
+      <rect x="138" y="115" width="10" height="36" rx="5" class="eq-fill2"/>
+      <!-- 컨트롤 패널 우측 -->
+      <rect x="158" y="42" width="30" height="176" rx="4" class="eq-fill2"/>
+      <circle cx="173" cy="65" r="8" class="eq-fill2" stroke="#b0bcd4"/>
+      <circle cx="173" cy="65" r="3" class="eq-acc"/>
+      <rect x="163" y="85" width="20" height="28" rx="2" style="fill:#c8d4e4;stroke:#b0bcd4;stroke-width:1;"/>
+      <circle cx="173" cy="125" r="5" class="circuit-dot"/>
+      <circle cx="173" cy="145" r="5" class="circuit-dot"/>
+      <rect x="163" y="160" width="20" height="12" rx="2" class="eq-acc" opacity="0.6"/>
+      <!-- 상단 연결관 -->
+      <rect x="50" y="10" width="30" height="22" rx="3" class="eq-fill2"/>
+      <rect x="110" y="10" width="30" height="22" rx="3" class="eq-fill2"/>
+      <rect x="40" y="0" width="14" height="12" rx="2" class="eq-fill2"/>
+      <rect x="100" y="0" width="14" height="12" rx="2" class="eq-fill2"/>
+      <!-- 냉각핀 -->
+      <rect x="4" y="42" width="6" height="176" rx="2" class="eq-fill2"/>
+    </g>
+
+    <!-- 오른쪽 중단: 원심분리기 -->
+    <g transform="translate(1230, 280)">
+      <!-- 본체 박스 -->
+      <rect x="0" y="40" width="160" height="130" rx="10" class="eq-fill"/>
+      <!-- 덮개 -->
+      <rect x="10" y="20" width="140" height="50" rx="8" class="eq-fill2"/>
+      <!-- 중앙 회전판 원 -->
+      <ellipse cx="80" cy="105" rx="50" ry="18" class="eq-fill2"/>
+      <ellipse cx="80" cy="105" rx="35" ry="12" style="fill:#c8d4e4;stroke:#b0bcd4;stroke-width:1;"/>
+      <circle cx="80" cy="105" r="6" class="eq-acc" opacity="0.6"/>
+      <!-- 컨트롤 -->
+      <rect x="15" y="148" width="55" height="16" rx="3" class="eq-fill2"/>
+      <rect x="80" y="148" width="55" height="16" rx="3" class="eq-fill2"/>
+      <circle cx="30" cy="156" r="5" class="eq-acc" opacity="0.5"/>
+      <circle cx="115" cy="156" r="5" class="circuit-dot"/>
+      <!-- 발 -->
+      <rect x="15" y="168" width="20" height="10" rx="2" class="eq-fill2"/>
+      <rect x="125" y="168" width="20" height="10" rx="2" class="eq-fill2"/>
+    </g>
+
+    <!-- 오른쪽 하단: 표면조도 측정기 -->
+    <g transform="translate(1180, 530)">
+      <!-- 본체 -->
+      <rect x="20" y="0" width="130" height="80" rx="8" class="eq-fill"/>
+      <rect x="30" y="10" width="90" height="50" rx="4" style="fill:#c8d4e4;stroke:#b0bcd4;stroke-width:1;"/>
+      <!-- 측정 프로브 -->
+      <rect x="70" y="78" width="8" height="50" rx="2" class="eq-fill2"/>
+      <polygon points="74,128 68,120 80,120" class="eq-fill"/>
+      <!-- 베이스 플레이트 -->
+      <rect x="0" y="128" width="170" height="12" rx="4" class="eq-fill"/>
+      <!-- 화면 내용 -->
+      <polyline points="36,45 52,32 68,38 84,28 100,35 112,22" class="chart-line" stroke="#f97316" stroke-width="1.2" opacity="0.8"/>
+      <!-- 버튼들 -->
+      <circle cx="150" cy="24" r="6" class="circuit-dot"/>
+      <circle cx="150" cy="42" r="6" class="circuit-dot"/>
+      <circle cx="150" cy="60" r="6" class="eq-acc" opacity="0.5"/>
+    </g>
+
+    <!-- ═══════════════════ 회로기판 연결선 ═══════════════════ -->
+    <!-- 왼쪽 상단 장비에서 나오는 회로선 -->
+    <g class="circuit" opacity="0.6">
+      <polyline points="245,120 300,120 300,180 380,180"/>
+      <circle cx="300" cy="120" r="3" class="circuit-dot" opacity="0.6"/>
+      <circle cx="300" cy="180" r="3" class="circuit-dot" opacity="0.6"/>
+      <polyline points="245,200 320,200 320,260 400,260"/>
+      <circle cx="320" cy="200" r="3" class="circuit-dot" opacity="0.6"/>
+
+      <polyline points="1160,130 1100,130 1100,200 1020,200"/>
+      <circle cx="1100" cy="130" r="3" class="circuit-dot" opacity="0.6"/>
+      <circle cx="1100" cy="200" r="3" class="circuit-dot" opacity="0.6"/>
+
+      <!-- 하단 연결선 -->
+      <polyline points="220,550 350,550 350,620 480,620"/>
+      <polyline points="1160,600 1050,600 1050,520 950,520"/>
+      <circle cx="1050" cy="600" r="3" class="circuit-dot" opacity="0.6"/>
+    </g>
+
+    <!-- 중앙 좌우 연결 회로선 (배경) -->
+    <g class="circuit" opacity="0.35">
+      <polyline points="0,450 180,450 180,380 350,380"/>
+      <polyline points="1440,450 1260,450 1260,380 1090,380"/>
+      <polyline points="350,700 500,700 500,760 700,760"/>
+      <polyline points="1090,700 940,700 940,760 740,760"/>
+      <circle cx="500" cy="700" r="4" class="circuit-dot" opacity="0.5"/>
+      <circle cx="940" cy="700" r="4" class="circuit-dot" opacity="0.5"/>
+    </g>
+
+    <!-- ═══════════════════ 이진수/데이터 텍스트 ═══════════════════ -->
+    <text x="280" y="100" class="bin">1010 1101100 1110010 10 00101110 10110 1</text>
+    <text x="260" y="115" class="bin">10010 10 11011000 110 110100(000 10110</text>
+    <text x="290" y="130" class="bin">100001100 11111-011011101111111111111</text>
+    <text x="270" y="340" class="bin">1010 1101110 1010 110 10011</text>
+    <text x="260" y="356" class="bin">100001100 11111-01101110111</text>
+    <text x="1000" y="288" class="bin">1010 1101100 1110010 10 00101110</text>
+    <text x="980" y="304" class="bin">10010 10 11011000 110 110100000</text>
+    <text x="970" y="160" class="bin">1010 11100 0013 0 01101</text>
+    <text x="960" y="176" class="bin">16010 117010 17010 110 10011</text>
+    <text x="975" y="192" class="bin">100001100 11111-011011101111</text>
+    <text x="340" y="760" class="bin">000001100 11111.011011101111111111</text>
+    <text x="1000" y="760" class="bin">011010 11100 0013 0 01101001</text>
+
+    <!-- ═══════════════════ 정밀도 수치 라벨 ═══════════════════ -->
+    <text x="88" y="298" text-anchor="middle" class="bin" font-size="9">▲ 2.56 kN</text>
+    <text x="88" y="160" text-anchor="middle" class="bin" font-size="9">GRIP</text>
+
+    <!-- 오른쪽 챔버 수치 -->
+    <text x="1260" y="260" class="bin" font-size="9">85°C / 85%RH</text>
+    <text x="1275" y="273" class="bin" font-size="9">24hr CYCLE</text>
+  </svg>
+
+  <!-- ── 이진수 텍스트 블록 (HTML) ── -->
+  <div class="bin-text" style="left:28px;top:300px;line-height:1.9;">
+    1010110 100 1101<br>10010 1101 00110<br>11100 10010 1011<br>01101 11010 1001
   </div>
-  <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--text-muted);">
-    계정이 없으신가요?
-    <a href="{{ url_for('auth.register') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">회원가입 신청</a>
+  <div class="bin-text" style="right:24px;top:480px;line-height:1.9;text-align:right;">
+    1101 1010 10110<br>10011 0110 10100<br>11010 11001 0110<br>01010 11010 1101
   </div>
 </div>
+
+<!-- ── 로그인 카드 ── -->
+<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3h6v6l4.5 9A2 2 0 0 1 17.8 21H6.2a2 2 0 0 1-1.7-3L9 9V3z"/>
+          <line x1="9" y1="3" x2="15" y2="3"/>
+          <line x1="7.5" y1="11" x2="16.5" y2="11"/>
+        </svg>
+        <span style="font-size:9px;font-weight:900;color:white;letter-spacing:0.15em;line-height:1;">INTOPS</span>
+      </div>
+      <div class="logo-title">신뢰성 시험 관리 시스템</div>
+      <div class="logo-sub">Reliability Test Management System (RTMS)</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">아이디</label>
+        <input type="text" name="username" class="form-control" placeholder="아이디 입력" required autofocus>
+      </div>
+      <div class="form-group" style="margin-bottom:18px;">
+        <label class="form-label">비밀번호</label>
+        <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#64748b;margin-bottom:18px;cursor:pointer;">
+        <input type="checkbox" name="remember"> 로그인 유지
+      </label>
+      <button type="submit" class="btn-login">로그인</button>
+    </form>
+
+    <div style="text-align:center;margin-top:14px;font-size:12px;color:#94a3b8;">
+      <a href="{{ url_for('auth.forgot_password') }}"
+         style="color:#6b7280;text-decoration:none;font-weight:600;">🔑 비밀번호 찾기</a>
+    </div>
+    <div style="text-align:center;margin-top:10px;font-size:12px;color:#94a3b8;">
+      계정이 없으신가요?
+      <a href="{{ url_for('auth.register') }}" style="color:#f97316;text-decoration:none;font-weight:600;">회원가입 신청</a>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
