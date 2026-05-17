@@ -287,9 +287,9 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">QA 승인자</label>
+            <label class="form-label">품질팀 승인자</label>
             <input type="text" name="qa_approver" class="form-control"
-                   value="{{ item.qa_approver or '' }}" placeholder="QA 승인자명">
+                   value="{{ item.qa_approver or '김현석' }}" placeholder="품질팀 승인자명">
           </div>
           <div class="form-group form-full">
             <label class="form-label">검토 의견</label>
@@ -308,7 +308,7 @@
       <div class="project-info-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <div class="info-item"><div class="info-label">접수자</div><div class="info-value">{{ item.receiver_name or '-' }}</div></div>
         <div class="info-item"><div class="info-label">시험 가능 여부</div><div class="info-value">{{ item.feasibility or '-' }}</div></div>
-        <div class="info-item"><div class="info-label">QA 승인자</div><div class="info-value">{{ item.qa_approver or '-' }}</div></div>
+        <div class="info-item"><div class="info-label">품질팀 승인자</div><div class="info-value">{{ item.qa_approver or '김현석' }}</div></div>
       </div>
       {% if item.review_opinion %}
       <div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border-radius:6px;font-size:13px;">
