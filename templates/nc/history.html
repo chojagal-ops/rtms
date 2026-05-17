@@ -97,8 +97,13 @@
           <td style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 6px;border-top:1px solid #f1f5f9;">
             {{ loop.index }}
           </td>
-          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-weight:700;color:#f97316;font-size:12px;">
-            {{ nc.nc_no or '-' }}
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;">
+            <div style="font-weight:700;color:#f97316;font-size:12px;">{{ nc.nc_no or '-' }}</div>
+            {% if nc.request %}
+            <div style="font-size:11px;color:#2563eb;margin-top:3px;font-weight:600;">
+              {{ nc.request.request_no or '' }}
+            </div>
+            {% endif %}
           </td>
           <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b;">
             {{ nc.detection_date.strftime('%Y-%m-%d') if nc.detection_date else '-' }}
@@ -110,7 +115,11 @@
             {% endif %}
           </td>
           <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;">
-            {{ nc.defect_type or '-' }}
+            <div style="font-weight:600;color:#374151;">{{ nc.defect_type or '-' }}</div>
+            {% if nc.defect_desc %}
+            <div style="font-size:11px;color:#64748b;margin-top:3px;line-height:1.5;
+                        white-space:pre-wrap;">{{ nc.defect_desc[:60] }}{% if nc.defect_desc|length > 60 %}…{% endif %}</div>
+            {% endif %}
           </td>
           <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;">
             {% if nc.severity %}
