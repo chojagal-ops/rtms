@@ -24,9 +24,12 @@ def _split(full_text):
 @login_required
 def list_view():
     q    = request.args.get('q', '').strip()
+    book = request.args.get('book', '').strip()
     page = int(request.args.get('page', 1))
     per  = 30
     query = TestStandard.query
+    if book:
+        query = query.filter(TestStandard.book_name == book)
     if q:
         query = query.filter(
             db.or_(
@@ -38,13 +41,16 @@ def list_view():
     total = query.count()
     rows  = query.order_by(TestStandard.std_no).offset((page-1)*per).limit(per).all()
     pages = (total + per - 1) // per
+    # 기준서 목록 (필터 드롭다운용)
+    book_rows = db.session.query(TestStandard.book_name).distinct().order_by(TestStandard.book_name).all()
+    books = [b[0] for b in book_rows if b[0]]
     # 시험조건/판정기준 분리
     items = []
     for s in rows:
         cond, crit = _split(s.condition_full)
         items.append({'s': s, 'condition': cond, 'criterion': crit})
     return render_template('standards/list.html',
-                           items=items, q=q,
+                           items=items, q=q, book=book, books=books,
                            page=page, pages=pages, total=total)
 
 
@@ -57,6 +63,7 @@ def new():
     if request.method == 'POST':
         try:
             std = TestStandard(
+                book_name        = request.form.get('book_name', '').strip() or 'MX기구부품기준서',
                 std_no           = request.form.get('std_no') or None,
                 test_name        = request.form.get('test_name', '').strip(),
                 condition_full   = request.form.get('condition_full', '').strip(),
@@ -73,7 +80,9 @@ def new():
             db.session.rollback()
             log_error('기준서 등록 오류', e)
             flash('등록 중 오류가 발생했습니다.', 'danger')
-    return render_template('standards/form.html', item=None)
+    book_rows = db.session.query(TestStandard.book_name).distinct().order_by(TestStandard.book_name).all()
+    books = [b[0] for b in book_rows if b[0]]
+    return render_template('standards/form.html', item=None, books=books)
 
 
 @standards_bp.route('/standards/<int:sid>/edit', methods=['GET', 'POST'])
@@ -85,6 +94,7 @@ def edit(sid):
     std = db.get_or_404(TestStandard, sid)
     if request.method == 'POST':
         try:
+            std.book_name         = request.form.get('book_name', '').strip() or 'MX기구부품기준서'
             std.std_no            = int(request.form.get('std_no')) if request.form.get('std_no') else None
             std.test_name         = request.form.get('test_name', '').strip()
             std.condition_full    = request.form.get('condition_full', '').strip()
@@ -97,7 +107,9 @@ def edit(sid):
             db.session.rollback()
             log_error('기준서 수정 오류', e)
             flash('수정 중 오류가 발생했습니다.', 'danger')
-    return render_template('standards/form.html', item=std)
+    book_rows = db.session.query(TestStandard.book_name).distinct().order_by(TestStandard.book_name).all()
+    books = [b[0] for b in book_rows if b[0]]
+    return render_template('standards/form.html', item=std, books=books)
 
 
 @standards_bp.route('/standards/<int:sid>/delete', methods=['POST'])

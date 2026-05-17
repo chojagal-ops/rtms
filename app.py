@@ -142,6 +142,9 @@ def migrate_db():
     add_col('nc_report', 'requester_contact', 'VARCHAR(50)')
     add_col('nc_report', 'requester_email',   'VARCHAR(120)')
 
+    # ── 기준서 책 구분 컬럼 ──────────────────────────────────
+    add_col('test_standard', 'book_name', "VARCHAR(100) DEFAULT 'MX기구부품기준서'")
+
     # ── NC 테이블 컬럼 (db.create_all 이후 보완용) ──────────
     # nc_report / nc_action 은 create_all 로 생성되므로 add_col 불필요
     # 기존 test_result의 합격/불합격 → 적합/부적합 데이터 마이그레이션

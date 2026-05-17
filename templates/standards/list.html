@@ -6,8 +6,14 @@
 
 {# ── 검색 + 등록 버튼 ── #}
 <form method="get" style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+  <select name="book" class="form-control" style="max-width:220px;" onchange="this.form.submit()">
+    <option value="">전체 기준서</option>
+    {% for b in books %}
+    <option value="{{ b }}" {% if b == book %}selected{% endif %}>{{ b }}</option>
+    {% endfor %}
+  </select>
   <input type="text" name="q" value="{{ q }}" placeholder="시험항목명 · 조건 · 판정기준 검색"
-         class="form-control" style="max-width:340px;">
+         class="form-control" style="max-width:280px;">
   <button type="submit" class="btn btn-primary">🔍 검색</button>
   <a href="{{ url_for('standards.list_view') }}" class="btn btn-outline">초기화</a>
   {% if current_user.role == 'admin' %}
@@ -33,10 +39,10 @@
     <table style="width:100%;table-layout:fixed;font-size:13px;">
       <colgroup>
         <col style="width:44px;">
-        <col style="width:150px;">
-        <col style="width:38%;">
-        <col style="width:30%;">
-        <col style="width:60px;">
+        <col style="width:110px;">
+        <col style="width:41%;">
+        <col style="width:33%;">
+        <col style="width:56px;">
         {% if current_user.role == 'admin' %}<col style="width:90px;">{% endif %}
       </colgroup>
       <thead>
@@ -108,17 +114,17 @@
   {% if pages > 1 %}
   <div style="padding:14px 18px;display:flex;gap:4px;justify-content:center;border-top:1px solid #f1f5f9;flex-wrap:wrap;">
     {% if page > 1 %}
-    <a href="{{ url_for('standards.list_view', q=q, page=page-1) }}"
+    <a href="{{ url_for('standards.list_view', q=q, book=book, page=page-1) }}"
        style="padding:5px 11px;border-radius:6px;font-size:13px;text-decoration:none;background:#f1f5f9;color:#475569;">‹</a>
     {% endif %}
     {% for p in range([1, page-3]|max, [pages+1, page+4]|min) %}
-    <a href="{{ url_for('standards.list_view', q=q, page=p) }}"
+    <a href="{{ url_for('standards.list_view', q=q, book=book, page=p) }}"
        style="padding:5px 11px;border-radius:6px;font-size:13px;text-decoration:none;
               {% if p == page %}background:#f97316;color:#fff;font-weight:700;
               {% else %}background:#f1f5f9;color:#475569;{% endif %}">{{ p }}</a>
     {% endfor %}
     {% if page < pages %}
-    <a href="{{ url_for('standards.list_view', q=q, page=page+1) }}"
+    <a href="{{ url_for('standards.list_view', q=q, book=book, page=page+1) }}"
        style="padding:5px 11px;border-radius:6px;font-size:13px;text-decoration:none;background:#f1f5f9;color:#475569;">›</a>
     {% endif %}
   </div>

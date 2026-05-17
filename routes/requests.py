@@ -180,14 +180,25 @@ def _split_condition_criterion(full_text):
     return full_text, ''
 
 
+@requests_bp.route('/api/test-standard-books')
+@login_required
+def api_test_standard_books():
+    """기준서 목록 API — 모달 북 선택 드롭다운용"""
+    rows = db.session.query(TestStandard.book_name).distinct().order_by(TestStandard.book_name).all()
+    return jsonify([b[0] for b in rows if b[0]])
+
+
 @requests_bp.route('/api/test-standards')
 @login_required
 def api_test_standards():
     """기준서 항목 검색 API — 의뢰서 작성 시 시험항목 자동입력용"""
     q    = request.args.get('q', '').strip()
+    book = request.args.get('book', '').strip()
     page = int(request.args.get('page', 1))
     per  = 20  # 한 페이지 항목 수
     query = TestStandard.query
+    if book:
+        query = query.filter(TestStandard.book_name == book)
     if q:
         query = query.filter(
             db.or_(

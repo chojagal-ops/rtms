@@ -211,10 +211,11 @@ class NCReport(db.Model):
     request        = db.relationship('TestRequest', backref='nc_reports', lazy=True)
 
 
-# ── 시험 기준서 마스터 (MX 사출 기구부품 기준서) ──────────
+# ── 시험 기준서 마스터 ────────────────────────────────────
 class TestStandard(db.Model):
     __tablename__ = 'test_standard'
     id               = db.Column(db.Integer, primary_key=True)
+    book_name        = db.Column(db.String(100), default='MX기구부품기준서', index=True)  # 기준서명
     std_no           = db.Column(db.Integer, index=True)           # 기준서 번호
     test_name        = db.Column(db.String(200), nullable=False)   # 시험항목
     condition_full   = db.Column(db.Text)                          # 시험조건 및 판정기준 전문

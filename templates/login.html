@@ -10,50 +10,27 @@
 
 body {
   min-height: 100vh;
-  background: #eaecf4;
+  background: url("{{ url_for('static', filename='img/login_bg.jpg') }}") center/cover no-repeat fixed;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-right: 8vw;
   position: relative;
-  overflow: hidden;
   font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
 }
 
-/* 회로기판 격자 배경 */
+/* 반투명 어두운 오버레이 */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(160,175,200,0.22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(160,175,200,0.22) 1px, transparent 1px);
-  background-size: 52px 52px;
+  background: linear-gradient(
+    to right,
+    rgba(10, 22, 40, 0.55) 0%,
+    rgba(10, 22, 40, 0.25) 55%,
+    rgba(10, 22, 40, 0.50) 100%
+  );
   z-index: 0;
-}
-
-/* 배경 장식 — 각 코너에 개별 배치 */
-.deco {
-  position: fixed;
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
-  opacity: 0.82;
-}
-.deco-tl { top: 0;    left: 0; }
-.deco-tr { top: 0;    right: 0; }
-.deco-bl { bottom: 0; left: 0; }
-.deco-br { bottom: 0; right: 0; }
-
-/* 이진수 텍스트 */
-.bin-float {
-  position: fixed;
-  font-family: 'Courier New', monospace;
-  font-size: 10.5px;
-  color: rgba(90,110,145,0.30);
-  line-height: 1.85;
-  letter-spacing: 0.04em;
-  pointer-events: none;
-  z-index: 1;
 }
 
 /* 로그인 카드 */
@@ -65,10 +42,11 @@ body::before {
   padding: 16px;
 }
 .login-box {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 20px;
   padding: 40px 36px 32px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.06);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.15);
+  backdrop-filter: blur(4px);
 }
 .login-logo { text-align: center; margin-bottom: 28px; }
 .logo-icon {
@@ -106,285 +84,40 @@ body::before {
   background: #fee2e2; color: #991b1b;
   border: 1px solid #fca5a5;
 }
+
+/* 좌측 하단 시스템명 레이블 */
+.bg-label {
+  position: fixed;
+  left: 48px;
+  bottom: 36px;
+  z-index: 5;
+  color: rgba(255,255,255,0.75);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.bg-label .title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  display: block;
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+  body { justify-content: center; padding-right: 0; }
+  .bg-label { display: none; }
+}
 </style>
 </head>
 <body>
 
-<!-- ══ 좌상단: 인장시험기 ══ -->
-<div class="deco deco-tl">
-  <svg width="148" height="185" viewBox="0 0 240 300" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <style>
-        .e{fill:none;stroke:#a8b8ce;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
-        .ef{fill:#cdd7e6;stroke:#a8b8ce;stroke-width:.9}
-        .ef2{fill:#dde4f0;stroke:#a8b8ce;stroke-width:.9}
-        .acc{fill:#f97316;opacity:.5}
-        .cd{fill:#b8c6d8}
-        .bt{font-family:'Courier New',monospace;font-size:9px;fill:rgba(90,110,145,.28)}
-      </style>
-    </defs>
-    <!-- 프레임 기둥 -->
-    <rect x="20" y="10" width="14" height="260" rx="3" class="ef"/>
-    <rect x="156" y="10" width="14" height="260" rx="3" class="ef"/>
-    <!-- 상단 크로스빔 -->
-    <rect x="10" y="10" width="170" height="22" rx="4" class="ef"/>
-    <!-- 하단 베이스 -->
-    <rect x="10" y="248" width="170" height="22" rx="4" class="ef"/>
-    <!-- 상단 그립 -->
-    <rect x="75" y="32" width="40" height="50" rx="2" class="ef2"/>
-    <rect x="85" y="40" width="20" height="35" rx="1" class="ef"/>
-    <!-- 하단 그립 -->
-    <rect x="75" y="168" width="40" height="50" rx="2" class="ef2"/>
-    <rect x="85" y="175" width="20" height="38" rx="1" class="ef"/>
-    <!-- 시편 -->
-    <rect x="90" y="82" width="10" height="86" rx="1" class="ef2"/>
-    <!-- 로드셀 -->
-    <rect x="80" y="68" width="30" height="15" rx="3" class="ef2"/>
-    <circle cx="95" cy="76" r="4" class="acc"/>
-    <!-- 크로스헤드 -->
-    <rect x="28" y="148" width="134" height="8" rx="4" class="ef"/>
-    <!-- 컨트롤 박스 -->
-    <rect x="28" y="90" width="38" height="52" rx="4" class="ef2"/>
-    <rect x="33" y="97" width="28" height="16" rx="2" style="fill:#bcc9db;stroke:#a8b8ce;stroke-width:.9"/>
-    <circle cx="38" cy="123" r="4" class="acc"/>
-    <circle cx="52" cy="123" r="4" class="cd"/>
-    <!-- 눈금자 선 -->
-    <line x1="172" y1="32" x2="172" y2="248" class="e" stroke-dasharray="3,4"/>
-    <!-- 측정 하이라이트 -->
-    <line x1="95" y1="32" x2="95" y2="82" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4,3" opacity=".45"/>
-    <line x1="95" y1="168" x2="95" y2="218" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4,3" opacity=".45"/>
-    <!-- 수치 라벨 -->
-    <text x="95" y="295" text-anchor="middle" class="bt" font-size="8.5">▲ 2.56 kN  |  TENSILE TESTER</text>
-    <!-- 회로선 -->
-    <line x1="190" y1="120" x2="230" y2="120" class="e" stroke="#a8b8ce" stroke-width="1"/>
-    <line x1="190" y1="180" x2="230" y2="180" class="e" stroke="#a8b8ce" stroke-width="1"/>
-    <circle cx="190" cy="120" r="2.5" class="cd"/>
-    <circle cx="190" cy="180" r="2.5" class="cd"/>
-    <!-- 바이너리 -->
-    <text x="4" y="285" class="bt">1010 1101 1100</text>
-    <text x="4" y="296" class="bt">0110 1010 1001</text>
-  </svg>
-</div>
-
-<!-- ══ 우상단: 항온항습 챔버 ══ -->
-<div class="deco deco-tr">
-  <svg width="160" height="178" viewBox="0 0 260 290" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <style>
-        .e2{fill:none;stroke:#a8b8ce;stroke-width:1.2;stroke-linecap:round}
-        .ef{fill:#cdd7e6;stroke:#a8b8ce;stroke-width:.9}
-        .ef2{fill:#dde4f0;stroke:#a8b8ce;stroke-width:.9}
-        .acc2{fill:#f97316;opacity:.5}
-        .cd2{fill:#b8c6d8}
-        .bt2{font-family:'Courier New',monospace;font-size:9px;fill:rgba(90,110,145,.28)}
-      </style>
-    </defs>
-    <!-- 회로선 (왼쪽으로 뻗어나감) -->
-    <line x1="0" y1="120" x2="30" y2="120" class="e2" stroke="#a8b8ce" stroke-width="1"/>
-    <line x1="0" y1="180" x2="30" y2="180" class="e2" stroke="#a8b8ce" stroke-width="1"/>
-    <circle cx="30" cy="120" r="2.5" class="cd2"/>
-    <circle cx="30" cy="180" r="2.5" class="cd2"/>
-    <!-- 상단 연결관 -->
-    <rect x="55" y="8"  width="28" height="22" rx="3" class="ef2"/>
-    <rect x="115" y="8" width="28" height="22" rx="3" class="ef2"/>
-    <rect x="48" y="2"  width="12" height="10" rx="2" class="ef2"/>
-    <rect x="108" y="2" width="12" height="10" rx="2" class="ef2"/>
-    <!-- 냉각핀 좌측 -->
-    <rect x="30" y="45" width="6" height="180" rx="2" class="ef2"/>
-    <!-- 본체 -->
-    <rect x="36" y="30" width="190" height="200" rx="8" class="ef"/>
-    <!-- 도어 -->
-    <rect x="48" y="42" width="132" height="176" rx="6" class="ef2"/>
-    <!-- 도어 유리창 -->
-    <rect x="60" y="58" width="108" height="108" rx="4" style="fill:#d4dded;stroke:#a8b8ce;stroke-width:.9"/>
-    <!-- 유리창 격자 -->
-    <line x1="114" y1="58" x2="114" y2="166" class="e2" opacity=".45"/>
-    <line x1="60" y1="112" x2="168" y2="112" class="e2" opacity=".45"/>
-    <!-- 핸들 -->
-    <rect x="182" y="118" width="9" height="34" rx="4.5" class="ef2"/>
-    <!-- 컨트롤 패널 우측 -->
-    <rect x="193" y="42" width="26" height="176" rx="4" class="ef2"/>
-    <circle cx="206" cy="66" r="8" class="ef2" stroke="#a8b8ce"/>
-    <circle cx="206" cy="66" r="3" class="acc2"/>
-    <rect x="196" y="86" width="20" height="26" rx="2" style="fill:#bcc9db;stroke:#a8b8ce;stroke-width:.9"/>
-    <circle cx="206" cy="126" r="5" class="cd2"/>
-    <circle cx="206" cy="146" r="5" class="cd2"/>
-    <rect x="196" y="162" width="20" height="11" rx="2" class="acc2" opacity=".6"/>
-    <!-- 도어 하단 버튼 -->
-    <rect x="65" y="180" width="50" height="24" rx="4" class="ef2"/>
-    <circle cx="80" cy="192" r="5" class="acc2" opacity=".6"/>
-    <circle cx="100" cy="192" r="5" class="cd2"/>
-    <!-- 바이너리 & 수치 -->
-    <text x="36" y="284" class="bt2">85°C / 85%RH  24hr CYCLE</text>
-    <text x="36" y="276" class="bt2">1010 11011 10100 10110</text>
-  </svg>
-</div>
-
-<!-- ══ 좌하단: 데이터 그래프 + 원통 시료 스택 ══ -->
-<div class="deco deco-bl">
-  <svg width="142" height="172" viewBox="0 0 230 280" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <style>
-        .e3{fill:none;stroke:#a8b8ce;stroke-width:1.2;stroke-linecap:round}
-        .ef3{fill:#cdd7e6;stroke:#a8b8ce;stroke-width:.9}
-        .ef32{fill:#dde4f0;stroke:#a8b8ce;stroke-width:.9}
-        .cd3{fill:#b8c6d8}
-        .bt3{font-family:'Courier New',monospace;font-size:9px;fill:rgba(90,110,145,.28)}
-        .cbl{fill:none;stroke:#f97316;stroke-width:1.4;opacity:.65}
-        .cbar{fill:#c8d2e2;opacity:.75}
-      </style>
-    </defs>
-    <!-- 그래프 패널 -->
-    <rect x="10" y="10" width="165" height="108" rx="6" class="ef32"/>
-    <!-- 축 -->
-    <line x1="28" y1="96" x2="162" y2="96" class="e3"/>
-    <line x1="28" y1="20" x2="28"  y2="96" class="e3"/>
-    <!-- 바 차트 -->
-    <rect x="38"  y="72" width="11" height="24" class="cbar"/>
-    <rect x="57"  y="58" width="11" height="38" class="cbar"/>
-    <rect x="76"  y="44" width="11" height="52" class="cbar"/>
-    <rect x="95"  y="52" width="11" height="44" class="cbar"/>
-    <rect x="114" y="36" width="11" height="60" class="cbar"/>
-    <rect x="133" y="28" width="11" height="68" class="cbar"/>
-    <!-- 꺾은선 -->
-    <polyline points="28,86 48,72 67,60 87,46 106,52 125,36 145,30 162,26" class="cbl"/>
-    <!-- 그래프 타이틀 -->
-    <text x="95" y="8" text-anchor="middle" class="bt3" font-size="8.5">LOAD vs DISPLACEMENT</text>
-
-    <!-- 원통 시료 스택 (오른쪽 하단) -->
-    <g transform="translate(28, 130)">
-      <ellipse cx="65" cy="20" rx="50" ry="9" class="ef32"/>
-      <rect x="15" y="20" width="100" height="17" class="ef3"/>
-      <ellipse cx="65" cy="37" rx="50" ry="9" class="ef32"/>
-
-      <ellipse cx="65" cy="48" rx="50" ry="9" class="ef32"/>
-      <rect x="15" y="48" width="100" height="17" class="ef3"/>
-      <ellipse cx="65" cy="65" rx="50" ry="9" class="ef32"/>
-
-      <ellipse cx="65" cy="76" rx="50" ry="9" class="ef32"/>
-      <rect x="15" y="76" width="100" height="17" class="ef3"/>
-      <ellipse cx="65" cy="93" rx="50" ry="9" class="ef32"/>
-
-      <ellipse cx="65" cy="104" rx="50" ry="9" class="ef32"/>
-      <rect x="15" y="104" width="100" height="17" class="ef3"/>
-      <ellipse cx="65" cy="121" rx="50" ry="9" class="ef32"/>
-    </g>
-
-    <!-- 회로선 -->
-    <line x1="180" y1="60" x2="220" y2="60" class="e3" stroke-width="1"/>
-    <circle cx="180" cy="60" r="2.5" class="cd3"/>
-    <!-- 바이너리 -->
-    <text x="6" y="272" class="bt3">1010 1101 10010 1001</text>
-    <text x="6" y="262" class="bt3">0110 1100 10011 0110</text>
-  </svg>
-</div>
-
-<!-- ══ 우하단: 원심분리기 + 표면조도 측정기 ══ -->
-<div class="deco deco-br">
-  <svg width="154" height="185" viewBox="0 0 250 300" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <style>
-        .e4{fill:none;stroke:#a8b8ce;stroke-width:1.2;stroke-linecap:round}
-        .ef4{fill:#cdd7e6;stroke:#a8b8ce;stroke-width:.9}
-        .ef42{fill:#dde4f0;stroke:#a8b8ce;stroke-width:.9}
-        .acc4{fill:#f97316;opacity:.5}
-        .cd4{fill:#b8c6d8}
-        .bt4{font-family:'Courier New',monospace;font-size:9px;fill:rgba(90,110,145,.28)}
-        .cbl4{fill:none;stroke:#f97316;stroke-width:1.2;opacity:.7}
-      </style>
-    </defs>
-    <!-- 회로선 (왼쪽으로) -->
-    <line x1="0" y1="70" x2="20" y2="70" class="e4" stroke-width="1"/>
-    <circle cx="20" cy="70" r="2.5" class="cd4"/>
-
-    <!-- 원심분리기 (상단) -->
-    <g transform="translate(30, 10)">
-      <!-- 본체 -->
-      <rect x="0" y="38" width="170" height="126" rx="10" class="ef4"/>
-      <!-- 덮개 -->
-      <rect x="10" y="18" width="150" height="48" rx="8" class="ef42"/>
-      <!-- 덮개 힌지 -->
-      <rect x="72" y="14" width="26" height="8" rx="4" class="ef4"/>
-      <!-- 회전판 -->
-      <ellipse cx="85" cy="100" rx="54" ry="20" class="ef42"/>
-      <ellipse cx="85" cy="100" rx="38" ry="13" style="fill:#bcc9db;stroke:#a8b8ce;stroke-width:.9"/>
-      <circle cx="85" cy="100" r="7" class="acc4" opacity=".6"/>
-      <!-- 회전 방향 호 -->
-      <path d="M 55,94 A 32,12 0 0,1 115,94" class="e4" stroke-dasharray="5,3" opacity=".5"/>
-      <!-- 컨트롤 패널 -->
-      <rect x="14" y="146" width="58" height="14" rx="3" class="ef42"/>
-      <rect x="82" y="146" width="74" height="14" rx="3" class="ef42"/>
-      <circle cx="28" cy="153" r="5" class="acc4" opacity=".5"/>
-      <circle cx="120" cy="153" r="5" class="cd4"/>
-      <!-- 발 -->
-      <rect x="14" y="162" width="20" height="8" rx="2" class="ef42"/>
-      <rect x="136" y="162" width="20" height="8" rx="2" class="ef42"/>
-    </g>
-
-    <!-- 표면조도 측정기 (하단) -->
-    <g transform="translate(20, 190)">
-      <!-- 본체 -->
-      <rect x="22" y="0" width="140" height="72" rx="8" class="ef4"/>
-      <!-- 디스플레이 -->
-      <rect x="32" y="9" width="92" height="46" rx="4" style="fill:#bcc9db;stroke:#a8b8ce;stroke-width:.9"/>
-      <!-- 파형 -->
-      <polyline points="38,42 52,30 66,36 80,24 94,31 108,18 118,22" class="cbl4"/>
-      <!-- 버튼들 -->
-      <circle cx="148" cy="22" r="6" class="cd4"/>
-      <circle cx="148" cy="40" r="6" class="cd4"/>
-      <circle cx="148" cy="58" r="6" class="acc4" opacity=".5"/>
-      <!-- 프로브 -->
-      <rect x="76" y="70" width="8" height="42" rx="2" class="ef42"/>
-      <polygon points="80,112 74,104 86,104" class="ef4"/>
-      <!-- 베이스 플레이트 -->
-      <rect x="4" y="112" width="172" height="11" rx="4" class="ef4"/>
-      <!-- Ra 값 -->
-      <text x="38" y="8" class="bt4" font-size="8">Ra 0.82μm</text>
-    </g>
-
-    <!-- 바이너리 -->
-    <text x="4" y="292" class="bt4">1101 1010 10110 01101</text>
-    <text x="4" y="282" class="bt4">10011 0110 10100 1101</text>
-  </svg>
-</div>
-
-<!-- ══ 중앙 연결 회로선 ══ -->
-<div class="deco" style="top:0;left:0;width:100%;height:100%;">
-  <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
-    <defs>
-      <style>.cl{fill:none;stroke:#a8b8ce;stroke-width:1.1;opacity:.35} .cld{fill:#b8c6d8;opacity:.45}</style>
-    </defs>
-    <!-- 좌→중앙 -->
-    <line x1="240" y1="42%" x2="38%" y2="42%" class="cl"/>
-    <line x1="240" y1="58%" x2="38%" y2="58%" class="cl"/>
-    <circle cx="38%" cy="42%" r="3" class="cld"/>
-    <circle cx="38%" cy="58%" r="3" class="cld"/>
-    <!-- 우→중앙 -->
-    <line x1="calc(100% - 240px)" y1="42%" x2="62%" y2="42%" class="cl"/>
-    <line x1="calc(100% - 240px)" y1="58%" x2="62%" y2="58%" class="cl"/>
-    <circle cx="62%" cy="42%" r="3" class="cld"/>
-    <circle cx="62%" cy="58%" r="3" class="cld"/>
-  </svg>
-</div>
-
-<!-- ══ 부유 이진수 텍스트 ══ -->
-<div class="bin-float" style="left:248px;top:30%;">
-  1010 1101 1100 0110<br>
-  10010 10 11011 00110<br>
-  11100 10010 101 1001<br>
-  01101 1101 010011 01
-</div>
-<div class="bin-float" style="right:260px;top:35%;text-align:right;">
-  1101 1010 10110 0110<br>
-  10011 0110 101 00110<br>
-  11010 11001 0110 101<br>
-  01010 11010 1101 100
-</div>
-<div class="bin-float" style="left:50%;transform:translateX(-50%);top:8px;text-align:center;opacity:.7;">
-  RELIABILITY TEST MANAGEMENT SYSTEM &nbsp;·&nbsp; RTMS &nbsp;·&nbsp; 신뢰성 시험 관리
-</div>
-<div class="bin-float" style="left:50%;transform:translateX(-50%);bottom:8px;text-align:center;opacity:.7;font-size:9.5px;">
-  1010 1101 · 0110 1100 · 10011 · INTOPS QA · 10110 1001 · 0110 1010
+<!-- 좌측 하단 브랜드 레이블 -->
+<div class="bg-label">
+  <span class="title">INTOPS RTMS</span>
+  신뢰성 시험 관리 시스템
 </div>
 
 <!-- ══ 로그인 카드 ══ -->
