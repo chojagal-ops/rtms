@@ -220,7 +220,7 @@
             <td><input type="text" name="item_test_name" class="form-control"
                        value="{{ ti.test_name or '' }}" placeholder="시험 항목명"></td>
             <td><textarea name="item_test_condition" class="form-control"
-                         rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;">{{ ti.test_condition or '' }}</textarea></td>
+                         rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;">{{ ti.test_condition or '' }}</textarea></td>
             <td>
               <select name="crit_type" class="form-control" style="font-size:12px;">
                 <option value="">- 선택 -</option>
@@ -230,7 +230,7 @@
               </select>
             </td>
             <td><textarea name="crit_content" class="form-control"
-                          rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;">{{ cr.criterion_content if cr else '' }}</textarea></td>
+                          rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;">{{ cr.criterion_content if cr else '' }}</textarea></td>
             <td><input type="text" name="item_standard" class="form-control"
                        value="{{ ti.standard or '' }}" placeholder="IEC, KS 등"></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
@@ -242,7 +242,7 @@
             <td style="text-align:center;color:#64748b;">{{ i }}</td>
             <td><input type="text" name="item_test_name" class="form-control" placeholder="시험 항목명"></td>
             <td><textarea name="item_test_condition" class="form-control"
-                         rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;"></textarea></td>
+                         rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;"></textarea></td>
             <td>
               <select name="crit_type" class="form-control" style="font-size:12px;">
                 <option value="">- 선택 -</option>
@@ -250,7 +250,7 @@
               </select>
             </td>
             <td><textarea name="crit_content" class="form-control"
-                          rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;"></textarea></td>
+                          rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;"></textarea></td>
             <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
           </tr>
@@ -466,10 +466,10 @@ function addItem() {
   tr.innerHTML = `
     <td style="text-align:center;color:#64748b;">${itemCount}</td>
     <td><input type="text" name="item_test_name" class="form-control" placeholder="시험 항목명"></td>
-    <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;"></textarea></td>
+    <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;"></textarea></td>
     <td><select name="crit_type" class="form-control" style="font-size:12px;">
           <option value="">- 선택 -</option>${critOpts('')}</select></td>
-    <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;"></textarea></td>
+    <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;"></textarea></td>
     <td><input type="text" name="item_standard" class="form-control" placeholder="IEC, KS 등"></td>
     <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
   `;
@@ -542,10 +542,10 @@ function copyItems(rid, reqNo, prodName) {
         tr.innerHTML = `
           <td style="text-align:center;color:#64748b;">${i + 1}</td>
           <td><input type="text" name="item_test_name" class="form-control" value="${escHtml(it.test_name||'')}" placeholder="시험 항목명"></td>
-          <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;">${escHtml(it.test_condition||'')}</textarea></td>
+          <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;">${escHtml(it.test_condition||'')}</textarea></td>
           <td><select name="crit_type" class="form-control" style="font-size:12px;">
                 <option value="">- 선택 -</option>${critOpts('')}</select></td>
-          <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;"></textarea></td>
+          <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;"></textarea></td>
           <td><input type="text" name="item_standard" class="form-control" value="${escHtml(it.standard||'')}" placeholder="IEC, KS 등"></td>
           <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
         tbody.appendChild(tr);
@@ -720,10 +720,10 @@ function addSelectedStandards() {
     tr.innerHTML = `
       <td style="text-align:center;color:#64748b;">${itemCount}</td>
       <td><input type="text" name="item_test_name" class="form-control" value="${nm}" placeholder="시험 항목명"></td>
-      <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;">${cond}</textarea></td>
+      <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;">${cond}</textarea></td>
       <td><select name="crit_type" class="form-control" style="font-size:12px;">
             <option value="">- 선택 -</option>${critOpts('')}</select></td>
-      <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;">${crit}</textarea></td>
+      <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;">${crit}</textarea></td>
       <td><input type="text" name="item_standard" class="form-control" value="MX기구부품기준서" placeholder="IEC, KS 등"></td>
       <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>`;
     tbody.appendChild(tr);
@@ -787,10 +787,10 @@ document.getElementById('btn_parse').addEventListener('click', function() {
           tr.innerHTML = `
             <td style="text-align:center;color:#64748b;">${i+1}</td>
             <td><input type="text" name="item_test_name" class="form-control" value="${escHtml(it.test_name||'')}"></td>
-            <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;">${escHtml(it.test_condition||'')}</textarea></td>
+            <td><textarea name="item_test_condition" class="form-control" rows="4" placeholder="조건 상세" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;">${escHtml(it.test_condition||'')}</textarea></td>
             <td><select name="crit_type" class="form-control" style="font-size:12px;">
                   <option value="">- 선택 -</option>${critOpts('')}</select></td>
-            <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;"></textarea></td>
+            <td><textarea name="crit_content" class="form-control" rows="4" placeholder="기준 내용 입력" style="resize:vertical;min-height:72px;width:100%;box-sizing:border-box;"></textarea></td>
             <td><input type="text" name="item_standard" class="form-control" value="${escHtml(it.standard||'')}"></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
           `;
