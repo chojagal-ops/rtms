@@ -8,23 +8,41 @@ from utils import log_error
 standards_bp = Blueprint('standards', __name__)
 
 
+def _split(full_text):
+    """시험조건 전문에서 시험조건/판정기준 분리"""
+    if not full_text:
+        return '', ''
+    for marker in ['▶ 판정기준', '◆ 판정기준', '■ 판정기준', '● 판정기준',
+                   '►판정기준', '▶판정기준', '▶ 합격기준', '◆ 합격기준']:
+        idx = full_text.find(marker)
+        if idx != -1:
+            return full_text[:idx].rstrip(), full_text[idx:]
+    return full_text, ''
+
+
 @standards_bp.route('/standards')
 @login_required
 def list_view():
     q    = request.args.get('q', '').strip()
     page = int(request.args.get('page', 1))
-    per  = 20
+    per  = 30
     query = TestStandard.query
     if q:
         query = query.filter(
             db.or_(
                 TestStandard.test_name.ilike(f'%{q}%'),
                 TestStandard.condition_summary.ilike(f'%{q}%'),
+                TestStandard.condition_full.ilike(f'%{q}%'),
             )
         )
-    total   = query.count()
-    items   = query.order_by(TestStandard.std_no).offset((page-1)*per).limit(per).all()
-    pages   = (total + per - 1) // per
+    total = query.count()
+    rows  = query.order_by(TestStandard.std_no).offset((page-1)*per).limit(per).all()
+    pages = (total + per - 1) // per
+    # 시험조건/판정기준 분리
+    items = []
+    for s in rows:
+        cond, crit = _split(s.condition_full)
+        items.append({'s': s, 'condition': cond, 'criterion': crit})
     return render_template('standards/list.html',
                            items=items, q=q,
                            page=page, pages=pages, total=total)
