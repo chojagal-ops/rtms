@@ -75,17 +75,18 @@
     <table style="width:100%;font-size:13px;border-collapse:collapse;">
       <thead>
         <tr>
-          <th style="width:4%;text-align:center;">No</th>
-          <th style="width:11%;">NC번호</th>
-          <th style="width:8%;text-align:center;">발생일</th>
-          <th style="width:14%;">제품명/모델</th>
-          <th style="width:10%;">부적합유형</th>
-          <th style="width:5%;text-align:center;">심각도</th>
-          <th style="width:9%;">발생부서</th>
-          <th style="width:8%;text-align:center;">상태</th>
-          <th style="width:15%;">처리내용</th>
-          <th style="width:8%;">처리자/일</th>
-          <th style="width:5%;text-align:center;print:hidden;">상세</th>
+          <th style="width:3%;text-align:center;">No</th>
+          <th style="width:10%;">NC번호</th>
+          <th style="width:7%;text-align:center;">발생일</th>
+          <th style="width:11%;">제품명/모델</th>
+          <th style="width:7%;">부적합유형</th>
+          <th style="width:14%;">부적합내용</th>
+          <th style="width:4%;text-align:center;">심각도</th>
+          <th style="width:7%;">발생부서</th>
+          <th style="width:6%;text-align:center;">상태</th>
+          <th style="width:13%;">처리내용</th>
+          <th style="width:7%;">처리자/일</th>
+          <th style="width:4%;text-align:center;">상세</th>
         </tr>
       </thead>
       <tbody>
@@ -114,12 +115,11 @@
             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">의뢰: {{ nc.requester_name }}{% if nc.requester_dept %} ({{ nc.requester_dept }}){% endif %}</div>
             {% endif %}
           </td>
-          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;">
-            <div style="font-weight:600;color:#374151;">{{ nc.defect_type or '-' }}</div>
-            {% if nc.defect_desc %}
-            <div style="font-size:11px;color:#64748b;margin-top:3px;line-height:1.5;
-                        white-space:pre-wrap;">{{ nc.defect_desc[:60] }}{% if nc.defect_desc|length > 60 %}…{% endif %}</div>
-            {% endif %}
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#374151;">
+            {{ nc.defect_type or '-' }}
+          </td>
+          <td style="padding:10px 8px;border-top:1px solid #f1f5f9;font-size:12px;color:#374151;line-height:1.5;white-space:pre-wrap;">
+            {{ nc.defect_desc[:80] if nc.defect_desc else '-' }}{% if nc.defect_desc and nc.defect_desc|length > 80 %}…{% endif %}
           </td>
           <td style="text-align:center;padding:10px 6px;border-top:1px solid #f1f5f9;">
             {% if nc.severity %}
