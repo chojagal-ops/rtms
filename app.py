@@ -36,7 +36,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024   # 업로드 최대 50MB
 # 서버 재시작마다 새 버전 → CSS/JS 변경이 브라우저에 즉시 반영
 APP_VERSION = str(int(time.time()))
 
-from models import db, User, TestStandard, SysConfig
+from models import db, User, TestStandard, SysConfig, MailLog
 db.init_app(app)
 
 login_manager = LoginManager(app)

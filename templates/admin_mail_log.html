@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% block title %}메일 발송 관리{% endblock %}
+{% block content %}
+<div style="max-width:900px;margin:0 auto;padding:24px 16px;">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+    <span style="font-size:22px;">✉️</span>
+    <div>
+      <h2 style="margin:0;font-size:18px;font-weight:700;color:#1e293b;">메일 발송 관리</h2>
+      <div style="font-size:12px;color:#64748b;margin-top:2px;">기능별 ON/OFF 설정 및 발송 이력 확인</div>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div style="padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;
+                background:{{ '#dcfce7' if cat=='success' else '#fee2e2' }};
+                color:{{ '#166534' if cat=='success' else '#991b1b' }};">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {# ── 기능별 ON/OFF 카드 ── #}
+  <form method="POST" action="{{ url_for('auth.admin_mail_log_settings') }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px;">
+
+      {# 의뢰 접수 알림 #}
+      {% set r_on = cfg.mail_request_enabled == '1' %}
+      <div style="background:#fff;border:1.5px solid {{ '#f97316' if r_on else '#e2e8f0' }};border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#1e293b;">📬 의뢰 접수 알림</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">의뢰 등록 → 접수자(품질팀)</div>
+          </div>
+          <label style="position:relative;width:40px;height:22px;flex-shrink:0;cursor:pointer;">
+            <input type="checkbox" name="mail_request_enabled" id="tog_req"
+                   {% if r_on %}checked{% endif %}
+                   style="opacity:0;width:0;height:0;position:absolute;"
+                   onchange="syncTog('tog_req','card_req')">
+            <span id="tog_req_track" style="position:absolute;inset:0;border-radius:22px;transition:.2s;
+                   background:{{ '#f97316' if r_on else '#cbd5e1' }};">
+              <span id="tog_req_thumb" style="position:absolute;width:16px;height:16px;border-radius:50%;
+                     background:#fff;top:3px;transition:.2s;left:{{ '21px' if r_on else '3px' }};
+                     box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+            </span>
+          </label>
+        </div>
+        <div id="card_req" style="display:{{ 'block' if r_on else 'none' }}">
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">수신자(TO)</div>
+            <input type="text" name="mail_request_to" value="{{ cfg.mail_request_to }}"
+                   style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;box-sizing:border-box;">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">참조(CC)</div>
+            <input type="text" name="mail_request_cc" value="{{ cfg.mail_request_cc }}"
+                   placeholder="없으면 공백"
+                   style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;
+                background:{{ '#fff7ed' if r_on else '#f1f5f9' }};
+                color:{{ '#f97316' if r_on else '#94a3b8' }};">
+            {{ 'ON' if r_on else 'OFF' }}
+          </span>
+        </div>
+      </div>
+
+      {# 결과 통보 #}
+      {% set res_on = cfg.mail_result_enabled == '1' %}
+      <div style="background:#fff;border:1.5px solid {{ '#f97316' if res_on else '#e2e8f0' }};border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#1e293b;">📊 시험 결과 통보</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">결과 등록 → 의뢰자 (TO 고정)</div>
+          </div>
+          <label style="position:relative;width:40px;height:22px;flex-shrink:0;cursor:pointer;">
+            <input type="checkbox" name="mail_result_enabled" id="tog_res"
+                   {% if res_on %}checked{% endif %}
+                   style="opacity:0;width:0;height:0;position:absolute;"
+                   onchange="syncTog('tog_res','card_res')">
+            <span id="tog_res_track" style="position:absolute;inset:0;border-radius:22px;transition:.2s;
+                   background:{{ '#f97316' if res_on else '#cbd5e1' }};">
+              <span id="tog_res_thumb" style="position:absolute;width:16px;height:16px;border-radius:50%;
+                     background:#fff;top:3px;transition:.2s;left:{{ '21px' if res_on else '3px' }};
+                     box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+            </span>
+          </label>
+        </div>
+        <div id="card_res" style="display:{{ 'block' if res_on else 'none' }}">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">참조(CC)</div>
+            <input type="text" name="mail_result_cc" value="{{ cfg.mail_result_cc }}"
+                   placeholder="없으면 공백"
+                   style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;
+                background:{{ '#fff7ed' if res_on else '#f1f5f9' }};
+                color:{{ '#f97316' if res_on else '#94a3b8' }};">
+            {{ 'ON' if res_on else 'OFF' }}
+          </span>
+        </div>
+      </div>
+
+      {# 부적합 알림 #}
+      {% set nc_on = cfg.mail_nc_enabled == '1' %}
+      <div style="background:#fff;border:1.5px solid {{ '#f97316' if nc_on else '#e2e8f0' }};border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#1e293b;">⚠️ 부적합 발생 알림</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">부적합 등록 → 담당자 + 의뢰자</div>
+          </div>
+          <label style="position:relative;width:40px;height:22px;flex-shrink:0;cursor:pointer;">
+            <input type="checkbox" name="mail_nc_enabled" id="tog_nc"
+                   {% if nc_on %}checked{% endif %}
+                   style="opacity:0;width:0;height:0;position:absolute;"
+                   onchange="syncTog('tog_nc','card_nc')">
+            <span id="tog_nc_track" style="position:absolute;inset:0;border-radius:22px;transition:.2s;
+                   background:{{ '#f97316' if nc_on else '#cbd5e1' }};">
+              <span id="tog_nc_thumb" style="position:absolute;width:16px;height:16px;border-radius:50%;
+                     background:#fff;top:3px;transition:.2s;left:{{ '21px' if nc_on else '3px' }};
+                     box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+            </span>
+          </label>
+        </div>
+        <div id="card_nc" style="display:{{ 'block' if nc_on else 'none' }}">
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">수신자(TO)</div>
+            <input type="text" name="mail_nc_to" value="{{ cfg.mail_nc_to }}"
+                   style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;box-sizing:border-box;">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">참조(CC)</div>
+            <input type="text" name="mail_nc_cc" value="{{ cfg.mail_nc_cc }}"
+                   placeholder="없으면 공백"
+                   style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;
+                background:{{ '#fff7ed' if nc_on else '#f1f5f9' }};
+                color:{{ '#f97316' if nc_on else '#94a3b8' }};">
+            {{ 'ON' if nc_on else 'OFF' }}
+          </span>
+        </div>
+      </div>
+
+    </div>{# end grid #}
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:28px;">
+      <button type="submit"
+              style="padding:9px 24px;background:#f97316;color:#fff;border:none;border-radius:8px;
+                     font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(249,115,22,.3);">
+        💾 설정 저장
+      </button>
+    </div>
+  </form>
+
+  {# ── 발송 이력 테이블 ── #}
+  <div class="card">
+    <div style="padding:14px 18px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:700;color:#1e293b;">📋 최근 발송 이력 <span style="font-size:12px;font-weight:400;color:#94a3b8;">(최대 200건)</span></div>
+      <div style="font-size:12px;color:#94a3b8;">발송 성공/실패 내역</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:130px;">발송일시</th>
+            <th style="width:100px;">기능</th>
+            <th>수신자(TO)</th>
+            <th style="width:160px;">참조(CC)</th>
+            <th>제목</th>
+            <th style="width:70px;text-align:center;">결과</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set FEATURE_LABELS = {
+            'request': '의뢰 접수',
+            'accept':  '접수 완료',
+            'result':  '결과 통보',
+            'nc':      '부적합',
+            'temp_pw': '임시 비밀번호'
+          } %}
+          {% set FEATURE_COLORS = {
+            'request': '#2563eb',
+            'accept':  '#7c3aed',
+            'result':  '#f97316',
+            'nc':      '#dc2626',
+            'temp_pw': '#6b7280'
+          } %}
+          {% for log in logs %}
+          <tr>
+            <td style="font-size:12px;color:#64748b;white-space:nowrap;">
+              {{ log.sent_at.strftime('%Y-%m-%d %H:%M') if log.sent_at else '-' }}
+            </td>
+            <td>
+              {% set lbl = FEATURE_LABELS.get(log.feature or '', log.feature or '-') %}
+              {% set clr = FEATURE_COLORS.get(log.feature or '', '#6b7280') %}
+              <span class="badge" style="background:{{ clr }}22;color:{{ clr }};font-size:11px;">{{ lbl }}</span>
+            </td>
+            <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ log.to_emails or '-' }}
+            </td>
+            <td style="font-size:12px;color:#94a3b8;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ log.cc_emails or '-' }}
+            </td>
+            <td style="font-size:12px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                title="{{ log.subject or '' }}">
+              {{ log.subject or '-' }}
+            </td>
+            <td style="text-align:center;">
+              {% if log.success %}
+                <span class="badge" style="background:#dcfce7;color:#16a34a;font-size:11px;">성공</span>
+              {% else %}
+                <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:11px;"
+                      title="{{ log.error_msg or '' }}">실패</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">
+              아직 발송 이력이 없습니다.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function syncTog(id, cardId) {
+  var cb    = document.getElementById(id);
+  var track = document.getElementById(id + '_track');
+  var thumb = document.getElementById(id + '_thumb');
+  var card  = document.getElementById(cardId);
+  if (cb.checked) {
+    track.style.background = '#f97316';
+    thumb.style.left = '21px';
+    if (card) card.style.display = 'block';
+  } else {
+    track.style.background = '#cbd5e1';
+    thumb.style.left = '3px';
+    if (card) card.style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

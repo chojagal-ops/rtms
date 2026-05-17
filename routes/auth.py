@@ -4,7 +4,7 @@ import random
 import string
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User, SysConfig
+from models import db, User, SysConfig, MailLog
 from utils import log_error, mail_temp_password
 from constants import DEPARTMENTS
 
@@ -275,3 +275,48 @@ def profile_edit():
             log_error('프로필 수정 오류', e)
             flash('수정 중 오류가 발생했습니다.', 'danger')
     return render_template('profile_edit.html')
+
+
+@auth_bp.route('/admin/mail-log')
+@login_required
+def admin_mail_log():
+    """관리자 전용: 메일 발송 이력 + 기능별 ON/OFF"""
+    if current_user.role != 'admin':
+        flash('관리자만 접근 가능합니다.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    import os as _os
+    _qa = _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
+    cfg = {
+        'mail_request_enabled': SysConfig.get('mail_request_enabled', '1'),
+        'mail_request_to':      SysConfig.get('mail_request_to', _qa),
+        'mail_request_cc':      SysConfig.get('mail_request_cc', ''),
+        'mail_result_enabled':  SysConfig.get('mail_result_enabled', '1'),
+        'mail_result_cc':       SysConfig.get('mail_result_cc', _qa),
+        'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
+        'mail_nc_to':           SysConfig.get('mail_nc_to', _qa),
+        'mail_nc_cc':           SysConfig.get('mail_nc_cc', ''),
+    }
+    logs = MailLog.query.order_by(MailLog.sent_at.desc()).limit(200).all()
+    return render_template('admin_mail_log.html', cfg=cfg, logs=logs)
+
+
+@auth_bp.route('/admin/mail-log/settings', methods=['POST'])
+@login_required
+def admin_mail_log_settings():
+    """메일 발송 관리 페이지에서 설정 저장"""
+    if current_user.role != 'admin':
+        flash('관리자만 접근 가능합니다.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    try:
+        for key in ('mail_request_enabled', 'mail_result_enabled', 'mail_nc_enabled'):
+            SysConfig.set(key, '1' if request.form.get(key) == 'on' else '0')
+        for key in ('mail_request_to', 'mail_request_cc',
+                    'mail_result_cc',
+                    'mail_nc_to', 'mail_nc_cc'):
+            SysConfig.set(key, request.form.get(key, '').strip())
+        flash('메일 설정이 저장되었습니다.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        log_error('메일 설정 저장 오류', e)
+        flash('저장 중 오류가 발생했습니다.', 'danger')
+    return redirect(url_for('auth.admin_mail_log'))

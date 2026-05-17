@@ -241,6 +241,19 @@ class NCAction(db.Model):
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# ── 메일 발송 이력 ────────────────────────────────────────
+class MailLog(db.Model):
+    __tablename__ = 'mail_log'
+    id         = db.Column(db.Integer, primary_key=True)
+    feature    = db.Column(db.String(30))          # request / result / nc / temp_pw / accept
+    to_emails  = db.Column(db.Text)                # 수신자 (콤마 구분)
+    cc_emails  = db.Column(db.Text)                # 참조
+    subject    = db.Column(db.Text)
+    success    = db.Column(db.Boolean, default=True)
+    error_msg  = db.Column(db.Text)
+    sent_at    = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 # ── 시스템 설정 (key-value) ────────────────────────────────
 class SysConfig(db.Model):
     __tablename__ = 'sys_config'

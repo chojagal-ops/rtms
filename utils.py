@@ -49,7 +49,7 @@ _MAIL_CFG_WARNED = False   # 설정 없음 경고 중복 방지
 
 
 def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
-              cc_emails=None) -> None:
+              cc_emails=None, feature: str = '') -> None:
     """비동기 이메일 발송 (daemon thread). 실패 시 로그만 기록, 앱 동작에 영향 없음.
 
     필수 환경변수:
@@ -86,14 +86,31 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
     else:
         cc_list = []
 
+    to_str = ', '.join(to_emails)
+    cc_str = ', '.join(cc_list)
+
+    def _log(success, error_msg=''):
+        try:
+            from flask import current_app
+            from models import db, MailLog
+            with current_app.app_context():
+                db.session.add(MailLog(
+                    feature=feature, to_emails=to_str, cc_emails=cc_str,
+                    subject=subject, success=success,
+                    error_msg=error_msg[:500] if error_msg else None,
+                ))
+                db.session.commit()
+        except Exception:
+            pass
+
     def _send():
         try:
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
             msg['From']    = username
-            msg['To']      = ', '.join(to_emails)
+            msg['To']      = to_str
             if cc_list:
-                msg['Cc'] = ', '.join(cc_list)
+                msg['Cc'] = cc_str
             if text_body:
                 msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
@@ -107,8 +124,10 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
                 smtp.login(username, password)
                 smtp.sendmail(username, all_recipients, msg.as_bytes())
             logging.info(f'이메일 발송 성공 → {all_recipients} / {subject}')
+            _log(True)
         except Exception as exc:
             log_error(f'이메일 발송 실패 → {to_emails}', exc)
+            _log(False, str(exc))
 
     threading.Thread(target=_send, daemon=True).start()
 
@@ -147,6 +166,7 @@ def mail_temp_password(user_name: str, username: str, temp_pw: str, to_email: st
         subject='[RTMS] 임시 비밀번호 안내',
         to_emails=to_email,
         html_body=html,
+        feature='temp_pw',
     )
 
 
@@ -205,6 +225,7 @@ def mail_new_request(req_obj, base_url: str = '') -> None:
         to_emails=qa_email,
         html_body=html,
         cc_emails=cc_addr if cc_addr else None,
+        feature='request',
     )
 
 
@@ -254,6 +275,7 @@ def mail_accept_notify(req_obj, requester_email: str, base_url: str = '') -> Non
         subject=f'[RTMS] 시험의뢰 접수 완료 — {req_obj.request_no} / {req_obj.product_name or ""}',
         to_emails=requester_email,
         html_body=html,
+        feature='accept',
     )
 
 
@@ -315,6 +337,7 @@ def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '
         to_emails=requester_email,
         html_body=html,
         cc_emails=cc_addr if cc_addr else None,
+        feature='result',
     )
 
 
@@ -377,4 +400,5 @@ def mail_nc_notify(nc_obj, base_url: str = '') -> None:
         to_emails=to_list,
         html_body=html,
         cc_emails=cc_addr if cc_addr else None,
+        feature='nc',
     )
