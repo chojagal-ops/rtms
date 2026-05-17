@@ -13,22 +13,22 @@ body {
   background: url("{{ url_for('static', filename='img/login_bg.jpg') }}") center/cover no-repeat fixed;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding-right: 8vw;
+  justify-content: flex-start;
+  padding-left: 7vw;
   position: relative;
   font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
 }
 
-/* 반투명 어두운 오버레이 */
+/* 반투명 오버레이 — 왼쪽 진하게, 오른쪽 투명 */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background: linear-gradient(
     to right,
-    rgba(10, 22, 40, 0.55) 0%,
-    rgba(10, 22, 40, 0.25) 55%,
-    rgba(10, 22, 40, 0.50) 100%
+    rgba(8, 18, 35, 0.60) 0%,
+    rgba(8, 18, 35, 0.30) 45%,
+    rgba(8, 18, 35, 0.05) 100%
   );
   z-index: 0;
 }
