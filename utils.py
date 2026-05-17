@@ -152,7 +152,15 @@ def mail_temp_password(user_name: str, username: str, temp_pw: str, to_email: st
 
 def mail_new_request(req_obj, base_url: str = '') -> None:
     """신규 의뢰서 등록 → 품질팀 알림 메일"""
-    qa_email = os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
+    try:
+        from models import SysConfig
+        if SysConfig.get('mail_request_enabled', '1') == '0':
+            return
+        qa_email = SysConfig.get('mail_request_to', os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'))
+        cc_addr  = SysConfig.get('mail_request_cc', '')
+    except Exception:
+        qa_email = os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
+        cc_addr  = ''
     fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
     items_html = ''.join(
         f'<tr><td style="padding:4px 8px;border:1px solid #e5e7eb;">{i+1}</td>'
@@ -196,6 +204,7 @@ def mail_new_request(req_obj, base_url: str = '') -> None:
         subject=f'[RTMS] 신뢰성 시험 의뢰 접수 — {req_obj.request_no} / {req_obj.product_name or ""}',
         to_emails=qa_email,
         html_body=html,
+        cc_emails=cc_addr if cc_addr else None,
     )
 
 
@@ -304,6 +313,65 @@ def mail_result_notify(req_obj, res_obj, requester_email: str, base_url: str = '
     send_mail(
         subject=f'[RTMS] 신뢰성 시험 결과 통보 — {req_obj.request_no} / {req_obj.product_name or ""} [{res_obj.overall_result or ""}]',
         to_emails=requester_email,
+        html_body=html,
+        cc_emails=cc_addr if cc_addr else None,
+    )
+
+
+def mail_nc_notify(nc_obj, base_url: str = '') -> None:
+    """부적합 등록 → 개선조치 담당자 알림 메일"""
+    try:
+        from models import SysConfig
+        if SysConfig.get('mail_nc_enabled', '1') == '0':
+            return
+        to_addr = SysConfig.get('mail_nc_to', os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'))
+        cc_addr = SysConfig.get('mail_nc_cc', '')
+    except Exception:
+        to_addr = os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
+        cc_addr = ''
+    if not to_addr:
+        return
+    fd = lambda d: d.strftime('%Y-%m-%d') if d else '-'
+    sev_color = {'상': '#dc2626', '중': '#d97706', '하': '#16a34a'}.get(nc_obj.severity or '', '#374151')
+    detail_url = f'{base_url}/nc/{nc_obj.id}' if base_url else ''
+    link_html  = f'<p><a href="{detail_url}" style="color:#f97316;">→ 시스템에서 확인하기</a></p>' if detail_url else ''
+
+    html = f"""
+<div style="font-family:'Segoe UI','Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;">
+  <div style="background:linear-gradient(135deg,#dc2626,#b91c1c);padding:24px 28px;border-radius:12px 12px 0 0;">
+    <h2 style="color:#fff;margin:0;font-size:18px;">⚠️ 부적합 발생 알림</h2>
+    <p style="color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px;">RTMS — 신뢰성 시험 관리 시스템</p>
+  </div>
+  <div style="background:#fff;padding:24px 28px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;width:110px;">부적합 번호</td>
+          <td style="padding:6px 0;font-weight:700;color:#dc2626;">{nc_obj.nc_no or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">제품명/모델</td>
+          <td style="padding:6px 0;font-weight:600;">{nc_obj.product_name or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">부적합 유형</td>
+          <td style="padding:6px 0;">{nc_obj.defect_type or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">심각도</td>
+          <td style="padding:6px 0;font-weight:700;color:{sev_color};">{nc_obj.severity or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">발생 부서</td>
+          <td style="padding:6px 0;">{nc_obj.dept or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">발견자</td>
+          <td style="padding:6px 0;">{nc_obj.detected_by or '-'}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">발생일</td>
+          <td style="padding:6px 0;">{fd(nc_obj.detection_date)}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">의뢰자</td>
+          <td style="padding:6px 0;">{nc_obj.requester_name or '-'} ({nc_obj.requester_dept or '-'})</td></tr>
+    </table>
+    {'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:16px;"><strong>불량 내용:</strong><br>' + (nc_obj.defect_desc or '') + '</div>' if nc_obj.defect_desc else ''}
+    {link_html}
+    <p style="font-size:12px;color:#9ca3af;margin-top:20px;border-top:1px solid #f3f4f6;padding-top:12px;">
+      본 메일은 RTMS 시스템에서 자동 발송된 메일입니다.
+    </p>
+  </div>
+</div>"""
+
+    send_mail(
+        subject=f'[RTMS] 부적합 발생 — {nc_obj.nc_no} / {nc_obj.product_name or ""} [심각도:{nc_obj.severity or "-"}]',
+        to_emails=to_addr,
         html_body=html,
         cc_emails=cc_addr if cc_addr else None,
     )

@@ -4,7 +4,7 @@ from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from models import db, NCReport, TestRequest
-from utils import parse_date, log_error
+from utils import parse_date, log_error, mail_nc_notify
 from constants import NC_STATUSES, NC_SEVERITIES
 
 nc_bp = Blueprint('nc', __name__)
@@ -98,6 +98,11 @@ def new():
             _form_to_nc(nc, request.form)
             db.session.add(nc)
             db.session.commit()
+            try:
+                base_url = request.host_url.rstrip('/')
+                mail_nc_notify(nc, base_url)
+            except Exception:
+                pass
             flash(f'부적합 [{nc.nc_no}] 등록되었습니다.', 'success')
             return redirect(url_for('nc.detail', nid=nc.id))
         except Exception as e:

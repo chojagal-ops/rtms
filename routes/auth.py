@@ -211,19 +211,29 @@ def admin_mail_settings():
         return redirect(url_for('dashboard.index'))
     if request.method == 'POST':
         try:
-            enabled = '1' if request.form.get('mail_result_enabled') == 'on' else '0'
-            cc_addr = request.form.get('mail_result_cc', '').strip()
-            SysConfig.set('mail_result_enabled', enabled)
-            SysConfig.set('mail_result_cc', cc_addr)
+            for key in ('mail_request_enabled', 'mail_result_enabled', 'mail_nc_enabled'):
+                SysConfig.set(key, '1' if request.form.get(key) == 'on' else '0')
+            for key in ('mail_request_to', 'mail_request_cc',
+                        'mail_result_cc',
+                        'mail_nc_to', 'mail_nc_cc'):
+                SysConfig.set(key, request.form.get(key, '').strip())
             flash('메일 설정이 저장되었습니다.', 'success')
         except Exception as e:
             db.session.rollback()
             log_error('메일 설정 저장 오류', e)
             flash('저장 중 오류가 발생했습니다.', 'danger')
         return redirect(url_for('auth.admin_mail_settings'))
+    import os as _os
+    _qa = _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
     cfg = {
-        'mail_result_enabled': SysConfig.get('mail_result_enabled', '1'),
-        'mail_result_cc':      SysConfig.get('mail_result_cc', 'igm550@intops.co.kr'),
+        'mail_request_enabled': SysConfig.get('mail_request_enabled', '1'),
+        'mail_request_to':      SysConfig.get('mail_request_to', _qa),
+        'mail_request_cc':      SysConfig.get('mail_request_cc', ''),
+        'mail_result_enabled':  SysConfig.get('mail_result_enabled', '1'),
+        'mail_result_cc':       SysConfig.get('mail_result_cc', _qa),
+        'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
+        'mail_nc_to':           SysConfig.get('mail_nc_to', _qa),
+        'mail_nc_cc':           SysConfig.get('mail_nc_cc', ''),
     }
     return render_template('admin_mail.html', cfg=cfg)
 

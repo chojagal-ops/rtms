@@ -200,9 +200,16 @@ def init_db():
         print('[RTMS] 기본 관리자 계정 생성: admin / admin1234')
     # SysConfig 기본값 설정 (없는 키만)
     import os as _os
+    _qa = _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
     _defaults = {
-        'mail_result_enabled': '1',
-        'mail_result_cc': _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'),
+        'mail_request_enabled': '1',
+        'mail_request_to':      _qa,
+        'mail_request_cc':      '',
+        'mail_result_enabled':  '1',
+        'mail_result_cc':       _qa,
+        'mail_nc_enabled':      '1',
+        'mail_nc_to':           _qa,
+        'mail_nc_cc':           '',
     }
     for k, v in _defaults.items():
         if not SysConfig.query.get(k):
