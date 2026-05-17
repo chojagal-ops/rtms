@@ -131,6 +131,8 @@ def migrate_db():
     add_col('test_result',  'notify_date',         'DATE')
     add_col('test_result',  'qa_approver',         'VARCHAR(50)')
     add_col('user',         'email',               'VARCHAR(120)')
+    add_col('test_request', 'test_type',           "VARCHAR(20) DEFAULT '신규시험'")
+    add_col('test_request', 'retest_ref_id',       'INTEGER')
 
     # ── NC 테이블 시험의뢰자 컬럼 ────────────────────────────
     add_col('nc_report', 'requester_name',    'VARCHAR(50)')

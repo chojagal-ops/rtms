@@ -89,6 +89,10 @@ class TestRequest(db.Model):
     review_opinion   = db.Column(db.Text)                             # 검토 의견
     qa_approver      = db.Column(db.String(50))                       # QA 승인자
 
+    # 시험 종류
+    test_type        = db.Column(db.String(20), default='신규시험')  # 신규시험 / 재시험
+    retest_ref_id    = db.Column(db.Integer, db.ForeignKey('test_request.id'), nullable=True)  # 재시험 대상 의뢰서
+
     # 상태 관리
     status           = db.Column(db.String(20), default='접수대기')
     notes            = db.Column(db.Text)                             # 비고

@@ -156,7 +156,9 @@ def _form_to_request(req_obj, form, files=None):
     req_obj.feasibility         = form.get('feasibility', '').strip()
     req_obj.review_opinion      = form.get('review_opinion', '').strip()
     req_obj.qa_approver         = form.get('qa_approver', '').strip()
-    req_obj.status              = form.get('status', '접수대기')
+    req_obj.test_type           = form.get('test_type', '신규시험').strip()
+    rid_ref = form.get('retest_ref_id', '').strip()
+    req_obj.retest_ref_id       = int(rid_ref) if rid_ref.isdigit() else None
     req_obj.notes               = form.get('notes', '').strip()
     if files:
         saved = _save_file(files.get('attachment'))
@@ -268,11 +270,15 @@ def new():
             db.session.rollback()
             log_error('의뢰서 등록 오류', e)
             flash('등록 중 오류가 발생했습니다.', 'danger')
+    prev_reqs = (TestRequest.query
+                 .filter(TestRequest.status.in_(['완료', '결과회신']))
+                 .order_by(TestRequest.created_at.desc()).all())
     return render_template('requests/form.html', item=None, prefill=prefill,
                            PRODUCT_TYPES=PRODUCT_TYPES, TEST_STAGES=TEST_STAGES,
                            TEST_PURPOSES=TEST_PURPOSES, SAMPLE_STATES=SAMPLE_STATES,
                            PRIORITIES=PRIORITIES, FEASIBILITY_OPTIONS=FEASIBILITY_OPTIONS,
-                           CRITERION_TYPES=CRITERION_TYPES, ATTACH_TYPES=ATTACH_TYPES)
+                           CRITERION_TYPES=CRITERION_TYPES, ATTACH_TYPES=ATTACH_TYPES,
+                           prev_reqs=prev_reqs)
 
 
 # ── 엑셀 업로드 파싱 (AJAX) ────────────────────────────────
@@ -326,11 +332,15 @@ def edit(rid):
             db.session.rollback()
             log_error('의뢰서 수정 오류', e)
             flash('수정 중 오류가 발생했습니다.', 'danger')
+    prev_reqs = (TestRequest.query
+                 .filter(TestRequest.status.in_(['완료', '결과회신']))
+                 .order_by(TestRequest.created_at.desc()).all())
     return render_template('requests/form.html', item=req_obj, prefill={},
                            PRODUCT_TYPES=PRODUCT_TYPES, TEST_STAGES=TEST_STAGES,
                            TEST_PURPOSES=TEST_PURPOSES, SAMPLE_STATES=SAMPLE_STATES,
                            PRIORITIES=PRIORITIES, FEASIBILITY_OPTIONS=FEASIBILITY_OPTIONS,
-                           CRITERION_TYPES=CRITERION_TYPES, ATTACH_TYPES=ATTACH_TYPES)
+                           CRITERION_TYPES=CRITERION_TYPES, ATTACH_TYPES=ATTACH_TYPES,
+                           prev_reqs=prev_reqs)
 
 
 # ── 상세 보기 ───────────────────────────────────────────────
