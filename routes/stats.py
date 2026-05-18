@@ -1,4 +1,4 @@
-﻿# routes/stats.py — 통계 / 모니터링 (SQLite · PostgreSQL 공용)
+# routes/stats.py — 통계 / 모니터링 (SQLite · PostgreSQL 공용)
 
 import calendar
 from datetime import date, timedelta

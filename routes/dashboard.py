@@ -1,4 +1,4 @@
-﻿# routes/dashboard.py — 대시보드 (통계 요약)
+# routes/dashboard.py — 대시보드 (통계 요약)
 
 from flask import Blueprint, render_template
 from flask_login import login_required

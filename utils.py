@@ -1,4 +1,4 @@
-﻿# utils.py — 공통 도우미 함수
+# utils.py — 공통 도우미 함수
 
 import logging
 import os

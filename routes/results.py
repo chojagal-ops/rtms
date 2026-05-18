@@ -1,4 +1,4 @@
-﻿# routes/results.py — 신뢰성 시험 결과서 CRUD + 엑셀 파싱
+# routes/results.py — 신뢰성 시험 결과서 CRUD + 엑셀 파싱
 
 import os, tempfile
 from io import BytesIO
