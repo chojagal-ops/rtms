@@ -45,39 +45,18 @@ def make_request_no(seq: int, dept_code: str, requester_initials: str, date_str:
 
 
 # ── 이메일 발송 ──────────────────────────────────────────────
-_MAIL_CFG_WARNED = False   # 설정 없음 경고 중복 방지
+_MAIL_CFG_WARNED = False
 
 
 def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
               cc_emails=None, feature: str = '') -> None:
-    """비동기 이메일 발송 (daemon thread). 실패 시 로그만 기록, 앱 동작에 영향 없음.
-
-    필수 환경변수:
-        MAIL_SERVER   — SMTP 서버 (예: smtp.gmail.com)
-        MAIL_PORT     — 포트 (기본 587)
-        MAIL_USERNAME — 발신자 이메일 (로그인 ID)
-        MAIL_PASSWORD — 앱 비밀번호 / SMTP 비밀번호
-    선택:
-        MAIL_USE_TLS  — true / false (기본 true)
-    """
+    """비동기 이메일 발송. Brevo API 우선, 없으면 SMTP 폴백."""
     global _MAIL_CFG_WARNED
-
-    # SMTP_* (Render 관례) 또는 MAIL_* 모두 지원
-    server   = (os.environ.get('SMTP_SERVER') or os.environ.get('MAIL_SERVER', '')).strip()
-    username = (os.environ.get('SMTP_EMAIL')  or os.environ.get('MAIL_USERNAME', '')).strip()
-    password = (os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD', '')).strip()
-
-    if not (server and username and password):
-        if not _MAIL_CFG_WARNED:
-            logging.warning('이메일 발송 건너뜀: SMTP_SERVER / SMTP_EMAIL / SMTP_PASSWORD 환경변수를 설정하세요.')
-            _MAIL_CFG_WARNED = True
-        return
-
-    port    = int(os.environ.get('SMTP_PORT') or os.environ.get('MAIL_PORT', '587'))
-    use_tls = (os.environ.get('SMTP_USE_TLS') or os.environ.get('MAIL_USE_TLS', 'true')).lower() != 'false'
 
     if isinstance(to_emails, str):
         to_emails = [e.strip() for e in to_emails.split(',') if e.strip()]
+    if not to_emails:
+        return
 
     if cc_emails:
         if isinstance(cc_emails, str):
@@ -105,6 +84,56 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
             pass
 
     def _send():
+        # ── 1. Brevo API 방식 ──────────────────────────────
+        brevo_key  = os.environ.get('BREVO_API_KEY', '').strip()
+        from_email = os.environ.get('BREVO_FROM_EMAIL', '').strip()
+        if brevo_key and from_email:
+            try:
+                import urllib.request, json as _json
+                payload = {
+                    'sender': {'email': from_email},
+                    'to':     [{'email': e} for e in to_emails],
+                    'subject': subject,
+                    'htmlContent': html_body,
+                }
+                if cc_list:
+                    payload['cc'] = [{'email': e} for e in cc_list]
+                if text_body:
+                    payload['textContent'] = text_body
+
+                req = urllib.request.Request(
+                    'https://api.brevo.com/v3/smtp/email',
+                    data=_json.dumps(payload).encode('utf-8'),
+                    headers={
+                        'api-key': brevo_key,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    method='POST',
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    resp.read()
+                logging.info(f'[Brevo] 발송 성공 → {to_emails} / {subject}')
+                _log(True)
+                return
+            except Exception as exc:
+                log_error(f'[Brevo] 발송 실패 → {to_emails}', exc)
+                _log(False, f'[Brevo] {exc}')
+                return
+
+        # ── 2. SMTP 폴백 ───────────────────────────────────
+        server   = (os.environ.get('SMTP_SERVER') or os.environ.get('MAIL_SERVER', '')).strip()
+        username = (os.environ.get('SMTP_EMAIL')  or os.environ.get('MAIL_USERNAME', '')).strip()
+        password = (os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD', '')).strip()
+
+        if not (server and username and password):
+            if not _MAIL_CFG_WARNED:
+                logging.warning('이메일 발송 건너뜀: BREVO_API_KEY 또는 SMTP 환경변수를 설정하세요.')
+            _log(False, 'SMTP/Brevo 환경변수 미설정')
+            return
+
+        port    = int(os.environ.get('SMTP_PORT') or os.environ.get('MAIL_PORT', '587'))
+        use_tls = (os.environ.get('SMTP_USE_TLS') or os.environ.get('MAIL_USE_TLS', 'true')).lower() != 'false'
         try:
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
@@ -115,19 +144,17 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
             if text_body:
                 msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
-
-            all_recipients = to_emails + cc_list
             with smtplib.SMTP(server, port, timeout=15) as smtp:
                 smtp.ehlo()
                 if use_tls:
                     smtp.starttls()
                     smtp.ehlo()
                 smtp.login(username, password)
-                smtp.sendmail(username, all_recipients, msg.as_bytes())
-            logging.info(f'이메일 발송 성공 → {all_recipients} / {subject}')
+                smtp.sendmail(username, to_emails + cc_list, msg.as_bytes())
+            logging.info(f'[SMTP] 발송 성공 → {to_emails} / {subject}')
             _log(True)
         except Exception as exc:
-            log_error(f'이메일 발송 실패 → {to_emails}', exc)
+            log_error(f'[SMTP] 발송 실패 → {to_emails}', exc)
             _log(False, str(exc))
 
     threading.Thread(target=_send, daemon=True).start()
