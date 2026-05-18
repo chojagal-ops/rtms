@@ -349,8 +349,42 @@ def admin_mail_log():
         'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
         'mail_nc_cc':           SysConfig.get('mail_nc_cc', 'igm550@intops.co.kr'),
     }
+    smtp_status = {
+        'MAIL_SERVER':   _os.environ.get('MAIL_SERVER', ''),
+        'MAIL_PORT':     _os.environ.get('MAIL_PORT', '587'),
+        'MAIL_USERNAME': _os.environ.get('MAIL_USERNAME', ''),
+        'MAIL_PASSWORD': _os.environ.get('MAIL_PASSWORD', ''),
+        'MAIL_USE_TLS':  _os.environ.get('MAIL_USE_TLS', 'true'),
+        'QA_EMAIL':      _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'),
+    }
+    smtp_ok = bool(smtp_status['MAIL_SERVER'] and smtp_status['MAIL_USERNAME'] and smtp_status['MAIL_PASSWORD'])
     logs = MailLog.query.order_by(MailLog.sent_at.desc()).limit(200).all()
-    return render_template('admin_mail_log.html', cfg=cfg, logs=logs)
+    return render_template('admin_mail_log.html', cfg=cfg, logs=logs,
+                           smtp_status=smtp_status, smtp_ok=smtp_ok)
+
+
+@auth_bp.route('/admin/mail-log/test', methods=['POST'])
+@login_required
+def admin_mail_test():
+    """테스트 메일 발송"""
+    if current_user.role != 'admin':
+        return redirect(url_for('dashboard.index'))
+    from utils import send_mail
+    to_addr = request.form.get('test_email', '').strip()
+    if not to_addr:
+        flash('수신자 이메일을 입력하세요.', 'danger')
+        return redirect(url_for('auth.admin_mail_log'))
+    try:
+        send_mail(
+            to_emails=to_addr,
+            subject='[RTMS] SMTP 테스트 메일',
+            body_html='<p>RTMS SMTP 설정이 정상적으로 작동합니다.</p>',
+            feature='test'
+        )
+        flash(f'테스트 메일을 {to_addr} 로 발송했습니다.', 'success')
+    except Exception as e:
+        flash(f'발송 실패: {e}', 'danger')
+    return redirect(url_for('auth.admin_mail_log'))
 
 
 @auth_bp.route('/admin/mail-log/settings', methods=['POST'])
