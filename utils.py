@@ -62,18 +62,19 @@ def send_mail(subject: str, to_emails, html_body: str, text_body: str = '',
     """
     global _MAIL_CFG_WARNED
 
-    server   = os.environ.get('MAIL_SERVER', '').strip()
-    username = os.environ.get('MAIL_USERNAME', '').strip()
-    password = os.environ.get('MAIL_PASSWORD', '').strip()
+    # SMTP_* (Render 관례) 또는 MAIL_* 모두 지원
+    server   = (os.environ.get('SMTP_SERVER') or os.environ.get('MAIL_SERVER', '')).strip()
+    username = (os.environ.get('SMTP_EMAIL')  or os.environ.get('MAIL_USERNAME', '')).strip()
+    password = (os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD', '')).strip()
 
     if not (server and username and password):
         if not _MAIL_CFG_WARNED:
-            logging.warning('이메일 발송 건너뜀: MAIL_SERVER / MAIL_USERNAME / MAIL_PASSWORD 환경변수를 설정하세요.')
+            logging.warning('이메일 발송 건너뜀: SMTP_SERVER / SMTP_EMAIL / SMTP_PASSWORD 환경변수를 설정하세요.')
             _MAIL_CFG_WARNED = True
         return
 
-    port    = int(os.environ.get('MAIL_PORT', '587'))
-    use_tls = os.environ.get('MAIL_USE_TLS', 'true').lower() != 'false'
+    port    = int(os.environ.get('SMTP_PORT') or os.environ.get('MAIL_PORT', '587'))
+    use_tls = (os.environ.get('SMTP_USE_TLS') or os.environ.get('MAIL_USE_TLS', 'true')).lower() != 'false'
 
     if isinstance(to_emails, str):
         to_emails = [e.strip() for e in to_emails.split(',') if e.strip()]

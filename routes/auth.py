@@ -349,15 +349,20 @@ def admin_mail_log():
         'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
         'mail_nc_cc':           SysConfig.get('mail_nc_cc', 'igm550@intops.co.kr'),
     }
+    _server   = _os.environ.get('SMTP_SERVER')   or _os.environ.get('MAIL_SERVER', '')
+    _username = _os.environ.get('SMTP_EMAIL')    or _os.environ.get('MAIL_USERNAME', '')
+    _password = _os.environ.get('SMTP_PASSWORD') or _os.environ.get('MAIL_PASSWORD', '')
+    _port     = _os.environ.get('SMTP_PORT')     or _os.environ.get('MAIL_PORT', '587')
+    _tls      = _os.environ.get('SMTP_USE_TLS')  or _os.environ.get('MAIL_USE_TLS', 'true')
     smtp_status = {
-        'MAIL_SERVER':   _os.environ.get('MAIL_SERVER', ''),
-        'MAIL_PORT':     _os.environ.get('MAIL_PORT', '587'),
-        'MAIL_USERNAME': _os.environ.get('MAIL_USERNAME', ''),
-        'MAIL_PASSWORD': _os.environ.get('MAIL_PASSWORD', ''),
-        'MAIL_USE_TLS':  _os.environ.get('MAIL_USE_TLS', 'true'),
+        'SMTP_SERVER':   _server,
+        'SMTP_PORT':     _port,
+        'SMTP_EMAIL':    _username,
+        'SMTP_PASSWORD': _password,
+        'SMTP_USE_TLS':  _tls,
         'QA_EMAIL':      _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr'),
     }
-    smtp_ok = bool(smtp_status['MAIL_SERVER'] and smtp_status['MAIL_USERNAME'] and smtp_status['MAIL_PASSWORD'])
+    smtp_ok = bool(_server and _username and _password)
     logs = MailLog.query.order_by(MailLog.sent_at.desc()).limit(200).all()
     return render_template('admin_mail_log.html', cfg=cfg, logs=logs,
                            smtp_status=smtp_status, smtp_ok=smtp_ok)
