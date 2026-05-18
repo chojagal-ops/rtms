@@ -1,158 +1,267 @@
 {% extends 'base.html' %}
-{% block title %}메일 발송 설정{% endblock %}
-{% block content %}
-<div style="max-width:680px;margin:0 auto;padding:24px 16px;">
+{% block title %}메일 발송 관리 — RTMS{% endblock %}
+{% block topbar_title %}✉️ 메일 발송 관리{% endblock %}
 
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-    <span style="font-size:22px;">✉️</span>
-    <div>
-      <h2 style="margin:0;font-size:18px;font-weight:700;color:#1e293b;">메일 발송 설정</h2>
-      <div style="font-size:12px;color:#64748b;margin-top:2px;">기능별 자동 메일 발송 제어 및 수신자 관리</div>
-    </div>
-  </div>
+{% block content %}
+<div style="max-width:720px;margin:0 auto;">
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in messages %}
-    <div style="padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;
-                background:{{ '#dcfce7' if cat=='success' else '#fee2e2' }};
-                color:{{ '#166534' if cat=='success' else '#991b1b' }};">
-      {{ msg }}
-    </div>
+    <div class="alert alert-{{ cat }}">{{ msg }}</div>
     {% endfor %}
   {% endwith %}
 
-  <form method="POST" id="mailForm">
-
-    {# ── 공통 토글 매크로 ── #}
-    {% macro toggle(name, checked, label, sub) %}
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:14px;">
-      <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
-        <input type="checkbox" name="{{ name }}" id="{{ name }}"
-               {% if checked == '1' %}checked{% endif %}
-               style="opacity:0;width:0;height:0;position:absolute;"
-               onchange="syncToggle('{{ name }}')">
-        <span id="{{ name }}_track"
-              style="position:absolute;inset:0;border-radius:24px;cursor:pointer;transition:.2s;
-                     background:{{ '#f97316' if checked == '1' else '#cbd5e1' }};">
-          <span id="{{ name }}_thumb"
-                style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;
-                       top:3px;left:{{ '23px' if checked == '1' else '3px' }};
-                       transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);">
-          </span>
-        </span>
+  {# ── SMTP 환경변수 현황 ── #}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><h5>⚙️ SMTP 서버 설정 현황</h5></div>
+    <div style="padding:16px 20px;">
+      {% if configured %}
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#166534;font-weight:600;">
+        ✅ SMTP 설정이 완료되었습니다. 자동 메일 발송이 활성화됩니다.
       </div>
-      <div>
-        <div id="{{ name }}_label" style="font-size:13px;font-weight:600;color:#1e293b;">
-          {{ '발송 활성화' if checked == '1' else '발송 비활성화' }}
+      {% else %}
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#991b1b;font-weight:600;">
+        ⚠️ SMTP 환경변수 미설정 — Render.com 환경변수에서 아래 항목을 설정하세요.
+      </div>
+      {% endif %}
+
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        {% for k, v in [
+            ('MAIL_SERVER',   cfg.MAIL_SERVER),
+            ('MAIL_PORT',     cfg.MAIL_PORT),
+            ('MAIL_USERNAME', cfg.MAIL_USERNAME),
+            ('MAIL_PASSWORD', cfg.MAIL_PASSWORD),
+            ('MAIL_USE_TLS',  cfg.MAIL_USE_TLS),
+            ('QA_EMAIL',      cfg.QA_EMAIL),
+        ] %}
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:7px 12px 7px 0;color:#6b7280;width:150px;font-family:monospace;">{{ k }}</td>
+          <td style="padding:7px 0;font-weight:600;color:{{ '#374151' if v else '#dc2626' }};">
+            {{ v if v else '❌ 미설정' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      {# 테스트 메일 발송 #}
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;">
+        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">📨 테스트 메일 발송</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="email" id="testEmail" placeholder="수신 이메일 주소"
+                 class="form-control" style="flex:1;min-width:200px;max-width:320px;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="sendTestMail()">📨 발송</button>
+          <span id="testResult" style="font-size:12px;"></span>
         </div>
-        <div style="font-size:11px;color:#9ca3af;">{{ sub }}</div>
       </div>
-    </label>
-    {% endmacro %}
-
-    {# ── 이메일 입력 매크로 ── #}
-    {% macro email_row(name, value, label, hint) %}
-    <div style="margin-bottom:12px;">
-      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">{{ label }}</label>
-      <input type="text" name="{{ name }}" value="{{ value }}"
-             placeholder="예: qa@company.com"
-             style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;
-                    font-size:13px;box-sizing:border-box;outline:none;"
-             onfocus="this.style.borderColor='#f97316'"
-             onblur="this.style.borderColor='#d1d5db'">
-      {% if hint %}<div style="font-size:11px;color:#9ca3af;margin-top:3px;">{{ hint }}</div>{% endif %}
     </div>
-    {% endmacro %}
+  </div>
 
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:16px;">
+  {# ── 기능별 메일 발송 설정 ── #}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <h5>📋 기능별 메일 발송 설정</h5>
+      <span style="font-size:11px;color:#9ca3af;">토글로 기능별 자동 발송 ON/OFF</span>
+    </div>
+    <form method="POST" action="{{ url_for('auth.admin_mail_settings') }}">
+      <div style="padding:0;">
 
-      {# ───── 1. 의뢰 접수 알림 ───── #}
-      <div style="padding:20px 24px;border-bottom:1px solid #f1f5f9;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-size:16px;">📬</span>
-          <div style="font-size:13px;font-weight:700;color:#374151;">시험 의뢰 접수 알림</div>
-        </div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:14px;">의뢰자가 의뢰서를 등록하면 <strong>접수자(품질팀)</strong>에게 자동 발송</div>
-
-        {{ toggle('mail_request_enabled', cfg.mail_request_enabled, '', '의뢰서 등록 시 수신자에게 자동 발송') }}
-        {{ email_row('mail_request_to', cfg.mail_request_to, '수신자(TO) 이메일', '품질팀 접수 담당자 주소') }}
-        {{ email_row('mail_request_cc', cfg.mail_request_cc, '참조(CC) 이메일', '비워두면 CC 없이 발송') }}
-      </div>
-
-      {# ───── 2. 시험 결과 통보 ───── #}
-      <div style="padding:20px 24px;border-bottom:1px solid #f1f5f9;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-size:16px;">📊</span>
-          <div style="font-size:13px;font-weight:700;color:#374151;">시험 결과 통보</div>
-        </div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:14px;">시험 완료 후 결과 등록 시 <strong>의뢰자</strong>에게 자동 발송 (수신자는 의뢰자 이메일로 고정)</div>
-
-        {{ toggle('mail_result_enabled', cfg.mail_result_enabled, '', '결과 등록 시 의뢰자에게 자동 발송') }}
-        {{ email_row('mail_result_cc', cfg.mail_result_cc, '참조(CC) 이메일', '결과 통보 시 CC 주소. 비워두면 CC 없이 발송') }}
-      </div>
-
-      {# ───── 3. 부적합 발생 알림 ───── #}
-      <div style="padding:20px 24px;border-bottom:1px solid #f1f5f9;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-size:16px;">⚠️</span>
-          <div style="font-size:13px;font-weight:700;color:#374151;">부적합 발생 알림</div>
-        </div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:14px;">부적합이 등록되면 <strong>개선조치 요구자</strong>에게 자동 발송</div>
-
-        {{ toggle('mail_nc_enabled', cfg.mail_nc_enabled, '', '부적합 등록 시 수신자에게 자동 발송') }}
-        <div style="margin-bottom:12px;">
-          <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">수신자(TO) 이메일</label>
-          <div style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;">
-            의뢰자 이메일 (자동)
+        {# 1. 의뢰 접수 알림 #}
+        <div style="padding:18px 20px;border-bottom:1px solid #f1f5f9;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#374151;">📬 시험 의뢰 접수 알림</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:2px;">의뢰서 등록 시 품질팀에 자동 발송</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <div style="position:relative;width:40px;height:22px;">
+                <input type="checkbox" name="mail_request_enabled" id="mail_request_enabled"
+                       {% if cfg.mail_request_enabled == '1' %}checked{% endif %}
+                       style="opacity:0;width:0;height:0;position:absolute;"
+                       onchange="syncTgl('mail_request_enabled')">
+                <span id="mail_request_enabled_t"
+                      style="position:absolute;inset:0;border-radius:22px;cursor:pointer;transition:.2s;background:{{ '#f97316' if cfg.mail_request_enabled=='1' else '#cbd5e1' }};">
+                  <span id="mail_request_enabled_d"
+                        style="position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;
+                               top:3px;left:{{ '21px' if cfg.mail_request_enabled=='1' else '3px' }};
+                               transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+                </span>
+              </div>
+              <span id="mail_request_enabled_l"
+                    style="font-size:12px;font-weight:600;color:{{ '#f97316' if cfg.mail_request_enabled=='1' else '#9ca3af' }};">
+                {{ 'ON' if cfg.mail_request_enabled == '1' else 'OFF' }}
+              </span>
+            </label>
           </div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:3px;">부적합 등록 시 입력된 의뢰자 이메일로 자동 발송</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label class="form-label" style="font-size:11px;">수신(TO)</label>
+              <input type="text" name="mail_request_to" value="{{ cfg.mail_request_to }}"
+                     placeholder="품질팀 담당자 이메일" class="form-control" style="font-size:12px;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size:11px;">참조(CC) <span style="color:#9ca3af;font-weight:400;">— 비워두면 CC 없음</span></label>
+              <input type="text" name="mail_request_cc" value="{{ cfg.mail_request_cc }}"
+                     placeholder="CC 이메일" class="form-control" style="font-size:12px;">
+            </div>
+          </div>
         </div>
-        {{ email_row('mail_nc_cc', cfg.mail_nc_cc, '참조(CC) 이메일', '비워두면 CC 없이 발송') }}
-      </div>
 
-      {# ───── SMTP 환경변수 안내 ───── #}
-      <div style="padding:16px 24px;background:#f8fafc;border-bottom:1px solid #f1f5f9;">
-        <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;">⚙️ SMTP 서버 설정 (환경변수)</div>
-        <div style="font-size:11px;color:#94a3b8;line-height:1.9;font-family:monospace;">
-          MAIL_SERVER &nbsp;&nbsp; — SMTP 서버 주소 (예: smtp.gmail.com)<br>
-          MAIL_PORT &nbsp;&nbsp;&nbsp;&nbsp; — 포트 번호 (기본: 587)<br>
-          MAIL_USERNAME — 발신자 이메일 주소<br>
-          MAIL_PASSWORD — 앱 비밀번호 / SMTP 비밀번호<br>
-          QA_EMAIL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — 기본 수신자 주소 (현재: {{ cfg.mail_request_to or '미설정' }})
+        {# 2. 시험 결과 통보 #}
+        <div style="padding:18px 20px;border-bottom:1px solid #f1f5f9;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#374151;">📊 시험 결과 통보</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:2px;">결과 등록 시 의뢰자에게 자동 발송</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <div style="position:relative;width:40px;height:22px;">
+                <input type="checkbox" name="mail_result_enabled" id="mail_result_enabled"
+                       {% if cfg.mail_result_enabled == '1' %}checked{% endif %}
+                       style="opacity:0;width:0;height:0;position:absolute;"
+                       onchange="syncTgl('mail_result_enabled')">
+                <span id="mail_result_enabled_t"
+                      style="position:absolute;inset:0;border-radius:22px;cursor:pointer;transition:.2s;background:{{ '#f97316' if cfg.mail_result_enabled=='1' else '#cbd5e1' }};">
+                  <span id="mail_result_enabled_d"
+                        style="position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;
+                               top:3px;left:{{ '21px' if cfg.mail_result_enabled=='1' else '3px' }};
+                               transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+                </span>
+              </div>
+              <span id="mail_result_enabled_l"
+                    style="font-size:12px;font-weight:600;color:{{ '#f97316' if cfg.mail_result_enabled=='1' else '#9ca3af' }};">
+                {{ 'ON' if cfg.mail_result_enabled == '1' else 'OFF' }}
+              </span>
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label class="form-label" style="font-size:11px;">수신(TO)</label>
+              <div class="form-control" style="font-size:12px;background:#f8fafc;color:#94a3b8;">의뢰자 이메일 (자동)</div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:11px;">참조(CC)</label>
+              <input type="text" name="mail_result_cc" value="{{ cfg.mail_result_cc }}"
+                     placeholder="CC 이메일" class="form-control" style="font-size:12px;">
+            </div>
+          </div>
         </div>
-      </div>
 
-      {# ───── 저장 버튼 ───── #}
-      <div style="padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;">
-        <a href="{{ url_for('auth.admin_users') }}"
-           style="padding:9px 18px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;
-                  color:#64748b;text-decoration:none;font-weight:600;">취소</a>
-        <button type="submit"
-                style="padding:9px 22px;background:#f97316;color:#fff;border:none;border-radius:8px;
-                       font-size:13px;font-weight:700;cursor:pointer;">
-          💾 저장
-        </button>
+        {# 3. 부적합 알림 #}
+        <div style="padding:18px 20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#374151;">⚠️ 부적합 발생 알림</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:2px;">부적합 등록 시 의뢰자에게 자동 발송</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <div style="position:relative;width:40px;height:22px;">
+                <input type="checkbox" name="mail_nc_enabled" id="mail_nc_enabled"
+                       {% if cfg.mail_nc_enabled == '1' %}checked{% endif %}
+                       style="opacity:0;width:0;height:0;position:absolute;"
+                       onchange="syncTgl('mail_nc_enabled')">
+                <span id="mail_nc_enabled_t"
+                      style="position:absolute;inset:0;border-radius:22px;cursor:pointer;transition:.2s;background:{{ '#f97316' if cfg.mail_nc_enabled=='1' else '#cbd5e1' }};">
+                  <span id="mail_nc_enabled_d"
+                        style="position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;
+                               top:3px;left:{{ '21px' if cfg.mail_nc_enabled=='1' else '3px' }};
+                               transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+                </span>
+              </div>
+              <span id="mail_nc_enabled_l"
+                    style="font-size:12px;font-weight:600;color:{{ '#f97316' if cfg.mail_nc_enabled=='1' else '#9ca3af' }};">
+                {{ 'ON' if cfg.mail_nc_enabled == '1' else 'OFF' }}
+              </span>
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label class="form-label" style="font-size:11px;">수신(TO)</label>
+              <div class="form-control" style="font-size:12px;background:#f8fafc;color:#94a3b8;">의뢰자 이메일 (자동)</div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:11px;">참조(CC)</label>
+              <input type="text" name="mail_nc_cc" value="{{ cfg.mail_nc_cc }}"
+                     placeholder="CC 이메일" class="form-control" style="font-size:12px;">
+            </div>
+          </div>
+        </div>
+
       </div>
+      <div style="padding:14px 20px;border-top:1px solid #f1f5f9;text-align:right;">
+        <button type="submit" class="btn btn-primary">💾 설정 저장</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── 최근 발송 이력 ── #}
+  {% if logs %}
+  <div class="card">
+    <div class="card-header"><h5>📜 최근 메일 발송 이력 (최근 100건)</h5></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px;">발송 시각</th>
+            <th style="width:80px;">유형</th>
+            <th>수신자</th>
+            <th style="width:220px;">제목</th>
+            <th style="width:55px;text-align:center;">결과</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="font-size:12px;color:#64748b;">
+              {{ log.sent_at.strftime('%m-%d %H:%M') if log.sent_at else '-' }}
+            </td>
+            <td style="font-size:12px;">{{ log.mail_type or '-' }}</td>
+            <td style="font-size:12px;">{{ log.to_email or '-' }}</td>
+            <td style="font-size:11px;color:#374151;">{{ (log.subject or '')[:40] }}</td>
+            <td style="text-align:center;">
+              {% if log.success %}
+              <span class="badge" style="background:#dcfce7;color:#16a34a;font-size:10px;">성공</span>
+              {% else %}
+              <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:10px;">실패</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
+  {% endif %}
 
-  </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function syncToggle(name) {
-  var cb    = document.getElementById(name);
-  var track = document.getElementById(name + '_track');
-  var thumb = document.getElementById(name + '_thumb');
-  var lbl   = document.getElementById(name + '_label');
+function syncTgl(name) {
+  const cb = document.getElementById(name);
+  const t  = document.getElementById(name + '_t');
+  const d  = document.getElementById(name + '_d');
+  const l  = document.getElementById(name + '_l');
   if (cb.checked) {
-    track.style.background = '#f97316';
-    thumb.style.left = '23px';
-    if (lbl) lbl.textContent = '발송 활성화';
+    t.style.background = '#f97316'; d.style.left = '21px';
+    l.textContent = 'ON'; l.style.color = '#f97316';
   } else {
-    track.style.background = '#cbd5e1';
-    thumb.style.left = '3px';
-    if (lbl) lbl.textContent = '발송 비활성화';
+    t.style.background = '#cbd5e1'; d.style.left = '3px';
+    l.textContent = 'OFF'; l.style.color = '#9ca3af';
   }
+}
+function sendTestMail() {
+  const email  = document.getElementById('testEmail').value.trim();
+  const result = document.getElementById('testResult');
+  if (!email) { result.textContent = '이메일을 입력하세요.'; result.style.color = '#dc2626'; return; }
+  result.textContent = '발송 중…'; result.style.color = '#6b7280';
+  fetch('{{ url_for("auth.admin_mail_test") }}', {
+    method: 'POST',
+    body: new URLSearchParams({ to_email: email })
+  }).then(r => r.json()).then(d => {
+    result.textContent = d.msg;
+    result.style.color = d.ok ? '#16a34a' : '#dc2626';
+  }).catch(() => { result.textContent = '요청 오류'; result.style.color = '#dc2626'; });
 }
 </script>
 {% endblock %}

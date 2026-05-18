@@ -145,6 +145,16 @@ def migrate_db():
     # ── 기준서 책 구분 컬럼 ──────────────────────────────────
     add_col('test_standard', 'book_name', "VARCHAR(100) DEFAULT 'MX기구부품기준서'")
 
+    # ── admin 계정 role 보호 (실수로 변경된 경우 복구) ───────
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text("UPDATE \"user\" SET role='admin' WHERE username='admin'")
+                         if is_pg else
+                         text("UPDATE user SET role='admin' WHERE username='admin'"))
+            conn.commit()
+    except Exception as e:
+        print(f'[RTMS] admin role 복구 건너뜀: {e}')
+
     # ── NC 테이블 컬럼 (db.create_all 이후 보완용) ──────────
     # nc_report / nc_action 은 create_all 로 생성되므로 add_col 불필요
     # 기존 test_result의 합격/불합격 → 적합/부적합 데이터 마이그레이션

@@ -1,11 +1,12 @@
 # routes/auth.py — 로그인 / 로그아웃 / 회원가입
 
+import os
 import random
 import string
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, SysConfig, MailLog
-from utils import log_error, mail_temp_password
+from utils import log_error, mail_temp_password, send_mail
 from constants import DEPARTMENTS
 
 auth_bp = Blueprint('auth', __name__)
@@ -184,7 +185,9 @@ def admin_edit_user(uid):
             user.name       = request.form.get('name', '').strip() or user.name
             user.email      = request.form.get('email', '').strip() or None
             user.department = request.form.get('department', '').strip()
-            user.role       = request.form.get('role', 'user')
+            # admin 계정 자신의 role은 변경 불가 (실수 방지)
+            if user.username != 'admin':
+                user.role = request.form.get('role', 'user')
             user.is_approved = request.form.get('is_approved') == 'on'
             new_pw = request.form.get('new_password', '').strip()
             if new_pw:
@@ -202,30 +205,23 @@ def admin_edit_user(uid):
     return render_template('admin_edit_user.html', u=user)
 
 
-@auth_bp.route('/admin/mail-settings', methods=['GET', 'POST'])
+# ── 메일 발송 관리 (메인 진입점) ──────────────────────────
+@auth_bp.route('/admin/mail')
 @login_required
-def admin_mail_settings():
-    """관리자 전용: 메일 발송 설정"""
+def admin_mail():
+    """관리자 전용: 메일발송 설정 현황 및 테스트"""
     if current_user.role != 'admin':
         flash('관리자만 접근 가능합니다.', 'danger')
         return redirect(url_for('dashboard.index'))
-    if request.method == 'POST':
-        try:
-            for key in ('mail_request_enabled', 'mail_result_enabled', 'mail_nc_enabled'):
-                SysConfig.set(key, '1' if request.form.get(key) == 'on' else '0')
-            for key in ('mail_request_to', 'mail_request_cc',
-                        'mail_result_cc',
-                        'mail_nc_cc'):
-                SysConfig.set(key, request.form.get(key, '').strip())
-            flash('메일 설정이 저장되었습니다.', 'success')
-        except Exception as e:
-            db.session.rollback()
-            log_error('메일 설정 저장 오류', e)
-            flash('저장 중 오류가 발생했습니다.', 'danger')
-        return redirect(url_for('auth.admin_mail_settings'))
     import os as _os
     _qa = _os.environ.get('QA_EMAIL', 'igm550@intops.co.kr')
     cfg = {
+        'MAIL_SERVER':   _os.environ.get('MAIL_SERVER', ''),
+        'MAIL_PORT':     _os.environ.get('MAIL_PORT', '587'),
+        'MAIL_USERNAME': _os.environ.get('MAIL_USERNAME', ''),
+        'MAIL_PASSWORD': '●●●●●●●●' if _os.environ.get('MAIL_PASSWORD') else '',
+        'MAIL_USE_TLS':  _os.environ.get('MAIL_USE_TLS', 'true'),
+        'QA_EMAIL':      _qa,
         'mail_request_enabled': SysConfig.get('mail_request_enabled', '1'),
         'mail_request_to':      SysConfig.get('mail_request_to', _qa),
         'mail_request_cc':      SysConfig.get('mail_request_cc', ''),
@@ -234,7 +230,66 @@ def admin_mail_settings():
         'mail_nc_enabled':      SysConfig.get('mail_nc_enabled', '1'),
         'mail_nc_cc':           SysConfig.get('mail_nc_cc', 'igm550@intops.co.kr'),
     }
-    return render_template('admin_mail.html', cfg=cfg)
+    configured = bool(_os.environ.get('MAIL_SERVER') and _os.environ.get('MAIL_USERNAME')
+                      and _os.environ.get('MAIL_PASSWORD'))
+    logs = MailLog.query.order_by(MailLog.sent_at.desc()).limit(100).all()
+    return render_template('admin_mail.html', cfg=cfg, configured=configured, logs=logs)
+
+
+@auth_bp.route('/admin/mail/test', methods=['POST'])
+@login_required
+def admin_mail_test():
+    """관리자 전용: 테스트 메일 발송"""
+    if current_user.role != 'admin':
+        return jsonify({'ok': False, 'msg': '관리자만 가능합니다.'}), 403
+    import os as _os
+    to_email = request.form.get('to_email', '').strip()
+    if not to_email:
+        return jsonify({'ok': False, 'msg': '수신 이메일을 입력하세요.'})
+    server   = _os.environ.get('MAIL_SERVER', '')
+    username = _os.environ.get('MAIL_USERNAME', '')
+    password = _os.environ.get('MAIL_PASSWORD', '')
+    if not (server and username and password):
+        return jsonify({'ok': False, 'msg': 'SMTP 환경변수가 설정되지 않았습니다.'})
+    html = f"""<div style="font-family:'Malgun Gothic',sans-serif;max-width:500px;margin:0 auto;
+padding:28px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;">
+  <div style="background:linear-gradient(135deg,#f97316,#ea580c);padding:16px 20px;border-radius:8px;margin-bottom:20px;">
+    <h2 style="color:#fff;margin:0;font-size:16px;">✅ RTMS 테스트 메일 발송 성공</h2>
+  </div>
+  <p style="font-size:14px;color:#374151;">SMTP 설정이 정상적으로 작동하고 있습니다.</p>
+  <table style="font-size:13px;color:#6b7280;margin-top:12px;">
+    <tr><td style="padding:4px 12px 4px 0;">발신 서버</td><td style="font-weight:600;color:#111;">{server}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;">발신 계정</td><td style="font-weight:600;color:#111;">{username}</td></tr>
+  </table>
+</div>"""
+    try:
+        send_mail('[RTMS] 테스트 메일 — SMTP 설정 확인', to_email, html)
+        return jsonify({'ok': True, 'msg': f'{to_email} 으로 테스트 메일을 발송했습니다.'})
+    except Exception as e:
+        log_error('테스트 메일 발송 오류', e)
+        return jsonify({'ok': False, 'msg': f'발송 오류: {e}'})
+
+
+@auth_bp.route('/admin/mail-settings', methods=['GET', 'POST'])
+@login_required
+def admin_mail_settings():
+    """관리자 전용: 메일 발송 설정 (기능별 ON/OFF + 수신자)"""
+    if current_user.role != 'admin':
+        flash('관리자만 접근 가능합니다.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    if request.method == 'POST':
+        try:
+            for key in ('mail_request_enabled', 'mail_result_enabled', 'mail_nc_enabled'):
+                SysConfig.set(key, '1' if request.form.get(key) == 'on' else '0')
+            for key in ('mail_request_to', 'mail_request_cc', 'mail_result_cc', 'mail_nc_cc'):
+                SysConfig.set(key, request.form.get(key, '').strip())
+            flash('메일 설정이 저장되었습니다.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            log_error('메일 설정 저장 오류', e)
+            flash('저장 중 오류가 발생했습니다.', 'danger')
+        return redirect(url_for('auth.admin_mail'))
+    return redirect(url_for('auth.admin_mail'))
 
 
 @auth_bp.route('/profile/edit', methods=['GET', 'POST'])
