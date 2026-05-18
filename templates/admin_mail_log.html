@@ -54,7 +54,7 @@
     {# 테스트 메일 발송 #}
     <div style="padding:14px 20px;border-top:1px solid #f1f5f9;background:#fafafa;">
       <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">📨 테스트 메일 발송</div>
-      <form method="POST" action="{{ url_for('auth.admin_mail_test') }}" style="display:flex;gap:8px;align-items:center;">
+      <form method="POST" action="{{ url_for('auth.admin_mail_log_test') }}" style="display:flex;gap:8px;align-items:center;">
         <input type="email" name="test_email" placeholder="수신자 이메일 입력"
                style="flex:1;padding:7px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;"
                onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#d1d5db'">

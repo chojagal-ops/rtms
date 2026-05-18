@@ -239,16 +239,16 @@ def admin_mail():
 @auth_bp.route('/admin/mail/test', methods=['POST'])
 @login_required
 def admin_mail_test():
-    """관리자 전용: 테스트 메일 발송"""
+    """관리자 전용: 테스트 메일 발송 (JSON 응답)"""
     if current_user.role != 'admin':
         return jsonify({'ok': False, 'msg': '관리자만 가능합니다.'}), 403
     import os as _os
     to_email = request.form.get('to_email', '').strip()
     if not to_email:
         return jsonify({'ok': False, 'msg': '수신 이메일을 입력하세요.'})
-    server   = _os.environ.get('MAIL_SERVER', '')
-    username = _os.environ.get('MAIL_USERNAME', '')
-    password = _os.environ.get('MAIL_PASSWORD', '')
+    server   = _os.environ.get('SMTP_SERVER') or _os.environ.get('MAIL_SERVER', '')
+    username = _os.environ.get('SMTP_EMAIL')  or _os.environ.get('MAIL_USERNAME', '')
+    password = _os.environ.get('SMTP_PASSWORD') or _os.environ.get('MAIL_PASSWORD', '')
     if not (server and username and password):
         return jsonify({'ok': False, 'msg': 'SMTP 환경변수가 설정되지 않았습니다.'})
     html = f"""<div style="font-family:'Malgun Gothic',sans-serif;max-width:500px;margin:0 auto;
@@ -263,7 +263,7 @@ padding:28px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;">
   </table>
 </div>"""
     try:
-        send_mail('[RTMS] 테스트 메일 — SMTP 설정 확인', to_email, html)
+        send_mail('[RTMS] 테스트 메일 — SMTP 설정 확인', to_email, html, feature='test')
         return jsonify({'ok': True, 'msg': f'{to_email} 으로 테스트 메일을 발송했습니다.'})
     except Exception as e:
         log_error('테스트 메일 발송 오류', e)
@@ -370,23 +370,22 @@ def admin_mail_log():
 
 @auth_bp.route('/admin/mail-log/test', methods=['POST'])
 @login_required
-def admin_mail_test():
-    """테스트 메일 발송"""
+def admin_mail_log_test():
+    """메일발송관리 페이지 테스트 메일 발송"""
     if current_user.role != 'admin':
         return redirect(url_for('dashboard.index'))
-    from utils import send_mail
     to_addr = request.form.get('test_email', '').strip()
     if not to_addr:
         flash('수신자 이메일을 입력하세요.', 'danger')
         return redirect(url_for('auth.admin_mail_log'))
     try:
         send_mail(
-            to_emails=to_addr,
             subject='[RTMS] SMTP 테스트 메일',
-            body_html='<p>RTMS SMTP 설정이 정상적으로 작동합니다.</p>',
+            to_emails=to_addr,
+            html_body='<p style="font-family:sans-serif;">RTMS SMTP 설정이 정상적으로 작동합니다.</p>',
             feature='test'
         )
-        flash(f'테스트 메일을 {to_addr} 로 발송했습니다.', 'success')
+        flash(f'테스트 메일을 {to_addr} 로 발송했습니다. 발송 이력에서 결과를 확인하세요.', 'success')
     except Exception as e:
         flash(f'발송 실패: {e}', 'danger')
     return redirect(url_for('auth.admin_mail_log'))
